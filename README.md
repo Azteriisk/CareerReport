@@ -21,8 +21,8 @@ CareerReport is a professional networking platform for the next generation. Buil
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-repo/careerreport.git
-   cd careerreport
+   git clone https://github.com/Azteriisk/CareerReport.git
+   cd CareerReport
    ```
 
 2. Install dependencies:
