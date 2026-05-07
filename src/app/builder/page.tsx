@@ -34,19 +34,19 @@ const MonthYearPicker = ({ value, onChange, disabled }: { value: string, onChang
 
   return (
     <div style={{ display: 'flex', gap: '4px' }}>
-      <select 
-        className={`input-field ${!month ? 'empty-date' : ''}`} 
-        style={{ padding: '0.5rem', minWidth: 0, flex: 1, cursor: 'pointer' }} 
-        value={month} 
+      <select
+        className={`input-field ${!month ? 'empty-date' : ''}`}
+        style={{ padding: '0.5rem', minWidth: 0, flex: 1, cursor: 'pointer' }}
+        value={month}
         onChange={e => onChange(`${year || currentYear}-${e.target.value}`)}
       >
         <option value="" disabled hidden>Mo.</option>
         {months.map(m => <option key={m.v} value={m.v} style={{ color: 'var(--text-primary)', background: 'var(--surface-color)' }}>{m.l}</option>)}
       </select>
-      <select 
-        className={`input-field ${!year ? 'empty-date' : ''}`} 
-        style={{ padding: '0.5rem', minWidth: 0, flex: 1, cursor: 'pointer' }} 
-        value={year} 
+      <select
+        className={`input-field ${!year ? 'empty-date' : ''}`}
+        style={{ padding: '0.5rem', minWidth: 0, flex: 1, cursor: 'pointer' }}
+        value={year}
         onChange={e => onChange(`${e.target.value}-${month || '01'}`)}
       >
         <option value="" disabled hidden>Yr.</option>
@@ -61,7 +61,7 @@ export default function BuilderPage() {
   const [template, setTemplate] = useState<'modern' | 'classic' | 'minimal' | 'modern-split'>('modern-split');
   const [isAILoading, setIsAILoading] = useState(false);
   const [showSectionMenu, setShowSectionMenu] = useState(false);
-  
+
   // Track which optional sections are actively in the editor
   const [hasProjectsSection, setHasProjectsSection] = useState(false);
   const [hasReferencesSection, setHasReferencesSection] = useState(false);
@@ -69,7 +69,7 @@ export default function BuilderPage() {
   const [showOverrides, setShowOverrides] = useState(false);
   const [includeHeadshot, setIncludeHeadshot] = useState(true);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
-  
+
   const [sidebarRef] = useAutoAnimate<HTMLDivElement>();
   const [workRef] = useAutoAnimate<HTMLDivElement>();
   const [skillsRef] = useAutoAnimate<HTMLDivElement>();
@@ -77,9 +77,9 @@ export default function BuilderPage() {
   const [referencesRef] = useAutoAnimate<HTMLDivElement>();
   const [certificationsRef] = useAutoAnimate<HTMLDivElement>();
   const [menuWrapperRef] = useAutoAnimate<HTMLDivElement>();
-  
+
   const user = null; // Mock auth for demo
-  
+
   const contentRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({
     contentRef
@@ -98,11 +98,13 @@ export default function BuilderPage() {
               return { ...job, summary: `Spearheaded operations at ${job.name || 'the company'}, driving significant cross-functional growth and improving key metrics by optimizing core workflows. Managed complex deliverables and consistently exceeded quarterly performance targets.` };
             }
             if (type === 'bullets') {
-              return { ...job, highlights: [
-                `Optimized core processes resulting in a 25% increase in operational efficiency.`,
-                `Led a cross-functional team of 5+ members to deliver key ${job.position || 'departmental'} projects 2 weeks ahead of schedule.`,
-                `Implemented robust tracking systems that improved overall data accuracy by 40%.`
-              ]};
+              return {
+                ...job, highlights: [
+                  `Optimized core processes resulting in a 25% increase in operational efficiency.`,
+                  `Led a cross-functional team of 5+ members to deliver key ${job.position || 'departmental'} projects 2 weeks ahead of schedule.`,
+                  `Implemented robust tracking systems that improved overall data accuracy by 40%.`
+                ]
+              };
             }
           }
           return job;
@@ -131,15 +133,15 @@ export default function BuilderPage() {
   const handleImageToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
     setData(prev => ({
       ...prev,
-      basics: { 
-        ...prev.basics, 
-        image: e.target.checked ? "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?fit=crop&w=300&h=300&q=80" : "" 
+      basics: {
+        ...prev.basics,
+        image: e.target.checked ? "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?fit=crop&w=300&h=300&q=80" : ""
       }
     }));
   };
 
   // Generic Job Handlers
-  const handleJobChange = (id: string, field: string, value: string) => {
+  const handleJobChange = (id: string, field: string, value: any) => {
     setData(prev => ({
       ...prev,
       work: prev.work.map(job => job.id === id ? { ...job, [field]: value } : job)
@@ -267,7 +269,7 @@ export default function BuilderPage() {
             <Link href="/" style={{ color: 'var(--primary)', fontWeight: 'bold' }}>CareerReport</Link> Builder
           </h1>
           {user ? (
-             <button className="btn-icon" title="Log Out"><LogOut size={18} /></button>
+            <button className="btn-icon" title="Log Out"><LogOut size={18} /></button>
           ) : null}
         </div>
 
@@ -277,25 +279,25 @@ export default function BuilderPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
               <label className="label" style={{ marginBottom: 0 }}>Headshot</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input 
-                  type="checkbox" 
-                  id="include-headshot" 
-                  checked={includeHeadshot} 
-                  onChange={(e) => setIncludeHeadshot(e.target.checked)} 
+                <input
+                  type="checkbox"
+                  id="include-headshot"
+                  checked={includeHeadshot}
+                  onChange={(e) => setIncludeHeadshot(e.target.checked)}
                   style={{ cursor: 'pointer' }}
                 />
                 <label htmlFor="include-headshot" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', cursor: 'pointer', margin: 0 }}>Include in resume</label>
               </div>
             </div>
-            
+
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '1.5rem' }}>
               {data.basics.image && <img src={data.basics.image} alt="Headshot" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--glass-border)' }} />}
               <label className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', cursor: 'pointer', flex: 1 }}>
                 <Upload size={14} /> {data.basics.image ? 'Change Image' : 'Upload Image'}
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  style={{ display: 'none' }} 
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
                   onChange={(e) => {
                     if (e.target.files && e.target.files.length > 0) {
                       const reader = new FileReader();
@@ -304,13 +306,13 @@ export default function BuilderPage() {
                       // Reset the input value so the same file can be uploaded again if needed
                       e.target.value = '';
                     }
-                  }} 
+                  }}
                 />
               </label>
               {data.basics.image && (
-                <button 
-                  onClick={() => setData(prev => ({ ...prev, basics: { ...prev.basics, image: '' } }))} 
-                  className="btn-icon" 
+                <button
+                  onClick={() => setData(prev => ({ ...prev, basics: { ...prev.basics, image: '' } }))}
+                  className="btn-icon"
                   style={{ color: 'var(--danger)', padding: '0.4rem' }}
                   title="Remove Image"
                 >
@@ -331,19 +333,19 @@ export default function BuilderPage() {
           <div className="form-group">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <label className="label" style={{ margin: 0 }}>Professional Summary</label>
-              <button 
+              <button
                 onClick={handleRewrite}
                 disabled={isAILoading}
-                className="btn btn-primary" 
+                className="btn btn-primary"
                 style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', background: 'var(--accent)' }}
               >
                 {isAILoading ? <RefreshCw size={14} className="animate-spin" /> : <><Sparkles size={14} /> AI Rewrite <Lock size={12} /></>}
               </button>
             </div>
-            <textarea 
-              className="input-field" 
+            <textarea
+              className="input-field"
               style={{ minHeight: '120px', resize: 'vertical' }}
-              value={data.basics.summary} 
+              value={data.basics.summary}
               onChange={(e) => setData(prev => ({ ...prev, basics: { ...prev.basics, summary: e.target.value } }))}
             />
           </div>
@@ -370,9 +372,9 @@ export default function BuilderPage() {
           </div>
 
           <div style={{ paddingBottom: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--glass-border)' }}>
-            <button 
-              onClick={() => setShowOverrides(!showOverrides)} 
-              className="btn btn-secondary" 
+            <button
+              onClick={() => setShowOverrides(!showOverrides)}
+              className="btn btn-secondary"
               style={{ width: '100%', borderStyle: 'dashed', borderColor: 'var(--text-secondary)', justifyContent: 'space-between' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -380,7 +382,7 @@ export default function BuilderPage() {
               </div>
               {showOverrides ? <Minus size={16} /> : <Plus size={16} />}
             </button>
-            
+
             {showOverrides && (
               <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--surface-highlight)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
                 {(template === 'modern' || template === 'modern-split') && (
@@ -480,10 +482,10 @@ export default function BuilderPage() {
                 <div className="form-group" style={{ marginBottom: '0.75rem' }}>
                   <label className="label" style={{ fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     Summary
-                    <button 
+                    <button
                       onClick={() => handleJobAI(job.id, 'summary')}
                       disabled={aiLoading[`${job.id}-summary`]}
-                      className="btn btn-primary" 
+                      className="btn btn-primary"
                       style={{ padding: '0.15rem 0.5rem', fontSize: '0.65rem', background: 'var(--accent)', gap: '4px' }}
                     >
                       {aiLoading[`${job.id}-summary`] ? <RefreshCw size={10} className="animate-spin" /> : <><Sparkles size={10} /> AI Generate <Lock size={8} /></>}
@@ -495,17 +497,17 @@ export default function BuilderPage() {
                   <label className="label" style={{ fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     Bullet Points
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <button 
+                      <button
                         onClick={() => handleJobAI(job.id, 'bullets')}
                         disabled={aiLoading[`${job.id}-bullets`]}
-                        className="btn btn-primary" 
+                        className="btn btn-primary"
                         style={{ padding: '0.15rem 0.5rem', fontSize: '0.65rem', background: 'var(--accent)', gap: '4px' }}
                       >
                         {aiLoading[`${job.id}-bullets`] ? <RefreshCw size={10} className="animate-spin" /> : <><Sparkles size={10} /> AI Generate <Lock size={8} /></>}
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleJobChange(job.id, 'highlights', [...(job.highlights || []), ''])}
-                        className="btn-icon" 
+                        className="btn-icon"
                         style={{ padding: '2px', color: 'var(--primary)' }}
                         title="Add Bullet Point"
                       >
@@ -515,23 +517,23 @@ export default function BuilderPage() {
                   </label>
                   {(job.highlights || []).map((highlight, hIndex) => (
                     <div key={hIndex} style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
-                      <input 
-                        type="text" 
-                        className="input-field" 
-                        style={{ padding: '0.4rem', fontSize: '0.85rem' }} 
-                        value={highlight} 
+                      <input
+                        type="text"
+                        className="input-field"
+                        style={{ padding: '0.4rem', fontSize: '0.85rem' }}
+                        value={highlight}
                         onChange={(e) => {
                           const newHighlights = [...(job.highlights || [])];
                           newHighlights[hIndex] = e.target.value;
                           handleJobChange(job.id, 'highlights', newHighlights);
-                        }} 
+                        }}
                       />
-                      <button 
+                      <button
                         onClick={() => {
                           const newHighlights = (job.highlights || []).filter((_, i) => i !== hIndex);
                           handleJobChange(job.id, 'highlights', newHighlights);
                         }}
-                        className="btn-icon" 
+                        className="btn-icon"
                         style={{ color: 'var(--danger)', padding: '4px' }}
                       >
                         <Trash2 size={14} />
@@ -572,9 +574,9 @@ export default function BuilderPage() {
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="label" style={{ fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     Skills
-                    <button 
+                    <button
                       onClick={() => handleSkillCategoryChange(skillGroup.id, 'keywords', [...(skillGroup.keywords || []), ''])}
-                      className="btn-icon" 
+                      className="btn-icon"
                       style={{ padding: '2px', color: 'var(--primary)' }}
                       title="Add Skill"
                     >
@@ -583,23 +585,23 @@ export default function BuilderPage() {
                   </label>
                   {(skillGroup.keywords || []).map((keyword, kIndex) => (
                     <div key={kIndex} style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
-                      <input 
-                        type="text" 
-                        className="input-field" 
-                        style={{ padding: '0.4rem', fontSize: '0.85rem' }} 
-                        value={keyword} 
+                      <input
+                        type="text"
+                        className="input-field"
+                        style={{ padding: '0.4rem', fontSize: '0.85rem' }}
+                        value={keyword}
                         onChange={(e) => {
                           const newKeywords = [...(skillGroup.keywords || [])];
                           newKeywords[kIndex] = e.target.value;
                           handleSkillCategoryChange(skillGroup.id, 'keywords', newKeywords);
-                        }} 
+                        }}
                       />
-                      <button 
+                      <button
                         onClick={() => {
                           const newKeywords = (skillGroup.keywords || []).filter((_, i) => i !== kIndex);
                           handleSkillCategoryChange(skillGroup.id, 'keywords', newKeywords);
                         }}
-                        className="btn-icon" 
+                        className="btn-icon"
                         style={{ color: 'var(--danger)', padding: '4px' }}
                       >
                         <Trash2 size={14} />
@@ -742,46 +744,46 @@ export default function BuilderPage() {
 
           {/* Add Section Menu */}
           <div ref={menuWrapperRef} style={{ marginTop: '2rem' }}>
-            <button 
-              onClick={() => setShowSectionMenu(!showSectionMenu)} 
-              className="btn btn-secondary" 
+            <button
+              onClick={() => setShowSectionMenu(!showSectionMenu)}
+              className="btn btn-secondary"
               style={{ width: '100%', borderStyle: 'dashed', borderColor: 'var(--text-secondary)' }}
             >
               {showSectionMenu ? <Minus size={16} /> : <Plus size={16} />} Add Custom Section
             </button>
-            
+
             {showSectionMenu && (
               <div style={{ marginTop: '0.5rem', background: 'var(--surface-highlight)', border: '1px solid var(--glass-border)', borderRadius: '8px', overflow: 'hidden' }}>
                 {!hasProjectsSection && (
-                  <button 
-                    className="btn" 
-                    style={{ width: '100%', justifyContent: 'flex-start', background: 'transparent', borderRadius: 0, borderBottom: '1px solid var(--glass-border)', color: 'var(--text-primary)' }} 
+                  <button
+                    className="btn"
+                    style={{ width: '100%', justifyContent: 'flex-start', background: 'transparent', borderRadius: 0, borderBottom: '1px solid var(--glass-border)', color: 'var(--text-primary)' }}
                     onClick={() => { setHasProjectsSection(true); handleAddProject(); setShowSectionMenu(false); }}
                   >
                     <Plus size={14} /> Portfolio Projects
                   </button>
                 )}
                 {!hasReferencesSection && (
-                  <button 
-                    className="btn" 
-                    style={{ width: '100%', justifyContent: 'flex-start', background: 'transparent', borderRadius: 0, borderBottom: '1px solid var(--glass-border)', color: 'var(--text-primary)' }} 
+                  <button
+                    className="btn"
+                    style={{ width: '100%', justifyContent: 'flex-start', background: 'transparent', borderRadius: 0, borderBottom: '1px solid var(--glass-border)', color: 'var(--text-primary)' }}
                     onClick={() => { setHasReferencesSection(true); handleAddReference(); setShowSectionMenu(false); }}
                   >
                     <Plus size={14} /> Professional References
                   </button>
                 )}
                 {!hasCertificationsSection && (
-                  <button 
-                    className="btn" 
-                    style={{ width: '100%', justifyContent: 'flex-start', background: 'transparent', borderRadius: 0, borderBottom: '1px solid var(--glass-border)', color: 'var(--text-primary)' }} 
+                  <button
+                    className="btn"
+                    style={{ width: '100%', justifyContent: 'flex-start', background: 'transparent', borderRadius: 0, borderBottom: '1px solid var(--glass-border)', color: 'var(--text-primary)' }}
                     onClick={() => { setHasCertificationsSection(true); handleAddCertification(); setShowSectionMenu(false); }}
                   >
                     <Plus size={14} /> Certifications
                   </button>
                 )}
-                <button 
-                  className="btn" 
-                  style={{ width: '100%', justifyContent: 'flex-start', background: 'transparent', borderRadius: 0, opacity: 0.6, color: 'var(--text-secondary)' }} 
+                <button
+                  className="btn"
+                  style={{ width: '100%', justifyContent: 'flex-start', background: 'transparent', borderRadius: 0, opacity: 0.6, color: 'var(--text-secondary)' }}
                   disabled
                   onClick={(e) => { e.preventDefault(); alert("Languages are a premium feature!"); }}
                 >
@@ -808,8 +810,8 @@ export default function BuilderPage() {
         <header style={{ padding: '1rem 2rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--glass-bg)' }}>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             <LayoutTemplate size={18} color="var(--text-secondary)" />
-            <select 
-              value={template} 
+            <select
+              value={template}
               onChange={(e) => setTemplate(e.target.value as any)}
               className="input-field"
               style={{ width: 'auto', padding: '0.5rem', background: 'var(--surface-color)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}
@@ -841,8 +843,8 @@ export default function BuilderPage() {
 
       {/* Image Cropper Modal */}
       {cropImageSrc && (
-        <ImageCropper 
-          imageSrc={cropImageSrc} 
+        <ImageCropper
+          imageSrc={cropImageSrc}
           onCropComplete={(croppedImage) => {
             setData(prev => ({ ...prev, basics: { ...prev.basics, image: croppedImage } }));
             setIncludeHeadshot(true); // Auto-include if they took the time to upload and crop

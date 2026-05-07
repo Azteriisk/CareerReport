@@ -9,6 +9,7 @@ CareerReport is a professional networking platform for the next generation. Buil
 - **Integrated Job Board:** Browse jobs from verified businesses and apply with one click.
 - **Modern Tech Stack:** Built with Next.js 14, Framer Motion, and Clerk for a premium, fast experience.
 - **Gruvbox Aesthetic:** A warm, developer-friendly dark mode design system.
+- **Real-time Data Sync:** Seamless synchronization between Clerk authentication and Supabase database profiles.
 
 ## 🚀 Getting Started
 
@@ -31,7 +32,7 @@ CareerReport is a professional networking platform for the next generation. Buil
    ```
 
 3. Set up environment variables:
-   Copy `.env.example` to `.env.local` and add your Clerk API keys.
+   Copy `.env.example` to `.env.local` and add your Clerk and Supabase API keys.
    ```bash
    cp .env.example .env.local
    ```
@@ -48,6 +49,7 @@ CareerReport is a professional networking platform for the next generation. Buil
 - **Framework:** [Next.js](https://nextjs.org/)
 - **Authentication:** [Clerk](https://clerk.com/)
 - **Animations:** [Framer Motion](https://www.framer.com/motion/)
+- **Database:** [Supabase](https://supabase.com/)
 - **Icons:** [Lucide React](https://lucide.dev/)
 - **Styling:** Custom CSS with Gruvbox theme variables.
 
