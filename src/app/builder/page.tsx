@@ -1139,21 +1139,22 @@ export default function BuilderPage() {
           </div>
         )}
 
-        <div style={{ 
+        <div className={!isMobile ? "sidebar-scroll" : ""} style={{ 
           flex: 1, 
           overflowY: 'auto', 
-          padding: isMobile ? '1rem' : '2rem', 
+          padding: isMobile ? '1rem' : '3rem 2rem', 
           display: 'flex', 
           justifyContent: 'center',
-          alignItems: isMobile ? 'flex-start' : 'center',
-          direction: 'ltr' // Ensure content is LTR even if container is RTL (for scrollbar)
+          alignItems: 'flex-start',
+          direction: 'ltr' 
         }}>
           <div style={{ 
-            width: isMobile ? '100%' : `${850 * mobileScale}px`, 
-            height: isMobile ? `${1100 * mobileScale}px` : 'auto',
+            width: isMobile ? '100%' : '850px', 
+            height: isMobile ? `${1100 * mobileScale}px` : '1100px',
             overflow: 'visible',
             display: 'flex',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            flexShrink: 0
           }}>
             <div style={{ 
               width: '850px',
