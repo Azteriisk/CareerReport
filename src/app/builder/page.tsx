@@ -6,7 +6,7 @@ import { TemplateModern } from '@/components/TemplateModern';
 import { TemplateClassic } from '@/components/TemplateClassic';
 import { TemplateMinimal } from '@/components/TemplateMinimal';
 import { useReactToPrint } from 'react-to-print';
-import { Download, Sparkles, LayoutTemplate, Lock, RefreshCw, Plus, Minus, Trash2, Upload, Save, CheckCircle, AlertCircle, Info, Share2, Settings, User, X } from 'lucide-react';
+import { Download, Sparkles, LayoutTemplate, Lock, RefreshCw, Plus, Minus, Trash2, Upload, Save, CheckCircle, AlertCircle, Info, Share2, Settings, User, X, Loader2 } from 'lucide-react';
 import { useUser, useAuth, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
 import { supabase, setSupabaseToken } from '@/lib/supabase';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
@@ -83,7 +83,8 @@ export default function BuilderPage() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-  const [data, setData] = useState(defaultResume);
+  const [data, setData] = useState<ResumeData>(defaultResume);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [template, setTemplate] = useState<'modern' | 'classic' | 'minimal' | 'modern-split'>('modern-split');
   const [isAILoading, setIsAILoading] = useState(false);
   const [showSectionMenu, setShowSectionMenu] = useState(false);
@@ -110,7 +111,9 @@ export default function BuilderPage() {
   // Load data from Supabase (if signed in) or localStorage (if guest)
   useEffect(() => {
     async function loadInitialData() {
-      if (isLoaded && isSignedIn && user) {
+      if (!isLoaded) return;
+
+      if (isSignedIn && user) {
         setSaveStatus('saving');
         const token = await getToken({ template: 'supabase' });
         setSupabaseToken(token);
@@ -128,7 +131,7 @@ export default function BuilderPage() {
           if (remoteData.template) setTemplate(remoteData.template);
           setSaveStatus('saved');
           setLastSaved(new Date(remoteData.updated_at));
-
+          setIsInitialLoading(false);
           return;
         }
       }
@@ -145,6 +148,7 @@ export default function BuilderPage() {
           console.error("Failed to parse saved resume data", e);
         }
       }
+      setIsInitialLoading(false);
     }
 
     loadInitialData();
@@ -434,6 +438,15 @@ export default function BuilderPage() {
       certifications: (prev.certifications || []).map(c => c.id === id ? { ...c, [field]: value } : c)
     }));
   };
+
+  if (isInitialLoading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 'calc(100vh - 82px)', gap: '1.5rem', background: 'var(--bg-color)', color: 'var(--text-secondary)' }}>
+        <Loader2 size={48} className="animate-spin" color="var(--primary)" />
+        <p style={{ fontSize: '1.1rem', fontWeight: 500 }}>Loading your workspace...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="builder-layout" style={{ 
