@@ -1,0 +1,175 @@
+import React from 'react';
+import { ResumeData } from '@/lib/resume-schema';
+import { formatResumeDate } from '@/lib/date-utils';
+
+interface Props {
+  data: ResumeData;
+}
+
+export const TemplateModernSplit: React.FC<Props> = ({ data }) => {
+  const themeColor = data.metadata?.themeColor || '#3b82f6';
+  const fontStyle = data.metadata?.fontFamily || 'sans-serif';
+  
+  return (
+    <div className="template-modern-split" style={{ display: 'flex', background: 'white', color: '#333', fontFamily: fontStyle, minHeight: '1056px' }}>
+      {/* Left Main Content */}
+      <main style={{ flex: '0 0 65%', padding: '40px' }}>
+        <header style={{ marginBottom: '30px' }}>
+          <h1 style={{ fontSize: '3rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.1, marginBottom: '5px', letterSpacing: '-0.5px' }}>{data.basics.name}</h1>
+          <h2 style={{ fontSize: '1.4rem', color: themeColor, fontWeight: 500, margin: 0 }}>{data.basics.label}</h2>
+        </header>
+
+        {data.basics.summary && (
+          <section style={{ marginBottom: '35px' }}>
+            <p style={{ fontSize: '1rem', lineHeight: 1.6, color: '#475569', margin: 0 }}>{data.basics.summary}</p>
+          </section>
+        )}
+
+        {data.work.length > 0 && (
+          <section style={{ marginBottom: '35px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+              <div style={{ width: '30px', height: '2px', background: themeColor, marginRight: '15px' }}></div>
+              <h3 style={{ fontSize: '1.4rem', color: '#0f172a', margin: 0, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Experience</h3>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+              {data.work.map((job) => (
+                <article key={job.id}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '5px' }}>
+                    <h4 style={{ fontSize: '1.1rem', color: '#0f172a', margin: 0, fontWeight: 600 }}>{job.position}</h4>
+                    <span style={{ fontSize: '0.9rem', color: themeColor, fontWeight: 500 }}>{formatResumeDate(job.startDate)} - {formatResumeDate(job.endDate)}</span>
+                  </div>
+                  <div style={{ fontSize: '1rem', color: '#475569', fontWeight: 500, marginBottom: '10px' }}>{job.name}</div>
+                  <p style={{ fontSize: '0.95rem', color: '#475569', marginBottom: '8px', lineHeight: 1.5 }}>{job.summary}</p>
+                  {job.highlights && job.highlights.length > 0 && (
+                    <ul style={{ paddingLeft: '18px', fontSize: '0.9rem', color: '#475569', margin: 0, lineHeight: 1.5 }}>
+                      {job.highlights.map((item, i) => (
+                        <li key={i} style={{ marginBottom: '4px' }}>{item}</li>
+                      ))}
+                    </ul>
+                  )}
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {data.education.length > 0 && (
+          <section style={{ marginBottom: '35px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+              <div style={{ width: '30px', height: '2px', background: themeColor, marginRight: '15px' }}></div>
+              <h3 style={{ fontSize: '1.4rem', color: '#0f172a', margin: 0, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Education</h3>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              {data.education.map((edu) => (
+                <article key={edu.id}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '5px' }}>
+                    <h4 style={{ fontSize: '1.05rem', color: '#0f172a', margin: 0, fontWeight: 600 }}>{edu.studyType} in {edu.area}</h4>
+                    <span style={{ fontSize: '0.9rem', color: themeColor, fontWeight: 500 }}>{formatResumeDate(edu.startDate)} - {formatResumeDate(edu.endDate)}</span>
+                  </div>
+                  <div style={{ fontSize: '1rem', color: '#475569' }}>{edu.institution}</div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+      </main>
+
+      {/* Right Sidebar */}
+      <aside style={{ flex: '0 0 35%', background: '#f8fafc', padding: '40px 30px', borderLeft: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '35px' }}>
+          {data.basics.image && (
+            <img src={data.basics.image} alt="Headshot" style={{ width: '140px', height: '140px', borderRadius: '50%', objectFit: 'cover', border: `4px solid white`, boxShadow: `0 4px 15px rgba(0,0,0,0.1)`, marginBottom: '20px' }} />
+          )}
+          
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.9rem', color: '#475569' }}>
+            {data.basics.email && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: themeColor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.7rem' }}>@</div>
+                <span style={{ wordBreak: 'break-all' }}>{data.basics.email}</span>
+              </div>
+            )}
+            {data.basics.phone && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: themeColor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.7rem' }}>#</div>
+                <span>{data.basics.phone}</span>
+              </div>
+            )}
+            {data.basics.location?.city && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: themeColor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.7rem' }}>📍</div>
+                <span>{data.basics.location.city}{data.basics.location.region ? `, ${data.basics.location.region}` : ''}</span>
+              </div>
+            )}
+            {data.basics.url && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: themeColor, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.7rem' }}>🔗</div>
+                <a href={data.basics.url} style={{ color: '#475569', textDecoration: 'none' }}>Website</a>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {data.skills.length > 0 && (
+          <section style={{ marginBottom: '30px' }}>
+            <h3 style={{ fontSize: '1.1rem', color: '#0f172a', margin: '0 0 15px 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Skills</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              {data.skills.map(group => (
+                <div key={group.id}>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>{group.name}</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {group.keywords.map((skill, i) => (
+                      <span key={i} style={{ background: 'white', border: '1px solid #e2e8f0', color: '#475569', padding: '4px 10px', borderRadius: '20px', fontSize: '0.8rem' }}>{skill}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {data.projects && data.projects.length > 0 && (
+          <section style={{ marginBottom: '30px' }}>
+            <h3 style={{ fontSize: '1.1rem', color: '#0f172a', margin: '0 0 15px 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Projects</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              {data.projects.map(proj => (
+                <article key={proj.id}>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#334155', marginBottom: '3px' }}>{proj.name}</div>
+                  <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>{proj.description}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {data.certifications && data.certifications.length > 0 && (
+          <section style={{ marginBottom: '30px' }}>
+            <h3 style={{ fontSize: '1.1rem', color: '#0f172a', margin: '0 0 15px 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Certifications</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              {data.certifications.map(cert => (
+                <article key={cert.id}>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#334155', marginBottom: '3px' }}>{cert.name}</div>
+                  <div style={{ fontSize: '0.85rem', color: themeColor, fontWeight: 500, marginBottom: '2px' }}>{cert.date}</div>
+                  <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{cert.issuer}</div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {data.references && data.references.length > 0 && (
+          <section style={{ marginBottom: '30px' }}>
+            <h3 style={{ fontSize: '1.1rem', color: '#0f172a', margin: '0 0 15px 0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>References</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              {data.references.map(ref => (
+                <article key={ref.id}>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#334155', marginBottom: '3px' }}>{ref.name}</div>
+                  <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{ref.reference}</div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+      </aside>
+    </div>
+  );
+};
