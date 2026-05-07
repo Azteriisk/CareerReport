@@ -2,14 +2,30 @@
 
 CareerReport is a professional networking platform for the next generation. Build stunning, ATS-friendly resumes, claim your public professional profile, and connect with businesses in a relaxed, business-first environment.
 
-## ✨ Features
+## ✨ Comprehensive Feature List
 
-- **Dynamic Resume Builder:** Create multiple versions of your resume with a real-time preview.
-- **Public Professional Profiles:** Claim your unique `/u/username` and share your career journey.
-- **Integrated Job Board:** Browse jobs from verified businesses and apply with one click.
-- **Modern Tech Stack:** Built with Next.js 14, Framer Motion, and Clerk for a premium, fast experience.
-- **Gruvbox Aesthetic:** A warm, developer-friendly dark mode design system.
-- **Real-time Data Sync:** Seamless synchronization between Clerk authentication and Supabase database profiles.
+### 📝 Advanced Resume Builder
+- **Real-Time WYSIWYG Editor:** Instantly preview your resume exactly as it will appear when printed or exported.
+- **Multiple Premium Templates:** Choose from Modern, Modern Split, Minimal, and Classic layouts dynamically.
+- **Responsive Design:** Fully functional builder on both mobile and desktop.
+- **Autosave & Cloud Sync:** Never lose your work. Your resume is automatically synced to the cloud via Supabase.
+- **Dynamic Columns:** Customize your Work Experience and Education sections with single or double-column layouts.
+- **Custom Image Cropping:** Upload, crop, and perfectly align your headshot directly within the browser.
+
+### 🌐 Public Professional Profiles
+- **Custom URLs:** Claim a unique `careerreport.com/u/your-name` link to share with employers.
+- **Global Search:** Easily find other professionals by their username, profile link, or email address.
+- **Profile Networking:** A central hub to share your career journey openly without the noise of traditional social networks.
+
+### 🤖 ATS & AI Metadata Integration (Embedded PDF Data)
+- **Invisible Data Layer:** We inject semantic JSON-LD directly into the resume DOM.
+- **Machine Readability:** Ensures Applicant Tracking Systems (ATS) and AI recruitment scanners can accurately extract your Name, Contact Info, Skills, and Experience without relying on optical character recognition (OCR) or guessing.
+- **The Best of Both Worlds:** Allows users to have visually stunning, heavily styled resumes without sacrificing parsing accuracy when applying to enterprise jobs. The exported PDF retains this metadata structure.
+
+### 🔒 Security & Architecture
+- **Authentication:** Passwordless, social, and standard login flows powered by Clerk.
+- **True Singleton Supabase Client:** Memory-leak-free database connections with custom JWT interceptors for seamless Clerk synchronization.
+- **SSR-Safe:** Next.js Server-Side Rendering compatible token decoding using Node `Buffer` fallbacks.
 
 ## 🚀 Getting Started
 

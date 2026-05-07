@@ -1,8 +1,10 @@
 "use client";
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FileText } from 'lucide-react';
+import { FileText, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { SettingsModal } from '@/components/SettingsModal';
 import { 
   SignInButton, 
   SignUpButton, 
@@ -10,14 +12,49 @@ import {
   useUser,
   useClerk
 } from '@clerk/nextjs';
+import { supabase } from '@/lib/supabase';
 
 export function Navbar() {
   const pathname = usePathname();
   const { isSignedIn, user } = useUser();
   const { signOut } = useClerk();
+  const [showSettings, setShowSettings] = useState(false);
+  const [profileData, setProfileData] = useState<any>(null);
+  const [globalUsername, setGlobalUsername] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function getUsername() {
+      if (!user?.id) return;
+      
+      const { data } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', user.id)
+        .single();
+        
+      if (data?.username) {
+        setGlobalUsername(data.username);
+      }
+    }
+    
+    getUsername();
+  }, [user?.id]);
+
+  const handleOpenSettings = async () => {
+    if (user?.id) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      if (data) setProfileData(data);
+    }
+    setShowSettings(true);
+  };
 
   return (
-    <header className="mobile-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 2rem', background: 'var(--glass-bg)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--glass-border)', position: 'sticky', top: 0, zIndex: 1000 }}>
+    <>
+      <header className="mobile-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 2rem', background: 'var(--glass-bg)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--glass-border)', position: 'sticky', top: 0, zIndex: 1000 }}>
       <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', color: 'inherit' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', background: 'var(--primary)', borderRadius: '8px', color: 'var(--bg-color)' }}>
           <FileText size={18} />
@@ -30,7 +67,7 @@ export function Navbar() {
         <NavLink href="/builder" active={pathname === '/builder'}>My Resume</NavLink>
         <NavLink href="/jobs" active={pathname?.startsWith('/jobs')}>Jobs</NavLink>
         {isSignedIn ? (
-          <NavLink href={`/u/${user?.username || 'me'}`} active={pathname?.startsWith('/u/')}>Profile</NavLink>
+          <ProfileLink globalUsername={globalUsername} />
         ) : (
           <SignInButton mode="modal">
             <button style={{ position: 'relative', padding: '0.5rem 1rem', borderRadius: '8px', border: 'none', background: 'transparent', color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer', transition: 'color 0.2s ease', zIndex: 1 }}>Sign In</button>
@@ -41,25 +78,71 @@ export function Navbar() {
       <div className="nav-auth-section" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
         <Link href="/support" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', textDecoration: 'none', fontWeight: 500 }}>Support</Link>
         {isSignedIn ? (
-          <UserButton 
-            afterSignOutUrl="/" 
-            appearance={{
-              elements: {
-                userButtonAvatarBox: {
-                  width: '32px',
-                  height: '32px',
-                  border: '2px solid var(--primary)'
+          <>
+            <motion.button 
+              onClick={handleOpenSettings}
+              whileTap={{ rotate: 180 }}
+              transition={{ duration: 0.3 }}
+              style={{ 
+                background: 'transparent', 
+                border: 'none', 
+                color: 'var(--text-secondary)', 
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0.5rem'
+              }}
+              title="Account Settings"
+            >
+              <Settings size={22} />
+            </motion.button>
+            <UserButton 
+              afterSignOutUrl="/" 
+              appearance={{
+                elements: {
+                  userButtonAvatarBox: {
+                    width: '32px',
+                    height: '32px',
+                    border: '2px solid var(--primary)'
+                  }
                 }
-              }
-            }}
-          />
+              }}
+            />
+          </>
         ) : (
           <SignUpButton mode="modal">
             <button className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>Sign Up Free</button>
           </SignUpButton>
         )}
       </div>
-    </header>
+      </header>
+
+      {showSettings && (
+        <SettingsModal 
+          user={user} 
+          profileData={profileData} 
+          onClose={() => setShowSettings(false)}
+          onUpdate={(newData) => {
+            setProfileData(newData);
+            if (newData?.username) setGlobalUsername(newData.username);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function ProfileLink({ globalUsername }: { globalUsername: string | null }) {
+  const { user } = useUser();
+  const pathname = usePathname();
+
+  const displayUsername = globalUsername || user?.username || 'me';
+  
+  return (
+    <NavLink href={`/u/${displayUsername}`} active={pathname?.startsWith('/u/')}>
+      Profile
+    </NavLink>
   );
 }
 

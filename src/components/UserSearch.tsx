@@ -5,27 +5,42 @@ import { useRouter } from 'next/navigation';
 
 export function UserSearch() {
   const [query, setQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
   const router = useRouter();
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query) return;
     
-    // Extract username if they pasted a full URL
-    let username = query.trim();
-    if (username.includes('/u/')) {
-      username = username.split('/u/')[1];
+    setIsSearching(true);
+    try {
+      // Extract username if they pasted a full URL
+      let searchVal = query.trim();
+      if (searchVal.includes('/u/')) {
+        searchVal = searchVal.split('/u/')[1].split('?')[0].split('/')[0];
+      }
+      
+      // Import supabase dynamically to avoid issues if this is rendered early
+      const { supabase } = await import('@/lib/supabase');
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('username')
+        .or(`username.ilike.${searchVal},email.ilike.${searchVal}`)
+        .limit(1)
+        .single();
+        
+      if (data?.username) {
+        router.push(`/u/${data.username}`);
+      } else {
+        alert('Could not find a user with that username, email, or link.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while searching.');
+    } finally {
+      setIsSearching(false);
     }
-    
-    // Clean up any trailing slashes or query parameters
-    username = username.split('?')[0].split('/')[0];
-    
-    // Mock mapping phone numbers or emails to a username
-    if (username.includes('@') || username.match(/^[0-9\-\+\s\(\)]+$/)) {
-      username = 'janedoe'; // fallback for demo mock lookup
-    }
-
-    router.push(`/u/${username}`);
   };
 
   return (
@@ -33,13 +48,14 @@ export function UserSearch() {
       <Search size={20} color="var(--text-secondary)" style={{ marginRight: '10px' }} />
       <input 
         type="text" 
-        placeholder="Find users by username, email, phone, or link..." 
+        placeholder="Find users by username, email, or profile link..." 
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         style={{ background: 'transparent', border: 'none', outline: 'none', flex: 1, fontSize: '1rem', color: 'var(--text-primary)' }}
+        disabled={isSearching}
       />
-      <button type="submit" className="btn btn-primary" style={{ padding: '0.6rem 1.5rem', borderRadius: '8px', fontWeight: 600 }}>
-        Search
+      <button type="submit" disabled={isSearching || !query} className="btn btn-primary" style={{ padding: '0.6rem 1.5rem', borderRadius: '8px', fontWeight: 600, opacity: isSearching ? 0.7 : 1 }}>
+        {isSearching ? 'Searching...' : 'Search'}
       </button>
     </form>
   );

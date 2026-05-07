@@ -6,13 +6,15 @@ import { TemplateModern } from '@/components/TemplateModern';
 import { TemplateClassic } from '@/components/TemplateClassic';
 import { TemplateMinimal } from '@/components/TemplateMinimal';
 import { useReactToPrint } from 'react-to-print';
-import { Download, Sparkles, LayoutTemplate, Lock, RefreshCw, Plus, Minus, Trash2, Upload, Save, CheckCircle, AlertCircle, Info, Share2 } from 'lucide-react';
+import { Download, Sparkles, LayoutTemplate, Lock, RefreshCw, Plus, Minus, Trash2, Upload, Save, CheckCircle, AlertCircle, Info, Share2, Settings, User, X } from 'lucide-react';
+import { useUser, useAuth, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
+import { supabase, setSupabaseToken } from '@/lib/supabase';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import Link from 'next/link';
 import { ImageCropper } from '@/components/ImageCropper';
 import { AtsMetadata } from '@/components/AtsMetadata';
 import { TemplateModernSplit } from '@/components/TemplateModernSplit';
-import { useUser, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
+
 
 const months = [
   { v: '01', l: 'Jan.' }, { v: '02', l: 'Feb.' }, { v: '03', l: 'Mar.' },
@@ -59,6 +61,7 @@ const MonthYearPicker = ({ value, onChange, disabled }: { value: string, onChang
 
 export default function BuilderPage() {
   const { isSignedIn, isLoaded, user } = useUser();
+  const { getToken } = useAuth();
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
   const [isMobile, setIsMobile] = useState(false);
   const [mobileScale, setMobileScale] = useState(0.45);
@@ -104,19 +107,48 @@ export default function BuilderPage() {
   const [certificationsRef] = useAutoAnimate<HTMLDivElement>();
   const [menuWrapperRef] = useAutoAnimate<HTMLDivElement>();
 
-  // Load data from localStorage on mount
+  // Load data from Supabase (if signed in) or localStorage (if guest)
   useEffect(() => {
-    const savedData = localStorage.getItem('career-report-resume-draft');
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        setData(parsed.data || defaultResume);
-        if (parsed.template) setTemplate(parsed.template);
-      } catch (e) {
-        console.error("Failed to parse saved resume data", e);
+    async function loadInitialData() {
+      if (isLoaded && isSignedIn && user) {
+        setSaveStatus('saving');
+        const token = await getToken({ template: 'supabase' });
+        setSupabaseToken(token);
+        
+        const { data: remoteData, error } = await supabase
+          .from('resumes')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (remoteData) {
+          setData(remoteData.data);
+          if (remoteData.template) setTemplate(remoteData.template);
+          setSaveStatus('saved');
+          setLastSaved(new Date(remoteData.updated_at));
+
+          return;
+        }
+      }
+
+      // Fallback to localStorage if guest or no cloud data found
+      const savedData = localStorage.getItem('career-report-resume-draft');
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData);
+          setData(parsed.data || defaultResume);
+          if (parsed.template) setTemplate(parsed.template);
+          if (parsed.updatedAt) setLastSaved(new Date(parsed.updatedAt));
+        } catch (e) {
+          console.error("Failed to parse saved resume data", e);
+        }
       }
     }
-  }, []);
+
+    loadInitialData();
+  }, [isLoaded, isSignedIn, user?.id, getToken]);
 
   // Autosave to localStorage
   useEffect(() => {
@@ -137,25 +169,49 @@ export default function BuilderPage() {
   useEffect(() => {
     if (!data) return;
 
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
       setSaveStatus('saving');
       try {
+        const timestamp = new Date().toISOString();
+        
+        // 1. Always save to localStorage for quick recovery/guest mode
         localStorage.setItem('career-report-resume-draft', JSON.stringify({
           data,
           template,
-          updatedAt: new Date().toISOString()
+          updatedAt: timestamp
         }));
+
+        // 2. Save to Supabase if signed in
+        if (isSignedIn && user) {
+          const token = await getToken({ template: 'supabase' });
+          setSupabaseToken(token);
+
+          const { error } = await supabase
+            .from('resumes')
+            .upsert({
+              user_id: user.id,
+              data,
+              template,
+              updated_at: timestamp
+            }, { onConflict: 'user_id' }); // Currently syncing one primary resume per user
+
+          if (error) {
+            console.error('Supabase sync error:', error.message || error);
+          }
+        }
+
         setSaveStatus('saved');
         setLastSaved(new Date());
         // Reset status to idle after a few seconds
         setTimeout(() => setSaveStatus('idle'), 3000);
       } catch (e) {
+        console.error("Failed to autosave resume data", e);
         setSaveStatus('error');
       }
-    }, 1000); // 1 second debounce for autosave
+    }, 2000);
 
     return () => clearTimeout(timer);
-  }, [data, template]);
+  }, [data, template, isSignedIn, user?.id, getToken]);
 
   const handleManualSave = () => {
     setSaveStatus('saving');
@@ -453,7 +509,9 @@ export default function BuilderPage() {
           <h1 style={{ fontSize: isMobile ? '1.1rem' : '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Link href="/" style={{ color: 'var(--primary)', fontWeight: 'bold' }}>CareerReport</Link> {isMobile ? '' : 'Builder'}
           </h1>
-          {isMobile && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+
+            {isMobile && (
             <select
               value={template}
               onChange={(e) => setTemplate(e.target.value as any)}
@@ -466,6 +524,7 @@ export default function BuilderPage() {
               <option value="classic">Classic</option>
             </select>
           )}
+          </div>
         </div>
 
         <div ref={sidebarRef} className="sidebar-scroll" style={{ padding: '1.5rem', flex: 1 }}>
@@ -1101,11 +1160,17 @@ export default function BuilderPage() {
 
           <div style={{ display: 'flex', gap: '0.75rem' }}>
             <button
+
+
               onClick={() => {
                 if (!isSignedIn) {
                   alert("Please sign up to get a public share link for your resume!");
+                } else if (user?.username) {
+                  const shareUrl = `${window.location.origin}/u/${user.username}`;
+                  navigator.clipboard.writeText(shareUrl);
+                  alert(`Copied profile link to clipboard!\n${shareUrl}`);
                 } else {
-                  alert("Profile link copied to clipboard! (Feature Demo)");
+                  alert("Please set a username in your profile to share your link!");
                 }
               }}
               className="btn btn-secondary"

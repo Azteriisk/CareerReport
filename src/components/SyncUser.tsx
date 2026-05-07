@@ -7,8 +7,10 @@ export function SyncUser() {
   const { isLoaded, isSignedIn, user } = useUser();
 
   useEffect(() => {
+    let isSyncing = false;
     async function syncProfile() {
-      if (!isLoaded || !isSignedIn || !user) return;
+      if (!isLoaded || !isSignedIn || !user || isSyncing) return;
+      isSyncing = true;
 
       try {
         // 1. Check if profile exists
