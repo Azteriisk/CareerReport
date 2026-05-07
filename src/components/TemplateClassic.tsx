@@ -18,7 +18,7 @@ export const TemplateClassic: React.FC<Props> = ({ data }) => {
           </div>
         )}
         <h1 className="fn" style={{ fontSize: '2.8rem', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '5px' }}>{data.basics.name}</h1>
-        
+
         <div style={{ fontSize: '1rem', color: '#444' }}>
           {data.basics.location?.city && <span className="adr">{data.basics.location.city}, {data.basics.location.region}</span>}
           <span style={{ margin: '0 8px' }}>|</span>
@@ -101,39 +101,39 @@ export const TemplateClassic: React.FC<Props> = ({ data }) => {
         </section>
       )}
 
-        {data.references && data.references.length > 0 && (
-          <section style={{ marginBottom: '25px' }}>
-            <h3 style={{ fontSize: '1.1rem', textTransform: 'uppercase', borderBottom: '1px solid #000', paddingBottom: '3px', marginBottom: '15px' }}>References</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${data.metadata?.layout?.references || 2}, 1fr)`, gap: '15px' }}>
-              {data.references.map(ref => (
-                <article key={ref.id}>
-                  <strong style={{ display: 'block', fontSize: '1rem', color: '#000' }}>{ref.name}</strong>
-                  <span style={{ fontSize: '0.95rem', color: '#444' }}>{ref.reference}</span>
-                </article>
-              ))}
-            </div>
-          </section>
-        )}
+      {data.references && data.references.length > 0 && (
+        <section style={{ marginBottom: '25px' }}>
+          <h3 style={{ fontSize: '1.1rem', textTransform: 'uppercase', borderBottom: '1px solid #000', paddingBottom: '3px', marginBottom: '15px' }}>References</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${data.metadata?.layout?.references || 2}, 1fr)`, gap: '15px' }}>
+            {data.references.map(ref => (
+              <article key={ref.id}>
+                <strong style={{ display: 'block', fontSize: '1rem', color: '#000' }}>{ref.name}</strong>
+                <span style={{ fontSize: '0.95rem', color: '#444' }}>{ref.reference}</span>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
-        {data.certifications && data.certifications.length > 0 && (
-          <section>
-            <h3 style={{ fontSize: '1.1rem', textTransform: 'uppercase', borderBottom: '1px solid #000', paddingBottom: '3px', marginBottom: '15px' }}>Certifications</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${data.metadata?.layout?.certifications || 1}, 1fr)`, gap: '15px' }}>
-              {data.certifications.map(cert => (
-                <article key={cert.id} style={{ marginBottom: '10px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                    <strong style={{ fontSize: '1rem', color: '#000' }}>{cert.name}</strong>
-                    <span style={{ fontSize: '0.9rem', color: '#444' }}>{cert.date}</span>
-                  </div>
-                  <div style={{ fontSize: '0.95rem', color: '#444' }}>
-                    {cert.issuer}
-                    {cert.url && <span style={{ marginLeft: '10px' }}>• <a href={cert.url} style={{ color: '#000' }}>View Credential</a></span>}
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        )}
+      {data.certifications && data.certifications.length > 0 && (
+        <section>
+          <h3 style={{ fontSize: '1.1rem', textTransform: 'uppercase', borderBottom: '1px solid #000', paddingBottom: '3px', marginBottom: '15px' }}>Certifications</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${data.metadata?.layout?.certifications || 1}, 1fr)`, gap: '15px' }}>
+            {data.certifications.map(cert => (
+              <article key={cert.id} style={{ marginBottom: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <strong style={{ fontSize: '1rem', color: '#000' }}>{cert.name}</strong>
+                  <span style={{ fontSize: '0.9rem', color: '#444' }}>{cert.date}</span>
+                </div>
+                <div style={{ fontSize: '0.95rem', color: '#444' }}>
+                  {cert.issuer}
+                  {cert.url && <span style={{ marginLeft: '10px' }}>• <a href={cert.url} style={{ color: '#000' }}>View Credential</a></span>}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 };

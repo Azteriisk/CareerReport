@@ -9,7 +9,7 @@ interface Props {
 export const TemplateModernSplit: React.FC<Props> = ({ data }) => {
   const themeColor = data.metadata?.themeColor || '#3b82f6';
   const fontStyle = data.metadata?.fontFamily || 'sans-serif';
-  
+
   return (
     <div className="template-modern-split" style={{ display: 'flex', background: 'white', color: '#333', fontFamily: fontStyle, minHeight: '1056px' }}>
       {/* Left Main Content */}
@@ -80,7 +80,7 @@ export const TemplateModernSplit: React.FC<Props> = ({ data }) => {
           {data.basics.image && (
             <img src={data.basics.image} alt="Headshot" style={{ width: '140px', height: '140px', borderRadius: '50%', objectFit: 'cover', border: `4px solid white`, boxShadow: `0 4px 15px rgba(0,0,0,0.1)`, marginBottom: '20px' }} />
           )}
-          
+
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.9rem', color: '#475569' }}>
             {data.basics.email && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

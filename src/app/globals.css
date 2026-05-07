@@ -113,17 +113,22 @@ a {
 /* Resume Templates Overrides */
 .resume-preview {
   background: white;
-  color: black;
-  width: 100%;
-  min-height: 1056px; /* A4 aspect roughly for web view */
+  color: #334155;
+  width: 850px;
+  height: 1100px;
+  aspect-ratio: 8.5 / 11;
   box-shadow: 0 10px 25px rgba(0,0,0,0.5);
   border-radius: 4px;
   overflow: hidden;
   font-family: 'Inter', sans-serif; /* Default, will be overridden by templates */
 }
 
-.template-modern {
-  font-family: 'Inter', sans-serif;
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .template-classic {
@@ -220,13 +225,25 @@ input[type="month"].empty-date:focus::-webkit-datetime-edit {
 @media (max-width: 768px) {
   /* Global Nav */
   .mobile-header {
-    flex-direction: column !important;
-    gap: 1rem !important;
-    padding: 1rem !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    padding: 0.75rem 1rem !important;
+    height: 60px !important;
+  }
+  .mobile-header h1 {
+    font-size: 1rem !important;
+    display: block !important;
   }
   .mobile-header nav {
-    flex-wrap: wrap !important;
-    justify-content: center !important;
+    gap: 0 !important;
+    padding: 2px !important;
+  }
+  .mobile-header nav a {
+    padding: 0.4rem 0.6rem !important;
+    font-size: 0.8rem !important;
+  }
+  .nav-auth-section {
+    display: none !important;
   }
   
   /* Landing Page */

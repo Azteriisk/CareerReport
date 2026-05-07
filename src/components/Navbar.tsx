@@ -38,7 +38,7 @@ export function Navbar() {
         )}
       </nav>
 
-      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+      <div className="nav-auth-section" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
         <Link href="/support" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', textDecoration: 'none', fontWeight: 500 }}>Support</Link>
         {isSignedIn ? (
           <UserButton 

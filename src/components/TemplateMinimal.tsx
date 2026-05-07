@@ -21,7 +21,7 @@ export const TemplateMinimal: React.FC<Props> = ({ data }) => {
             <div key={i}>{n}</div>
           ))}
         </h1>
-        
+
         <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '30px' }}>
           {data.basics.email && <div style={{ marginBottom: '5px' }}>{data.basics.email}</div>}
           {data.basics.phone && <div style={{ marginBottom: '5px' }}>{data.basics.phone}</div>}
@@ -46,7 +46,7 @@ export const TemplateMinimal: React.FC<Props> = ({ data }) => {
 
       <main style={{ width: '70%', paddingLeft: '30px' }}>
         <h2 style={{ fontSize: '1.2rem', fontWeight: 400, color: '#666', marginBottom: '20px' }}>{data.basics.label}</h2>
-        
+
         {data.basics.summary && (
           <p style={{ fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '30px' }}>{data.basics.summary}</p>
         )}

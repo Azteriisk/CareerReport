@@ -1,17 +1,18 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { defaultResume } from '@/lib/default-resume';
 import { TemplateModern } from '@/components/TemplateModern';
 import { TemplateClassic } from '@/components/TemplateClassic';
 import { TemplateMinimal } from '@/components/TemplateMinimal';
 import { useReactToPrint } from 'react-to-print';
-import { Download, Sparkles, LayoutTemplate, Lock, RefreshCw, LogOut, Plus, Minus, Trash2, Upload } from 'lucide-react';
+import { Download, Sparkles, LayoutTemplate, Lock, RefreshCw, Plus, Minus, Trash2, Upload, Save, CheckCircle, AlertCircle, Info, Share2 } from 'lucide-react';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import Link from 'next/link';
 import { ImageCropper } from '@/components/ImageCropper';
 import { AtsMetadata } from '@/components/AtsMetadata';
 import { TemplateModernSplit } from '@/components/TemplateModernSplit';
+import { useUser, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
 
 const months = [
   { v: '01', l: 'Jan.' }, { v: '02', l: 'Feb.' }, { v: '03', l: 'Mar.' },
@@ -57,10 +58,34 @@ const MonthYearPicker = ({ value, onChange, disabled }: { value: string, onChang
 };
 
 export default function BuilderPage() {
+  const { isSignedIn, isLoaded, user } = useUser();
+  const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileScale, setMobileScale] = useState(0.45);
+
+  // Handle window resize for mobile detection and preview scaling
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      setIsMobile(width <= 768);
+      
+      // Calculate perfect scale to fit 850px resume into viewport width (minus padding)
+      const padding = 32; // 1rem on each side
+      const targetWidth = 850;
+      const calculatedScale = Math.min(1, (width - padding) / targetWidth);
+      setMobileScale(calculatedScale);
+    };
+    
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const [data, setData] = useState(defaultResume);
   const [template, setTemplate] = useState<'modern' | 'classic' | 'minimal' | 'modern-split'>('modern-split');
   const [isAILoading, setIsAILoading] = useState(false);
   const [showSectionMenu, setShowSectionMenu] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   // Track which optional sections are actively in the editor
   const [hasProjectsSection, setHasProjectsSection] = useState(false);
@@ -73,12 +98,84 @@ export default function BuilderPage() {
   const [sidebarRef] = useAutoAnimate<HTMLDivElement>();
   const [workRef] = useAutoAnimate<HTMLDivElement>();
   const [skillsRef] = useAutoAnimate<HTMLDivElement>();
+  const [educationRef] = useAutoAnimate<HTMLDivElement>();
   const [projectsRef] = useAutoAnimate<HTMLDivElement>();
   const [referencesRef] = useAutoAnimate<HTMLDivElement>();
   const [certificationsRef] = useAutoAnimate<HTMLDivElement>();
   const [menuWrapperRef] = useAutoAnimate<HTMLDivElement>();
 
-  const user = null; // Mock auth for demo
+  // Load data from localStorage on mount
+  useEffect(() => {
+    const savedData = localStorage.getItem('career-report-resume-draft');
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        setData(parsed.data || defaultResume);
+        if (parsed.template) setTemplate(parsed.template);
+      } catch (e) {
+        console.error("Failed to parse saved resume data", e);
+      }
+    }
+  }, []);
+
+  // Autosave to localStorage
+  useEffect(() => {
+    // Only lock body scroll on desktop to allow natural scrolling on mobile
+    if (!isMobile) {
+      document.body.style.overflow = 'hidden';
+      document.body.classList.remove('hide-scrollbar');
+    } else {
+      document.body.style.overflow = 'auto';
+      document.body.classList.add('hide-scrollbar');
+    }
+    return () => {
+      document.body.style.overflow = 'auto';
+      document.body.classList.remove('hide-scrollbar');
+    };
+  }, [isMobile]);
+
+  useEffect(() => {
+    if (!data) return;
+
+    const timer = setTimeout(() => {
+      setSaveStatus('saving');
+      try {
+        localStorage.setItem('career-report-resume-draft', JSON.stringify({
+          data,
+          template,
+          updatedAt: new Date().toISOString()
+        }));
+        setSaveStatus('saved');
+        setLastSaved(new Date());
+        // Reset status to idle after a few seconds
+        setTimeout(() => setSaveStatus('idle'), 3000);
+      } catch (e) {
+        setSaveStatus('error');
+      }
+    }, 1000); // 1 second debounce for autosave
+
+    return () => clearTimeout(timer);
+  }, [data, template]);
+
+  const handleManualSave = () => {
+    setSaveStatus('saving');
+    try {
+      localStorage.setItem('career-report-resume-draft', JSON.stringify({
+        data,
+        template,
+        updatedAt: new Date().toISOString()
+      }));
+      setSaveStatus('saved');
+      setLastSaved(new Date());
+      setTimeout(() => setSaveStatus('idle'), 3000);
+
+      if (!isSignedIn) {
+        alert("Draft saved locally! Sign up to persist your resume to the cloud and get a public share link.");
+      }
+    } catch (e) {
+      setSaveStatus('error');
+    }
+  };
 
   const contentRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({
@@ -159,6 +256,28 @@ export default function BuilderPage() {
     setData(prev => ({
       ...prev,
       work: prev.work.filter(job => job.id !== id)
+    }));
+  };
+
+  // Education Handlers
+  const handleEducationChange = (id: string, field: string, value: any) => {
+    setData(prev => ({
+      ...prev,
+      education: (prev.education || []).map(edu => edu.id === id ? { ...edu, [field]: value } : edu)
+    }));
+  };
+
+  const handleAddEducation = () => {
+    setData(prev => ({
+      ...prev,
+      education: [...(prev.education || []), { id: crypto.randomUUID(), institution: '', area: '', studyType: '', startDate: '', endDate: '', score: '', courses: [], url: '' }]
+    }));
+  };
+
+  const handleRemoveEducation = (id: string) => {
+    setData(prev => ({
+      ...prev,
+      education: (prev.education || []).filter(edu => edu.id !== id)
     }));
   };
 
@@ -261,16 +380,92 @@ export default function BuilderPage() {
   };
 
   return (
-    <div className="builder-layout" style={{ display: 'flex', height: '100%', flex: 1, overflow: 'hidden' }}>
+    <div className="builder-layout" style={{ 
+      display: 'flex', 
+      flexDirection: isMobile ? 'column' : 'row',
+      height: isMobile ? 'auto' : 'calc(100vh - 82px)', 
+      width: '100vw', 
+      overflow: isMobile ? 'visible' : 'hidden', 
+      position: isMobile ? 'relative' : 'fixed', 
+      top: isMobile ? '0' : '82px', 
+      left: 0,
+      background: 'var(--bg-color)'
+    }}>
+      {isMobile && (
+        <>
+          <div style={{ 
+            position: 'fixed', 
+            top: '60px', 
+            left: 0,
+            right: 0,
+            zIndex: 100, 
+            background: 'var(--surface-color)', 
+            padding: '0.5rem', 
+            display: 'flex', 
+            gap: '0.5rem',
+            borderBottom: '1px solid var(--glass-border)',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.3)'
+          }}>
+            <button 
+              onClick={() => setActiveTab('edit')} 
+              className="btn" 
+              style={{ 
+                flex: 1, 
+                background: activeTab === 'edit' ? 'var(--primary)' : 'transparent',
+                color: activeTab === 'edit' ? 'var(--bg-color)' : 'var(--text-primary)',
+                padding: '0.5rem',
+                fontSize: '0.9rem'
+              }}
+            >
+              Edit Resume
+            </button>
+            <button 
+              onClick={() => setActiveTab('preview')} 
+              className="btn" 
+              style={{ 
+                flex: 1, 
+                background: activeTab === 'preview' ? 'var(--primary)' : 'transparent',
+                color: activeTab === 'preview' ? 'var(--bg-color)' : 'var(--text-primary)',
+                padding: '0.5rem',
+                fontSize: '0.9rem'
+              }}
+            >
+              Live Preview
+            </button>
+          </div>
+          <div style={{ height: '57px' }} /> {/* Spacer for fixed tabs */}
+        </>
+      )}
+
       {/* Sidebar Editor */}
-      <aside className="builder-sidebar" style={{ width: '400px', background: 'var(--surface-color)', borderRight: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', height: '100%' }}>
-        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h1 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Link href="/" style={{ color: 'var(--primary)', fontWeight: 'bold' }}>CareerReport</Link> Builder
+      <aside 
+        className="builder-sidebar" 
+        style={{ 
+          width: isMobile ? '100%' : '400px', 
+          background: 'var(--surface-color)', 
+          borderRight: isMobile ? 'none' : '1px solid var(--glass-border)', 
+          display: isMobile ? (activeTab === 'edit' ? 'flex' : 'none') : 'flex', 
+          flexDirection: 'column', 
+          height: isMobile ? 'auto' : '100%' 
+        }}
+      >
+        <div style={{ padding: isMobile ? '0.75rem 1.5rem' : '1.5rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h1 style={{ fontSize: isMobile ? '1.1rem' : '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Link href="/" style={{ color: 'var(--primary)', fontWeight: 'bold' }}>CareerReport</Link> {isMobile ? '' : 'Builder'}
           </h1>
-          {user ? (
-            <button className="btn-icon" title="Log Out"><LogOut size={18} /></button>
-          ) : null}
+          {isMobile && (
+            <select
+              value={template}
+              onChange={(e) => setTemplate(e.target.value as any)}
+              className="input-field"
+              style={{ width: 'auto', padding: '0.35rem 0.6rem', background: 'var(--surface-color)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}
+            >
+              <option value="modern">Modern</option>
+              <option value="modern-split">Split</option>
+              <option value="minimal">Minimal</option>
+              <option value="classic">Classic</option>
+            </select>
+          )}
         </div>
 
         <div ref={sidebarRef} className="sidebar-scroll" style={{ padding: '1.5rem', flex: 1 }}>
@@ -545,6 +740,63 @@ export default function BuilderPage() {
             ))}
           </div>
 
+          {/* Education Section */}
+          <div ref={educationRef} style={{ marginTop: '2rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <h2 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', margin: 0 }}>Education</h2>
+                {template !== 'modern-split' && (
+                  <select className="input-field" style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', width: 'auto', minWidth: 0, height: 'auto', background: 'var(--surface-highlight)', border: 'none' }} value={data.metadata?.layout?.education || 1} onChange={(e) => handleLayoutChange('education', parseInt(e.target.value))}>
+                    <option value={1}>1 Column</option>
+                    <option value={2}>2 Columns</option>
+                    <option value={3}>3 Columns</option>
+                  </select>
+                )}
+              </div>
+              <button onClick={handleAddEducation} className="btn-icon" style={{ background: 'var(--primary)', color: 'white', padding: '4px 8px' }}><Plus size={16} /></button>
+            </div>
+            {(data.education || []).map((edu, index) => (
+              <div key={edu.id} style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Education {index + 1}</div>
+                  <button onClick={() => handleRemoveEducation(edu.id)} className="btn-icon" style={{ color: 'var(--danger)', padding: '2px' }}><Trash2 size={14} /></button>
+                </div>
+                <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                  <label className="label" style={{ fontSize: '0.75rem' }}>Institution</label>
+                  <input type="text" className="input-field" style={{ padding: '0.5rem' }} value={edu.institution} onChange={(e) => handleEducationChange(edu.id, 'institution', e.target.value)} />
+                </div>
+                <div className="form-group" style={{ marginBottom: '0.75rem' }}>
+                  <label className="label" style={{ fontSize: '0.75rem' }}>Area of Study</label>
+                  <input type="text" className="input-field" style={{ padding: '0.5rem' }} value={edu.area} onChange={(e) => handleEducationChange(edu.id, 'area', e.target.value)} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="label" style={{ fontSize: '0.75rem' }}>Degree / Study Type</label>
+                    <input type="text" className="input-field" style={{ padding: '0.5rem' }} value={edu.studyType} onChange={(e) => handleEducationChange(edu.id, 'studyType', e.target.value)} />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="label" style={{ fontSize: '0.75rem' }}>GPA / Score</label>
+                    <input type="text" className="input-field" style={{ padding: '0.5rem' }} value={edu.score} onChange={(e) => handleEducationChange(edu.id, 'score', e.target.value)} />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <div className="form-group" style={{ flex: 1, marginBottom: 0, minWidth: 0 }}>
+                    <label className="label" style={{ fontSize: '0.75rem' }}>Start Date</label>
+                    <MonthYearPicker value={edu.startDate} onChange={(val) => handleEducationChange(edu.id, 'startDate', val)} />
+                  </div>
+                  <div className="form-group" style={{ flex: 1, marginBottom: 0, minWidth: 0 }}>
+                    <label className="label" style={{ fontSize: '0.75rem' }}>End Date</label>
+                    <MonthYearPicker disabled={edu.endDate === 'Present'} value={edu.endDate === 'Present' ? '' : edu.endDate} onChange={(val) => handleEducationChange(edu.id, 'endDate', val)} />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 0 }}>
+                  <input type="checkbox" id={`current-edu-${edu.id}`} checked={edu.endDate === 'Present'} onChange={(e) => handleEducationChange(edu.id, 'endDate', e.target.checked ? 'Present' : '')} style={{ cursor: 'pointer' }} />
+                  <label htmlFor={`current-edu-${edu.id}`} style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', cursor: 'pointer', margin: 0 }}>Currently studying</label>
+                </div>
+              </div>
+            ))}
+          </div>
+
           {/* Skills Section */}
           <div ref={skillsRef} style={{ marginTop: '2rem', marginBottom: '1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
@@ -806,31 +1058,111 @@ export default function BuilderPage() {
       </aside>
 
       {/* Main Preview Area */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--bg-color)' }}>
-        <header style={{ padding: '1rem 2rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--glass-bg)' }}>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <LayoutTemplate size={18} color="var(--text-secondary)" />
-            <select
-              value={template}
-              onChange={(e) => setTemplate(e.target.value as any)}
-              className="input-field"
-              style={{ width: 'auto', padding: '0.5rem', background: 'var(--surface-color)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}
-            >
-              <option value="modern" style={{ color: '#fff', background: '#1e293b' }}>Modern Template</option>
-              <option value="modern-split" style={{ color: '#fff', background: '#1e293b' }}>Modern Split</option>
-              <option value="minimal" style={{ color: '#fff', background: '#1e293b' }}>Minimal Template</option>
-              <option value="classic" style={{ color: '#fff', background: '#1e293b' }}>Classic Template</option>
-            </select>
+      <main 
+        className={isMobile ? "hide-scrollbar" : ""} 
+        style={{ 
+          flex: 1, 
+          display: isMobile ? (activeTab === 'preview' ? 'flex' : 'none') : 'flex', 
+          flexDirection: 'column', 
+          background: 'var(--bg-color)',
+          height: isMobile ? 'calc(100vh - 124px)' : 'auto',
+          overflow: isMobile ? 'auto' : 'hidden',
+          marginBottom: isMobile ? '60px' : 0
+        }}
+      >
+        <header style={{ padding: isMobile ? '0.5rem 1rem' : '1rem 2rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--glass-bg)', backdropFilter: 'blur(10px)', position: 'sticky', top: 0, zIndex: 10 }}>
+          <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+            {!isMobile && (
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <LayoutTemplate size={18} color="var(--text-secondary)" />
+                <select
+                  value={template}
+                  onChange={(e) => setTemplate(e.target.value as any)}
+                  className="input-field"
+                  style={{ width: 'auto', padding: '0.4rem 0.75rem', background: 'var(--surface-color)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem' }}
+                >
+                  <option value="modern" style={{ color: '#fff', background: '#1e293b' }}>Modern Template</option>
+                  <option value="modern-split" style={{ color: '#fff', background: '#1e293b' }}>Modern Split</option>
+                  <option value="minimal" style={{ color: '#fff', background: '#1e293b' }}>Minimal Template</option>
+                  <option value="classic" style={{ color: '#fff', background: '#1e293b' }}>Classic Template</option>
+                </select>
+              </div>
+            )}
+
+            {!isMobile && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                {saveStatus === 'saving' && <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><RefreshCw size={14} className="animate-spin" /> Saving...</span>}
+                {saveStatus === 'saved' && <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--success)' }}><CheckCircle size={14} /> Autosaved</span>}
+                {saveStatus === 'error' && <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--danger)' }}><AlertCircle size={14} /> Save failed</span>}
+                {saveStatus === 'idle' && lastSaved && <span style={{ opacity: 0.7 }}>Last saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
+              </div>
+            )}
           </div>
 
-          <button onClick={() => handlePrint()} className="btn btn-primary">
-            <Download size={18} /> Export PDF
-          </button>
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <button
+              onClick={() => {
+                if (!isSignedIn) {
+                  alert("Please sign up to get a public share link for your resume!");
+                } else {
+                  alert("Profile link copied to clipboard! (Feature Demo)");
+                }
+              }}
+              className="btn btn-secondary"
+              style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', gap: '0.5rem' }}
+            >
+              <Share2 size={18} /> Share
+            </button>
+            <button
+              onClick={handleManualSave}
+              className="btn btn-secondary"
+              style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', gap: '0.5rem' }}
+              title="Manual Save"
+            >
+              <Save size={18} /> Save
+            </button>
+            <button onClick={() => handlePrint()} className="btn btn-primary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', gap: '0.5rem' }}>
+              <Download size={18} /> Export PDF
+            </button>
+          </div>
         </header>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '2rem', display: 'flex', justifyContent: 'center' }}>
-          <div style={{ width: '100%', maxWidth: '850px' }}>
-            <div ref={contentRef} className="resume-preview" style={{ position: 'relative' }}>
+        {!isSignedIn && (
+          <div style={{ background: 'linear-gradient(90deg, var(--primary), var(--accent))', color: 'white', padding: '0.6rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <Info size={18} />
+              <span>You are currently building as a guest. <strong>Sign up to save your work permanently and get a public profile link!</strong></span>
+            </div>
+            <SignUpButton mode="modal">
+              <button style={{ background: 'white', color: 'var(--primary)', border: 'none', padding: '0.35rem 1rem', borderRadius: '6px', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}>Sign Up Now</button>
+            </SignUpButton>
+          </div>
+        )}
+
+        <div style={{ 
+          flex: 1, 
+          overflowY: 'auto', 
+          padding: isMobile ? '1rem' : '2rem', 
+          display: 'flex', 
+          justifyContent: 'center',
+          alignItems: isMobile ? 'flex-start' : 'center',
+          direction: 'ltr' // Ensure content is LTR even if container is RTL (for scrollbar)
+        }}>
+          <div style={{ 
+            width: isMobile ? '100%' : `${850 * mobileScale}px`, 
+            height: isMobile ? `${1100 * mobileScale}px` : 'auto',
+            overflow: 'visible',
+            display: 'flex',
+            justifyContent: 'center'
+          }}>
+            <div style={{ 
+              width: '850px',
+              transform: isMobile ? `scale(${mobileScale})` : 'none',
+              transformOrigin: 'top center',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+              marginLeft: '0'
+            }}>
+              <div ref={contentRef} className="resume-preview" style={{ position: 'relative' }}>
               <AtsMetadata data={data} />
               {template === 'modern' && <TemplateModern data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
               {template === 'modern-split' && <TemplateModernSplit data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
@@ -839,7 +1171,8 @@ export default function BuilderPage() {
             </div>
           </div>
         </div>
-      </main>
+      </div>
+    </main>
 
       {/* Image Cropper Modal */}
       {cropImageSrc && (
@@ -852,6 +1185,35 @@ export default function BuilderPage() {
           }}
           onCancel={() => setCropImageSrc(null)}
         />
+      )}
+
+      {/* Global Mobile Footer */}
+      {isMobile && (
+        <div style={{ 
+          position: 'fixed', 
+          bottom: 0, 
+          left: 0, 
+          right: 0, 
+          padding: '1rem', 
+          borderTop: '1px solid var(--glass-border)', 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center', 
+          background: 'var(--surface-color)',
+          zIndex: 1000
+        }}>
+          <Link href="/support" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>Support</Link>
+          {isSignedIn ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{user?.firstName || 'User'}</span>
+              <UserButton />
+            </div>
+          ) : (
+            <SignInButton mode="modal">
+              <button className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>Sign In</button>
+            </SignInButton>
+          )}
+        </div>
       )}
     </div>
   );
