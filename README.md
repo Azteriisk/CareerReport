@@ -11,21 +11,65 @@ CareerReport is a professional networking platform for the next generation. Buil
 - **Autosave & Cloud Sync:** Never lose your work. Your resume is automatically synced to the cloud via Supabase.
 - **Dynamic Columns:** Customize your Work Experience and Education sections with single or double-column layouts.
 - **Custom Image Cropping:** Upload, crop, and perfectly align your headshot directly within the browser.
+- **Public/Private Toggle:** Instantly control whether your resume is visible on your public profile.
+- **Optional Sections:** Add Projects, References, and Certifications on demand — only what you need.
 
 ### 🌐 Public Professional Profiles
 - **Custom URLs:** Claim a unique `careerreport.com/u/your-name` link to share with employers.
-- **Global Search:** Easily find other professionals by their username, profile link, or email address.
+- **Resume Tab:** View any user's published resume directly from their profile page.
+- **Posts Tab:** Browse a user's activity feed from their profile.
+- **Follower / Following Counts:** See your network size at a glance.
 - **Profile Networking:** A central hub to share your career journey openly without the noise of traditional social networks.
+
+### 📣 Social Networking Feed
+- **Post Creator:** Share career updates, milestones, and professional thoughts with your network.
+- **Image Attachments:** Attach images to posts with a built-in lightbox viewer.
+- **Quote Reposts:** Embed and comment on existing posts in your own voice.
+- **Likes System:** Like posts from other users with real-time optimistic UI updates.
+- **Comments:** Threaded comment sections on every post, with avatar, name, and delete support.
+- **Inline Delete Confirmation:** Two-click delete flow prevents accidental post removal.
+- **Follow / Unfollow:** Follow other professionals to build your network.
 
 ### 🤖 ATS & AI Metadata Integration (Embedded PDF Data)
 - **Invisible Data Layer:** We inject semantic JSON-LD directly into the resume DOM.
 - **Machine Readability:** Ensures Applicant Tracking Systems (ATS) and AI recruitment scanners can accurately extract your Name, Contact Info, Skills, and Experience without relying on optical character recognition (OCR) or guessing.
 - **The Best of Both Worlds:** Allows users to have visually stunning, heavily styled resumes without sacrificing parsing accuracy when applying to enterprise jobs. The exported PDF retains this metadata structure.
+- **AI Placeholder Integration:** Stubbed AI rewrite and bullet-point generation buttons (premium feature hooks) for summaries and job descriptions.
 
 ### 🔒 Security & Architecture
 - **Authentication:** Passwordless, social, and standard login flows powered by Clerk.
 - **True Singleton Supabase Client:** Memory-leak-free database connections with custom JWT interceptors for seamless Clerk synchronization.
+- **Row-Level Security:** Supabase RLS policies enforce per-user data isolation across resumes, posts, likes, comments, and followers.
 - **SSR-Safe:** Next.js Server-Side Rendering compatible token decoding using Node `Buffer` fallbacks.
+
+---
+
+## 🗺️ Roadmap / To-Do
+
+### 🤖 AI Features
+- [ ] **AI Resume Generation** — Full resume generation from a job description or LinkedIn URL input
+- [ ] **AI Pre-prompting** — Allow users to provide a "career context" system prompt that personalizes all AI suggestions (tone, industry, seniority level)
+- [ ] **AI Job Match Score** — Score the user's resume against a pasted job description and highlight gaps
+
+### 💼 Job Board
+- [ ] **Job Listing Improvements** — Richer job cards with salary ranges, remote/hybrid tags, and company logos
+- [ ] **Job Posting Flow** — Full employer-side flow: create, preview, and publish job listings
+- [ ] **Apply with CareerReport** — One-click application that sends the user's public resume + profile link to the employer
+
+### 🏢 Business Accounts
+- [ ] **Business Account Setup** — Separate account type for employers with a company profile, logo, and bio
+- [ ] **Company Profile Pages** — Public pages at `/co/company-name` with open listings and follower counts
+- [ ] **Employee Tagging** — Employees can link their profile to a verified company
+
+### 📣 Social Networking (Remaining)
+- [ ] **Notifications** — In-app alerts for new followers, likes, comments, and reposts
+- [ ] **Messaging / DMs** — Direct messages between connected users
+- [ ] **Hashtags & Discover** — Tag posts with topics and surface trending content
+- [ ] **Search** — Global search across users, companies, and posts
+- [ ] **Verified Badges** — Manual or automated verification for notable professionals and businesses
+- [ ] **Feed Algorithm** — Ranked feed based on follows, engagement, and recency instead of purely chronological
+
+---
 
 ## 🚀 Getting Started
 
@@ -64,8 +108,8 @@ CareerReport is a professional networking platform for the next generation. Buil
 
 - **Framework:** [Next.js](https://nextjs.org/)
 - **Authentication:** [Clerk](https://clerk.com/)
-- **Animations:** [Framer Motion](https://www.framer.com/motion/)
-- **Database:** [Supabase](https://supabase.com/)
+- **Animations:** [@formkit/auto-animate](https://auto-animate.formkit.com/)
+- **Database:** [Supabase](https://supabase.com/) (PostgreSQL + Row-Level Security)
 - **Icons:** [Lucide React](https://lucide.dev/)
 - **Styling:** Custom CSS with Gruvbox theme variables.
 
