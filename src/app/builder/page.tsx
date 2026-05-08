@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { defaultResume } from '@/lib/default-resume';
+import { ResumeData } from '@/lib/resume-schema';
 import { TemplateModern } from '@/components/TemplateModern';
 import { TemplateClassic } from '@/components/TemplateClassic';
 import { TemplateMinimal } from '@/components/TemplateMinimal';
@@ -90,6 +91,9 @@ export default function BuilderPage() {
   const [showSectionMenu, setShowSectionMenu] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [isPublic, setIsPublic] = useState(true);
+  const [profileUsername, setProfileUsername] = useState<string | null>(null);
+  const [sharingCopied, setSharingCopied] = useState(false);
 
   // Track which optional sections are actively in the editor
   const [hasProjectsSection, setHasProjectsSection] = useState(false);
@@ -129,11 +133,21 @@ export default function BuilderPage() {
         if (remoteData) {
           setData(remoteData.data);
           if (remoteData.template) setTemplate(remoteData.template);
+          if (typeof remoteData.is_public === 'boolean') setIsPublic(remoteData.is_public);
           setSaveStatus('saved');
           setLastSaved(new Date(remoteData.updated_at));
           setIsInitialLoading(false);
-          return;
         }
+
+        // Also fetch the Supabase username (separate from Clerk username)
+        const { data: profileRow } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', user.id)
+          .single();
+        if (profileRow?.username) setProfileUsername(profileRow.username);
+
+        if (remoteData) return;
       }
 
       // Fallback to localStorage if guest or no cloud data found
@@ -196,6 +210,7 @@ export default function BuilderPage() {
               user_id: user.id,
               data,
               template,
+              is_public: isPublic,
               updated_at: timestamp
             }, { onConflict: 'user_id' }); // Currently syncing one primary resume per user
 
@@ -215,7 +230,7 @@ export default function BuilderPage() {
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [data, template, isSignedIn, user?.id, getToken]);
+  }, [data, template, isPublic, isSignedIn, user?.id, getToken]);
 
   const handleManualSave = () => {
     setSaveStatus('saving');
@@ -1172,24 +1187,54 @@ export default function BuilderPage() {
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem' }}>
+            {isSignedIn && (
+              <button
+                onClick={async () => {
+                  const next = !isPublic;
+                  setIsPublic(next);
+                  // Refresh token before writing
+                  const token = await getToken({ template: 'supabase' });
+                  setSupabaseToken(token);
+                  const { error } = await supabase.from('resumes').upsert({
+                    user_id: user!.id,
+                    data,
+                    template,
+                    is_public: next,
+                    updated_at: new Date().toISOString()
+                  }, { onConflict: 'user_id' });
+                  if (error) {
+                    console.error('Failed to update visibility:', error.message);
+                    // Revert optimistic update on failure
+                    setIsPublic(!next);
+                  }
+                }}
+                className="btn btn-secondary"
+                style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', gap: '0.5rem', color: isPublic ? 'var(--accent)' : 'var(--text-secondary)' }}
+                title={isPublic ? 'Resume is public — click to make private' : 'Resume is private — click to make public'}
+              >
+                {isPublic ? <><span>🌐</span> Public</> : <><Lock size={16} /> Private</>}
+              </button>
+            )}
             <button
-
-
               onClick={() => {
                 if (!isSignedIn) {
                   alert("Please sign up to get a public share link for your resume!");
-                } else if (user?.username) {
-                  const shareUrl = `${window.location.origin}/u/${user.username}`;
-                  navigator.clipboard.writeText(shareUrl);
-                  alert(`Copied profile link to clipboard!\n${shareUrl}`);
+                } else if (!isPublic) {
+                  alert("Your resume is set to Private. Toggle it to Public first to share.");
+                } else if (profileUsername) {
+                  const shareUrl = `${window.location.origin}/u/${profileUsername}`;
+                  navigator.clipboard.writeText(shareUrl).then(() => {
+                    setSharingCopied(true);
+                    setTimeout(() => setSharingCopied(false), 2500);
+                  });
                 } else {
-                  alert("Please set a username in your profile to share your link!");
+                  alert("Please set a username in your settings to get a shareable link!");
                 }
               }}
               className="btn btn-secondary"
-              style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', gap: '0.5rem' }}
+              style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', gap: '0.5rem', color: sharingCopied ? 'var(--accent)' : undefined }}
             >
-              <Share2 size={18} /> Share
+              {sharingCopied ? <><CheckCircle size={18} /> Copied!</> : <><Share2 size={18} /> Share</>}
             </button>
             <button
               onClick={handleManualSave}

@@ -10,17 +10,29 @@ import {
   SignUpButton, 
   UserButton, 
   useUser,
+  useAuth,
   useClerk
 } from '@clerk/nextjs';
-import { supabase } from '@/lib/supabase';
+import { supabase, setTokenGetter } from '@/lib/supabase';
 
 export function Navbar() {
   const pathname = usePathname();
   const { isSignedIn, user } = useUser();
   const { signOut } = useClerk();
+  const { getToken } = useAuth();
   const [showSettings, setShowSettings] = useState(false);
   const [profileData, setProfileData] = useState<any>(null);
   const [globalUsername, setGlobalUsername] = useState<string | null>(null);
+
+  // Register the Clerk token getter globally so every Supabase request
+  // automatically gets a fresh, valid token — no more manual token management.
+  useEffect(() => {
+    if (isSignedIn) {
+      setTokenGetter(() => getToken({ template: 'supabase' }));
+    } else {
+      setTokenGetter(null);
+    }
+  }, [isSignedIn, getToken]);
 
   useEffect(() => {
     async function getUsername() {
@@ -98,7 +110,6 @@ export function Navbar() {
               <Settings size={22} />
             </motion.button>
             <UserButton 
-              afterSignOutUrl="/" 
               appearance={{
                 elements: {
                   userButtonAvatarBox: {
