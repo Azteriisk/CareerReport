@@ -7,7 +7,7 @@ export default function SupportPage() {
   const [submitted, setSubmitted] = useState(false);
 
   return (
-    <div className="landing-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="landing-container" style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
       <main style={{ flex: 1, maxWidth: '600px', margin: '0 auto', padding: '4rem 2rem', width: '100%' }}>
         <h2 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Support & Feedback</h2>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Running into issues or have a feature request? Let us know.</p>

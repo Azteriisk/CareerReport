@@ -3,7 +3,7 @@ import { FileText, Cpu, EyeOff, LayoutTemplate } from "lucide-react";
 
 export default function HowItWorksPage() {
   return (
-    <div className="landing-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="landing-container" style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
       <main style={{ flex: 1, maxWidth: '800px', margin: '0 auto', padding: '4rem 2rem' }}>
         <h2 style={{ fontSize: '3rem', marginBottom: '1rem', lineHeight: 1.2 }}>How CareerReport is <span className="premium-gradient-text">Different</span></h2>
         <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', marginBottom: '3rem', lineHeight: 1.6 }}>

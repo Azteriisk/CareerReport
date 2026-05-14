@@ -34,6 +34,22 @@ export function Feed({ targetUserId }: { targetUserId?: string }) {
 
       if (targetUserId) {
         query = query.eq('user_id', targetUserId);
+      } else if (user) {
+        const { data: followData, error: followError } = await supabase
+          .from('followers')
+          .select('following_id')
+          .eq('follower_id', user.id);
+          
+        if (followError) {
+          console.error("Error fetching followers:", followError);
+        } else if (followData) {
+          const followingIds = followData.map((f: any) => f.following_id);
+          followingIds.push(user.id);
+          // Note: In the future, this is where we might mix in advertisement posts based on a toggle
+          if (followingIds.length > 0) {
+            query = query.in('user_id', followingIds);
+          }
+        }
       }
 
       const { data, error } = await query;
@@ -93,7 +109,7 @@ export function Feed({ targetUserId }: { targetUserId?: string }) {
     } finally {
       setLoading(false);
     }
-  }, [targetUserId, isSignedIn, getToken]);
+  }, [targetUserId, isSignedIn, getToken, user?.id]);
 
   useEffect(() => {
     fetchPosts();
@@ -113,7 +129,7 @@ export function Feed({ targetUserId }: { targetUserId?: string }) {
         </div>
       ) : posts.length === 0 ? (
         <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '3rem 1rem', background: 'var(--surface-color)', borderRadius: '16px', border: '1px solid var(--glass-border)' }}>
-          <p>{targetUserId ? "This user hasn't posted anything yet." : "No posts yet. Be the first to share something!"}</p>
+          <p>{targetUserId ? "This user hasn't posted anything yet." : "You aren't following anyone with posts yet. Find users to follow to see their posts here!"}</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>

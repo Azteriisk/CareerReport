@@ -26,7 +26,7 @@ body {
   font-family: 'Plus Jakarta Sans', sans-serif;
   background-color: var(--bg-color);
   color: var(--text-primary);
-  min-height: 100vh;
+  min-height: 100dvh;
   line-height: 1.5;
   background-image: radial-gradient(circle at top right, rgba(250, 189, 47, 0.12), transparent 40%),
                     radial-gradient(circle at bottom left, rgba(184, 187, 38, 0.12), transparent 40%);
@@ -342,4 +342,20 @@ input[type="month"].empty-date:focus::-webkit-datetime-edit {
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+.hover-opacity {
+  transition: opacity 0.2s ease;
+}
+
+.hover-opacity:hover {
+  opacity: 0.8;
+}
+
+.hover-surface {
+  transition: background-color 0.2s ease;
+}
+
+.hover-surface:hover {
+  background-color: var(--surface-highlight);
 }

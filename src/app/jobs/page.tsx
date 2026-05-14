@@ -14,7 +14,7 @@ export default function JobsBoardPage() {
   const [search, setSearch] = useState('');
 
   return (
-    <div className="landing-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="landing-container" style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
       <main style={{ flex: 1, maxWidth: '1000px', margin: '0 auto', padding: '3rem 2rem', width: '100%' }}>
         <div style={{ marginBottom: '2rem' }}>
           <h2 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem', letterSpacing: '-0.5px' }}>Discover Opportunities</h2>
@@ -40,7 +40,7 @@ export default function JobsBoardPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {MOCK_JOBS.filter(j => j.title.toLowerCase().includes(search.toLowerCase()) || j.company.toLowerCase().includes(search.toLowerCase())).map(job => (
             <Link href={`/jobs/${job.id}`} key={job.id} style={{ textDecoration: 'none', color: 'inherit' }}>
-              <div className="job-card" style={{ background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--glass-border)', display: 'flex', gap: '1.5rem', alignItems: 'center', transition: 'all 0.2s ease', cursor: 'pointer' }} className="job-card-hover">
+              <div className="job-card job-card-hover" style={{ background: 'var(--surface-color)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--glass-border)', display: 'flex', gap: '1.5rem', alignItems: 'center', transition: 'all 0.2s ease', cursor: 'pointer' }}>
                 <div style={{ width: '60px', height: '60px', borderRadius: '12px', background: 'var(--surface-highlight)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 700, color: 'var(--primary)', border: '1px solid var(--glass-border)' }}>
                   {job.logo}
                 </div>
@@ -50,7 +50,7 @@ export default function JobsBoardPage() {
                   <div className="job-card-meta" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '0.75rem' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 500 }}>
                       <Building size={16} /> {job.company}
-                      {job.verified && <BadgeCheck size={16} color="var(--primary)" style={{ marginLeft: '2px' }} title="Verified Business Account" />}
+                      {job.verified && <span title="Verified Business Account" style={{ display: 'flex', marginLeft: '2px' }}><BadgeCheck size={16} color="var(--primary)" /></span>}
                     </span>
                     <span>•</span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><MapPin size={16} /> {job.location}</span>

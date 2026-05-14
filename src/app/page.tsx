@@ -7,7 +7,7 @@ import { auth } from '@clerk/nextjs/server';
 export default async function Home() {
   const { userId } = await auth();
   return (
-    <div className="landing-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <div className="landing-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: userId ? 'flex-start' : 'center', padding: '4rem 2rem' }}>
         {userId ? (
           <div style={{ width: '100%', maxWidth: '600px' }}>

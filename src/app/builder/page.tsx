@@ -15,7 +15,7 @@ import Link from 'next/link';
 import { ImageCropper } from '@/components/ImageCropper';
 import { AtsMetadata } from '@/components/AtsMetadata';
 import { TemplateModernSplit } from '@/components/TemplateModernSplit';
-
+import { UpgradeModal } from '@/components/UpgradeModal';
 
 const months = [
   { v: '01', l: 'Jan.' }, { v: '02', l: 'Feb.' }, { v: '03', l: 'Mar.' },
@@ -102,7 +102,17 @@ export default function BuilderPage() {
   const [showOverrides, setShowOverrides] = useState(false);
   const [includeHeadshot, setIncludeHeadshot] = useState(true);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [upgradeFeature, setUpgradeFeature] = useState('');
+  const [undoData, setUndoData] = useState<ResumeData | null>(null);
+  const [showUndo, setShowUndo] = useState(false);
+  const [careerContext, setCareerContext] = useState('');
 
+  const saveUndoState = () => {
+    setUndoData(data);
+    setShowUndo(true);
+    setTimeout(() => setShowUndo(false), 8000);
+  };
   const [sidebarRef] = useAutoAnimate<HTMLDivElement>();
   const [workRef] = useAutoAnimate<HTMLDivElement>();
   const [skillsRef] = useAutoAnimate<HTMLDivElement>();
@@ -139,13 +149,14 @@ export default function BuilderPage() {
           setIsInitialLoading(false);
         }
 
-        // Also fetch the Supabase username (separate from Clerk username)
+        // Also fetch the Supabase username and career context
         const { data: profileRow } = await supabase
           .from('profiles')
-          .select('username')
+          .select('username, career_context')
           .eq('id', user.id)
           .single();
         if (profileRow?.username) setProfileUsername(profileRow.username);
+        if (profileRow?.career_context) setCareerContext(profileRow.career_context);
 
         if (remoteData) return;
       }
@@ -259,47 +270,128 @@ export default function BuilderPage() {
 
   const [aiLoading, setAiLoading] = useState<Record<string, boolean>>({});
 
-  const handleJobAI = (jobId: string, type: 'summary' | 'bullets') => {
+  const isPremium = process.env.NODE_ENV === 'development'; // Mock premium in dev
+
+  const handleJobAI = async (jobId: string, type: 'summary' | 'bullets') => {
+    if (!isPremium) {
+      setUpgradeFeature(type === 'summary' ? 'AI Job Summaries' : 'AI Bullet Points');
+      setUpgradeModalOpen(true);
+      return;
+    }
+
+    const job = data.work.find(j => j.id === jobId);
+    if (!job) return;
+
+    if (!job.name && !job.position && !job.summary && job.highlights.length === 0) {
+      alert("Please provide at least a Job Title or Company to generate AI context.");
+      return;
+    }
+
     setAiLoading(prev => ({ ...prev, [`${jobId}-${type}`]: true }));
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context: { job, globalSkills: data.skills.map(s => s.name) }, type, careerContext })
+      });
+      if (!response.ok) throw new Error('Failed to generate');
+      const text = await response.text();
+      
+      saveUndoState();
       setData(prev => ({
         ...prev,
-        work: prev.work.map(job => {
-          if (job.id === jobId) {
-            if (type === 'summary') {
-              return { ...job, summary: `Spearheaded operations at ${job.name || 'the company'}, driving significant cross-functional growth and improving key metrics by optimizing core workflows. Managed complex deliverables and consistently exceeded quarterly performance targets.` };
-            }
-            if (type === 'bullets') {
-              return {
-                ...job, highlights: [
-                  `Optimized core processes resulting in a 25% increase in operational efficiency.`,
-                  `Led a cross-functional team of 5+ members to deliver key ${job.position || 'departmental'} projects 2 weeks ahead of schedule.`,
-                  `Implemented robust tracking systems that improved overall data accuracy by 40%.`
-                ]
-              };
-            }
+        work: prev.work.map(j => {
+          if (j.id === jobId) {
+            if (type === 'summary') return { ...j, summary: text.replace(/"/g, '').trim() };
+            if (type === 'bullets') return { ...j, highlights: text.split('\n').map(b => b.trim()).filter(b => b.length > 0) };
           }
-          return job;
+          return j;
         })
       }));
+    } catch (e) {
+      console.error(e);
+      alert("AI Generation failed. Please try again.");
+    } finally {
       setAiLoading(prev => ({ ...prev, [`${jobId}-${type}`]: false }));
-      alert(`AI ${type === 'summary' ? 'Summary' : 'Bullet Points'} Generated! (Premium Feature Demo)`);
-    }, 1500);
+    }
   };
 
-  const handleRewrite = () => {
+  const handleRewrite = async () => {
+    if (!isPremium) {
+      setUpgradeFeature('AI Professional Summary');
+      setUpgradeModalOpen(true);
+      return;
+    }
+
+    if (!data.work.length && !data.skills.length && !data.education.length && !data.basics.summary) {
+      alert("Please add some experience, skills, or education before generating a Professional Summary.");
+      return;
+    }
+
     setIsAILoading(true);
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context: data, type: 'rewrite', careerContext })
+      });
+      if (!response.ok) throw new Error('Failed to rewrite');
+      const text = await response.text();
+      
+      saveUndoState();
       setData(prev => ({
         ...prev,
-        basics: {
-          ...prev.basics,
-          summary: "Highly motivated and results-driven " + prev.basics.label + " with a proven track record of delivering scalable solutions. Adept at cross-functional collaboration and leading high-performing teams to exceed strategic objectives. Passionate about leveraging cutting-edge technologies to drive business growth."
-        }
+        basics: { ...prev.basics, summary: text.replace(/"/g, '').trim() }
       }));
+    } catch (e) {
+      console.error(e);
+      alert("AI Rewrite failed.");
+    } finally {
       setIsAILoading(false);
-      alert("AI Rewrite Complete! (Premium Feature Demo)");
-    }, 1500);
+    }
+  };
+
+  const handlePdfImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      e.target.value = ''; // reset input
+      
+      if (!isPremium) {
+        setUpgradeFeature('AI PDF Resume Import');
+        setUpgradeModalOpen(true);
+        return;
+      }
+
+      setIsAILoading(true);
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('careerContext', careerContext);
+        
+        const response = await fetch('/api/ai/parse-pdf', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!response.ok) throw new Error('Failed to parse PDF');
+        
+        const parsedData = await response.json();
+        if (parsedData) {
+          saveUndoState();
+          setData(prev => ({
+            ...prev,
+            ...parsedData,
+            metadata: prev.metadata
+          }));
+          alert("Resume imported successfully!");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Failed to parse PDF resume.");
+      } finally {
+        setIsAILoading(false);
+      }
+    }
   };
 
   const handleImageToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -456,7 +548,7 @@ export default function BuilderPage() {
 
   if (isInitialLoading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 'calc(100vh - 82px)', gap: '1.5rem', background: 'var(--bg-color)', color: 'var(--text-secondary)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 'calc(100dvh - 82px)', gap: '1.5rem', background: 'var(--bg-color)', color: 'var(--text-secondary)' }}>
         <Loader2 size={48} className="animate-spin" color="var(--primary)" />
         <p style={{ fontSize: '1.1rem', fontWeight: 500 }}>Loading your workspace...</p>
       </div>
@@ -467,7 +559,7 @@ export default function BuilderPage() {
     <div className="builder-layout" style={{ 
       display: 'flex', 
       flexDirection: isMobile ? 'column' : 'row',
-      height: isMobile ? 'auto' : 'calc(100vh - 82px)', 
+      height: isMobile ? 'auto' : 'calc(100dvh - 82px)', 
       width: '100vw', 
       overflow: isMobile ? 'visible' : 'hidden', 
       position: isMobile ? 'relative' : 'fixed', 
@@ -556,6 +648,44 @@ export default function BuilderPage() {
         </div>
 
         <div ref={sidebarRef} className="sidebar-scroll" style={{ padding: '1.5rem', flex: 1 }}>
+          {/* AI Import Section */}
+          <div style={{ marginBottom: '2rem', padding: '1rem', background: 'var(--surface-highlight)', borderRadius: '8px', border: '1px solid var(--primary)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)' }}>
+                <Sparkles size={16} /> AI Resume Import <Lock size={12} />
+              </span>
+            </div>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+              Upload your existing PDF resume and let CareerReport AI instantly extract and populate your profile.
+            </p>
+            <label className="btn btn-primary" style={{ marginTop: '0.5rem', cursor: isAILoading ? 'not-allowed' : 'pointer', textAlign: 'center', display: 'flex', justifyContent: 'center', gap: '0.5rem', padding: '0.5rem', opacity: isAILoading ? 0.7 : 1 }}>
+              {isAILoading ? <RefreshCw size={16} className="animate-spin" /> : <Upload size={16} />}
+              {isAILoading ? 'Extracting Data...' : 'Upload PDF'}
+              <input type="file" accept=".pdf" style={{ display: 'none' }} onChange={handlePdfImport} disabled={isAILoading} />
+            </label>
+            
+            <div style={{ marginTop: '1rem', borderTop: '1px solid var(--glass-border)', paddingTop: '1rem' }}>
+              <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                Career Context System Prompt
+              </label>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0 0 0.5rem 0', lineHeight: 1.4 }}>
+                Describe your target industry, tone, or seniority. AI will use this to personalize all rewrites and imports.
+              </p>
+              <textarea
+                className="input-field"
+                style={{ minHeight: '60px', resize: 'vertical', fontSize: '0.85rem', padding: '0.5rem' }}
+                placeholder="e.g. 'I am a Senior Staff Engineer applying to YC startups. Keep the tone extremely concise and impactful.'"
+                value={careerContext}
+                onChange={(e) => setCareerContext(e.target.value)}
+                onBlur={async () => {
+                  if (isSignedIn && user) {
+                    await supabase.from('profiles').update({ career_context: careerContext }).eq('id', user.id);
+                  }
+                }}
+              />
+            </div>
+          </div>
+
           {/* Basics Section */}
           <div className="form-group">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
@@ -1139,7 +1269,7 @@ export default function BuilderPage() {
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               Upgrade your account to access our ATS-optimized AI writer for experience bullets, skills extraction, and custom cover letters.
             </p>
-            <button className="btn btn-secondary" style={{ width: '100%', fontSize: '0.875rem' }}>Upgrade to Premium ($10)</button>
+            <button onClick={() => { setUpgradeFeature('CareerReport Pro'); setUpgradeModalOpen(true); }} className="btn btn-secondary" style={{ width: '100%', fontSize: '0.875rem' }}>Upgrade to Premium ($9)</button>
           </div>
         </div>
       </aside>
@@ -1152,7 +1282,7 @@ export default function BuilderPage() {
           display: isMobile ? (activeTab === 'preview' ? 'flex' : 'none') : 'flex', 
           flexDirection: 'column', 
           background: 'var(--bg-color)',
-          height: isMobile ? 'calc(100vh - 124px)' : 'auto',
+          height: isMobile ? 'calc(100dvh - 124px)' : 'auto',
           overflow: isMobile ? 'auto' : 'hidden',
           marginBottom: isMobile ? '60px' : 0
         }}
@@ -1339,6 +1469,28 @@ export default function BuilderPage() {
           )}
         </div>
       )}
+      
+      {showUndo && (
+        <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 9999, background: 'var(--surface-color)', padding: '1rem', borderRadius: '8px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', border: '1px solid var(--primary)', display: 'flex', alignItems: 'center', gap: '1rem', animation: 'fadeIn 0.3s ease-out' }}>
+          <span style={{ color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 500 }}>AI applied successfully.</span>
+          <button 
+            className="btn btn-primary" 
+            style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
+            onClick={() => {
+              if (undoData) setData(undoData);
+              setShowUndo(false);
+            }}
+          >
+            Undo Change
+          </button>
+        </div>
+      )}
+
+      <UpgradeModal 
+        isOpen={upgradeModalOpen} 
+        onClose={() => setUpgradeModalOpen(false)} 
+        featureName={upgradeFeature} 
+      />
     </div>
   );
 }

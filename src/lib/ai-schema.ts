@@ -1,0 +1,70 @@
+import { z } from 'zod';
+
+export const resumeDataSchema = z.object({
+  basics: z.object({
+    name: z.string().default(''),
+    label: z.string().default(''),
+    image: z.string().default(''),
+    email: z.string().default(''),
+    phone: z.string().default(''),
+    url: z.string().default(''),
+    summary: z.string().default(''),
+    location: z.object({
+      address: z.string().default(''),
+      postalCode: z.string().default(''),
+      city: z.string().default(''),
+      countryCode: z.string().default(''),
+      region: z.string().default(''),
+    }).default({ address: '', postalCode: '', city: '', countryCode: '', region: '' }),
+    profiles: z.array(z.object({
+      network: z.string().default(''),
+      username: z.string().default(''),
+      url: z.string().default(''),
+    })).default([]),
+  }),
+  work: z.array(z.object({
+    id: z.string(),
+    name: z.string().default(''),
+    position: z.string().default(''),
+    url: z.string().default(''),
+    startDate: z.string().default(''),
+    endDate: z.string().default(''),
+    summary: z.string().default(''),
+    highlights: z.array(z.string()).default([]),
+  })).default([]),
+  education: z.array(z.object({
+    id: z.string(),
+    institution: z.string().default(''),
+    url: z.string().default(''),
+    area: z.string().default(''),
+    studyType: z.string().default(''),
+    startDate: z.string().default(''),
+    endDate: z.string().default(''),
+    score: z.string().default(''),
+    courses: z.array(z.string()).default([]),
+  })).default([]),
+  skills: z.array(z.object({
+    id: z.string(),
+    name: z.string().default(''),
+    level: z.string().default(''),
+    keywords: z.array(z.string()).default([]),
+  })).default([]),
+  references: z.array(z.object({
+    id: z.string(),
+    name: z.string().default(''),
+    reference: z.string().default(''),
+  })).default([]).optional(),
+  certifications: z.array(z.object({
+    id: z.string(),
+    name: z.string().default(''),
+    issuer: z.string().default(''),
+    date: z.string().default(''),
+    url: z.string().default('').optional(),
+  })).default([]).optional(),
+  projects: z.array(z.object({
+    id: z.string(),
+    name: z.string().default(''),
+    description: z.string().default(''),
+    url: z.string().default(''),
+  })).default([]).optional(),
+});

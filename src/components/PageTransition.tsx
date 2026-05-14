@@ -27,7 +27,7 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
     }
   }, [pathname, prevPath]);
 
-  const variants = {
+  const variants: any = {
     initial: (dir: number) => ({
       x: dir > 0 ? "15%" : "-15%",
       opacity: 0,

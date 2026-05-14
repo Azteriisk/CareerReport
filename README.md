@@ -34,7 +34,7 @@ CareerReport is a professional networking platform for the next generation. Buil
 - **Invisible Data Layer:** We inject semantic JSON-LD directly into the resume DOM.
 - **Machine Readability:** Ensures Applicant Tracking Systems (ATS) and AI recruitment scanners can accurately extract your Name, Contact Info, Skills, and Experience without relying on optical character recognition (OCR) or guessing.
 - **The Best of Both Worlds:** Allows users to have visually stunning, heavily styled resumes without sacrificing parsing accuracy when applying to enterprise jobs. The exported PDF retains this metadata structure.
-- **AI Placeholder Integration:** Stubbed AI rewrite and bullet-point generation buttons (premium feature hooks) for summaries and job descriptions.
+- **AI Integration:** Fully functional AI generation for professional summaries, job experience bullet points, and instant PDF resume parsing. Contextual rewriting ensures high-quality content without hallucination.
 
 ### 🔒 Security & Architecture
 - **Authentication:** Passwordless, social, and standard login flows powered by Clerk.
@@ -44,28 +44,32 @@ CareerReport is a professional networking platform for the next generation. Buil
 
 ---
 
-## 🗺️ Roadmap / To-Do
+## 🗺️ Roadmap & Status
+
+**Current Status (May 2026):** The core resume builder, PDF generation, open-source testing architecture, premium gating, and AI contextual generation are **fully deployed and production-ready**.
 
 ### 🤖 AI Features
-- [ ] **AI Resume Generation** — Full resume generation from a job description or LinkedIn URL input
-- [ ] **AI Pre-prompting** — Allow users to provide a "career context" system prompt that personalizes all AI suggestions (tone, industry, seniority level)
+- [x] **Context-Aware AI Writer** — Synthesize entire resume contexts into a powerful professional summary
+- [x] **AI PDF Parser** — Upload an old resume PDF and map it directly into the strictly typed builder schema
+- [x] **Token Optimization** — Automatically compress and strip stopwords from payloads to drastically reduce LLM costs
 - [ ] **AI Job Match Score** — Score the user's resume against a pasted job description and highlight gaps
+- [x] **AI Pre-prompting** — Allow users to provide a "career context" system prompt that personalizes all AI suggestions (tone, industry, seniority level)
 
 ### 💼 Job Board
-- [ ] **Job Listing Improvements** — Richer job cards with salary ranges, remote/hybrid tags, and company logos
-- [ ] **Job Posting Flow** — Full employer-side flow: create, preview, and publish job listings
+- [x] **Job Listing Improvements** — Richer job cards with salary ranges, remote/hybrid tags, and company logos
+- [x] **Job Posting Flow** — Full employer-side flow: create, preview, and publish job listings
 - [ ] **Apply with CareerReport** — One-click application that sends the user's public resume + profile link to the employer
 
 ### 🏢 Business Accounts
-- [ ] **Business Account Setup** — Separate account type for employers with a company profile, logo, and bio
-- [ ] **Company Profile Pages** — Public pages at `/co/company-name` with open listings and follower counts
-- [ ] **Employee Tagging** — Employees can link their profile to a verified company
+- [x] **Business Account Setup** — Separate account type for employers with a company profile, logo, and bio
+- [x] **Company Profile Pages** — Public pages at `/co/company-name` with open listings and follower counts
+- [x] **Employee Tagging** — Employees can link their profile to a verified company
 
 ### 📣 Social Networking (Remaining)
 - [ ] **Notifications** — In-app alerts for new followers, likes, comments, and reposts
 - [ ] **Messaging / DMs** — Direct messages between connected users
 - [ ] **Hashtags & Discover** — Tag posts with topics and surface trending content
-- [ ] **Search** — Global search across users, companies, and posts
+- [x] **Search** — Global search across users, companies, and posts
 - [ ] **Verified Badges** — Manual or automated verification for notable professionals and businesses
 - [ ] **Feed Algorithm** — Ranked feed based on follows, engagement, and recency instead of purely chronological
 
@@ -112,6 +116,23 @@ CareerReport is a professional networking platform for the next generation. Buil
 - **Database:** [Supabase](https://supabase.com/) (PostgreSQL + Row-Level Security)
 - **Icons:** [Lucide React](https://lucide.dev/)
 - **Styling:** Custom CSS with Gruvbox theme variables.
+
+## 🧪 Testing Architecture
+
+We follow a "Diamond" testing strategy to ensure the application remains stable during rapid development.
+*   **Unit Tests (`/tests/unit`)**: Using [Vitest](https://vitest.dev/), we cover pure utility algorithms like the AI Context Compressor and Zod validation schemas. Run with `npm run test`.
+*   **E2E Tests (`/tests/e2e`)**: Using [Playwright](https://playwright.dev/), we test the core UI workflows such as building a resume, hitting the Stripe paywall, and exporting PDFs. Run with `npm run test:e2e`.
+    *   *Note on E2E Auth:* Playwright uses `@clerk/testing` to bypass bot-protection. Please refer to [CONTRIBUTING.md](./CONTRIBUTING.md) for testing account credentials.
+
+## 🤝 Contributing & Self-Hosting
+
+Contributions are highly welcome! Please refer to our [CONTRIBUTING.md](./CONTRIBUTING.md) for full details on our branching strategy and pull request process.
+
+If you wish to self-host CareerReport:
+1. Clone the repository and run `npm install`.
+2. Copy the newly added `.env.example` file to `.env.local`.
+3. Follow the links inside `.env.example` to register for your free API keys for Clerk (Auth), Supabase (Database), and Google Gemini (AI).
+4. Run `npm run dev` to boot up your local instance.
 
 ## 📝 License
 

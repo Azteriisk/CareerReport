@@ -1,108 +1,159 @@
 "use client";
+
+import React, { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { Briefcase, MapPin, Globe, DollarSign, Calendar, Building2, ArrowLeft, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
-import { FileText, MapPin, Building, BadgeCheck, CheckCircle, Zap, Loader2 } from 'lucide-react';
-import { useState } from 'react';
 
-export default function JobDetailsPage({ params }: { params: { id: string } }) {
+export default function JobViewPage({ params }: { params: { id: string } }) {
+  const [job, setJob] = useState<any>(null);
+  const [company, setCompany] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [hasApplied, setHasApplied] = useState(false);
-  const [isApplying, setIsApplying] = useState(false);
 
-  // Mock fetching job by ID
-  const job = {
-    title: 'Senior Frontend Engineer',
-    company: 'Vercel',
-    verified: true,
-    location: 'San Francisco, CA (or Remote)',
-    salary: '$160,000 - $200,000',
-    type: 'Full-time',
-    description: "We are looking for an experienced Frontend Engineer to help build the future of the web. You will be working directly on our core platform, improving the dashboard experience for millions of developers worldwide. The ideal candidate has deep expertise in React, Next.js, and modern web architecture.",
-    requirements: [
-      "5+ years of experience with React and modern JavaScript.",
-      "Deep understanding of web performance and rendering strategies (SSR, SSG, RSC).",
-      "Experience building complex, data-heavy dashboards.",
-      "A keen eye for design and UX details."
-    ],
-    logo: 'V'
-  };
+  useEffect(() => {
+    async function loadJob() {
+      setIsLoading(true);
+      try {
+        const { data: jobData, error: jobErr } = await supabase
+          .from('jobs')
+          .select('*')
+          .eq('id', params.id)
+          .single();
 
-  const handleApply = () => {
-    setIsApplying(true);
-    // Mock network request
-    setTimeout(() => {
-      setIsApplying(false);
-      setHasApplied(true);
-    }, 1500);
-  };
+        if (jobErr) throw jobErr;
+        setJob(jobData);
+
+        if (jobData?.business_id) {
+          const { data: compData } = await supabase
+            .from('business_profiles')
+            .select('name, slug, logo_url')
+            .eq('id', jobData.business_id)
+            .single();
+          if (compData) setCompany(compData);
+        }
+      } catch (err) {
+        console.error("Error loading job:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadJob();
+  }, [params.id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex-center" style={{ minHeight: '100dvh', background: 'var(--bg-color)' }}>
+        <p style={{ color: 'var(--text-secondary)' }}>Loading job details...</p>
+      </div>
+    );
+  }
+
+  if (!job) {
+    return (
+      <div className="flex-center" style={{ minHeight: '100dvh', background: 'var(--bg-color)', flexDirection: 'column', gap: '1rem' }}>
+        <Briefcase size={48} color="var(--text-secondary)" opacity={0.5} />
+        <h1 style={{ color: 'var(--text-primary)' }}>Job not found</h1>
+        <p style={{ color: 'var(--text-secondary)' }}>This listing may have been removed or closed.</p>
+        <Link href="/" className="btn btn-secondary">Return Home</Link>
+      </div>
+    );
+  }
 
   return (
-    <div className="landing-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <main style={{ flex: 1, maxWidth: '800px', margin: '0 auto', padding: '3rem 2rem', width: '100%' }}>
-        <div style={{ background: 'var(--surface-color)', padding: '2.5rem', borderRadius: '12px', border: '1px solid var(--glass-border)', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }}>
-          <div className="job-details-header" style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', marginBottom: '2rem' }}>
-            <div style={{ width: '80px', height: '80px', borderRadius: '16px', background: 'var(--surface-highlight)', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', fontWeight: 800, border: '1px solid var(--glass-border)' }}>
-              {job.logo}
-            </div>
-            <div style={{ flex: 1 }}>
-              <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 0.5rem 0', letterSpacing: '-0.5px' }}>{job.title}</h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '1.1rem', marginBottom: '1rem' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                  <Building size={18} /> {job.company}
-                  {job.verified && <BadgeCheck size={18} color="var(--primary)" title="Verified Business Account" />}
-                </span>
-                <span>•</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}><MapPin size={18} /> {job.location}</span>
-              </div>
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <span style={{ background: 'var(--surface-highlight)', color: 'var(--text-primary)', padding: '6px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600 }}>{job.type}</span>
-                <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--accent)', padding: '6px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600 }}>{job.salary}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="job-apply-box" style={{ padding: '2rem', background: 'var(--glass-bg)', borderRadius: '8px', border: '1px solid var(--glass-border)', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontSize: '1.1rem' }}>Apply with CareerReport</h3>
-              <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.95rem' }}>Your verified resume and profile will be sent directly to {job.company}.</p>
-            </div>
-            
-            {hasApplied ? (
-              <button disabled className="btn" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--accent)', border: '1px solid var(--accent)', cursor: 'default', padding: '0.75rem 1.5rem', borderRadius: '6px', fontSize: '1.05rem', fontWeight: 600 }}>
-                <CheckCircle size={20} /> Applied
-              </button>
-            ) : isApplying ? (
-              <button disabled className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.05rem', padding: '0.75rem 1.5rem', opacity: 0.8, cursor: 'not-allowed' }}>
-                <Loader2 size={20} className="spinner" /> Sending...
-              </button>
-            ) : (
-              <button onClick={handleApply} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.05rem', padding: '0.75rem 1.5rem', boxShadow: '0 4px 14px 0 rgba(250, 189, 47, 0.39)' }}>
-                <Zap size={20} /> Easy Apply Now
-              </button>
+    <main style={{ minHeight: '100dvh', background: 'var(--bg-color)' }}>
+      {/* Header */}
+      <div style={{ background: 'var(--surface-color)', borderBottom: '1px solid var(--glass-border)', padding: '3rem 0' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '0 1rem' }}>
+          <Link href={company ? `/co/${company.slug}` : '/'} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', textDecoration: 'none', marginBottom: '2rem', fontSize: '0.9rem' }}>
+            <ArrowLeft size={16} /> Back to {company ? company.name : 'Listings'}
+          </Link>
+          
+          <h1 style={{ margin: '0 0 1rem 0', fontSize: '2.5rem', color: 'var(--text-primary)' }}>{job.title}</h1>
+          
+          <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
+            {company && (
+              <Link href={`/co/${company.slug}`} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)', textDecoration: 'none', fontWeight: 600 }}>
+                {company.logo_url ? (
+                  <img src={company.logo_url} alt={company.name} style={{ width: '24px', height: '24px', borderRadius: '4px' }} />
+                ) : (
+                  <Building2 size={18} color="var(--primary)" />
+                )}
+                {company.name}
+              </Link>
             )}
+            
+            {job.location && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+                <MapPin size={16} /> {job.location}
+              </span>
+            )}
+            
+            {job.is_remote && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontSize: '0.95rem' }}>
+                <Globe size={16} /> Remote
+              </span>
+            )}
+            
+            {(job.salary_min || job.salary_max) && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success)', fontSize: '0.95rem', fontWeight: 600 }}>
+                <DollarSign size={16} /> 
+                {job.salary_min ? `$${(job.salary_min/1000).toFixed(0)}k` : ''} 
+                {job.salary_min && job.salary_max ? ' - ' : ''} 
+                {job.salary_max ? `$${(job.salary_max/1000).toFixed(0)}k` : ''}
+              </span>
+            )}
+            
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+              <Calendar size={16} /> Posted {new Date(job.created_at).toLocaleDateString()}
+            </span>
           </div>
 
-          <div>
-            <h2 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>About the Role</h2>
-            <p style={{ lineHeight: 1.7, color: 'var(--text-secondary)', marginBottom: '2rem' }}>{job.description}</p>
-
-            <h2 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>Requirements</h2>
-            <ul style={{ lineHeight: 1.7, color: 'var(--text-secondary)', paddingLeft: '1.25rem' }}>
-              {job.requirements.map((req, i) => (
-                <li key={i} style={{ marginBottom: '0.5rem' }}>{req}</li>
-              ))}
-            </ul>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <button 
+              className={`btn ${hasApplied ? 'btn-secondary' : 'btn-primary'}`} 
+              style={{ padding: '0.75rem 2rem', fontSize: '1rem', fontWeight: 600 }}
+              onClick={() => {
+                setHasApplied(true);
+                alert("Application functionality coming soon! This would send your CareerReport PDF directly to the employer.");
+              }}
+              disabled={hasApplied}
+            >
+              {hasApplied ? <><CheckCircle size={18} /> Applied</> : 'Apply with CareerReport'}
+            </button>
+            <button className="btn btn-secondary" style={{ padding: '0.75rem 1.5rem', fontSize: '1rem' }}>
+              Save Job
+            </button>
           </div>
         </div>
-      </main>
+      </div>
 
-      <style dangerouslySetInnerHTML={{__html: `
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .spinner {
-          animation: spin 1s linear infinite;
-        }
-      `}} />
-    </div>
+      {/* Content */}
+      <div style={{ maxWidth: '800px', margin: '3rem auto', padding: '0 1rem' }}>
+        <h2 style={{ color: 'var(--text-primary)', fontSize: '1.5rem', margin: '0 0 1.5rem 0' }}>Job Description</h2>
+        
+        <div style={{ color: 'var(--text-secondary)', fontSize: '1.05rem', lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
+          {job.description}
+        </div>
+        
+        <div style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h3 style={{ color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Interested in this role?</h3>
+            <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Apply instantly with your CareerReport profile.</p>
+          </div>
+          <button 
+            className={`btn ${hasApplied ? 'btn-secondary' : 'btn-primary'}`} 
+            onClick={() => {
+              setHasApplied(true);
+              alert("Application functionality coming soon!");
+            }}
+            disabled={hasApplied}
+          >
+            {hasApplied ? 'Applied' : 'Apply Now'}
+          </button>
+        </div>
+      </div>
+    </main>
   );
 }
