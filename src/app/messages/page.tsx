@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, Suspense } from 'react';
-import { supabase } from "@/lib/supabase";
+import { supabase, setSupabaseToken } from '@/lib/supabase';
 import { useUser, useAuth } from '@clerk/nextjs';
 import { Loader2, Send, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
@@ -27,7 +27,7 @@ function MessagesContent() {
   const { user, isLoaded, isSignedIn } = useUser();
   const { getToken } = useAuth();
   const searchParams = useSearchParams();
-  
+
   const [conversations, setConversations] = useState<ChatPartner[]>([]);
   const [activePartner, setActivePartner] = useState<ChatPartner | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -80,7 +80,7 @@ function MessagesContent() {
             .select('id, username, full_name, avatar_url')
             .eq('username', toUsername)
             .single();
-            
+
           if (newUser) {
             const newPartner = newUser as ChatPartner;
             setConversations(prev => [newPartner, ...prev]);
@@ -100,7 +100,7 @@ function MessagesContent() {
 
     async function loadMessages() {
       setLoadingMessages(true);
-      
+
       // Load message history
       const { data } = await supabase
         .from('messages')
@@ -111,7 +111,7 @@ function MessagesContent() {
       if (data) {
         setMessages(data);
       }
-      
+
       // Mark received messages from this partner as read
       await supabase
         .from('messages')
@@ -128,16 +128,16 @@ function MessagesContent() {
 
     // Subscribe to new incoming messages from this partner
     const channel = supabase.channel(`messages-${activePartner.id}`)
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
         table: 'messages',
         filter: `receiver_id=eq.${user.id}`
       }, payload => {
         if (payload.new.sender_id === activePartner.id) {
           setMessages(prev => [...prev, payload.new as Message]);
           scrollToBottom();
-          
+
           // Mark as read instantly
           supabase.from('messages')
             .update({ read: true })
@@ -161,11 +161,11 @@ function MessagesContent() {
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !activePartner || !user?.id) return;
-    
+
     setSending(true);
     try {
       const token = await getToken({ template: 'supabase' });
-      
+      setSupabaseToken(token);
 
       const payload = {
         sender_id: user.id,
@@ -174,7 +174,7 @@ function MessagesContent() {
       };
 
       const { data, error } = await supabase.from('messages').insert([payload]).select().single();
-      
+
       if (!error && data) {
         setMessages(prev => [...prev, data]);
         setNewMessage('');
@@ -209,7 +209,7 @@ function MessagesContent() {
   return (
     <main style={{ height: 'calc(100dvh - 82px)', background: 'var(--bg-color)', padding: '2rem 1rem' }}>
       <div style={{ maxWidth: '1000px', margin: '0 auto', height: '100%', display: 'flex', background: 'var(--surface-color)', borderRadius: '16px', border: '1px solid var(--glass-border)', overflow: 'hidden' }}>
-        
+
         {/* Sidebar */}
         <div style={{ width: '300px', borderRight: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', background: 'var(--glass-bg)' }}>
           <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--glass-border)' }}>
@@ -217,7 +217,7 @@ function MessagesContent() {
               <MessageSquare size={20} /> Messages
             </h2>
           </div>
-          
+
           <div style={{ flex: 1, overflowY: 'auto' }}>
             {conversations.length === 0 ? (
               <p style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
@@ -225,14 +225,14 @@ function MessagesContent() {
               </p>
             ) : (
               conversations.map(partner => (
-                <div 
+                <div
                   key={partner.id}
                   onClick={() => setActivePartner(partner)}
-                  style={{ 
-                    padding: '1rem 1.5rem', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '1rem', 
+                  style={{
+                    padding: '1rem 1.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '1rem',
                     cursor: 'pointer',
                     background: activePartner?.id === partner.id ? 'var(--surface-highlight)' : 'transparent',
                     borderBottom: '1px solid var(--glass-border)',
@@ -240,8 +240,8 @@ function MessagesContent() {
                   }}
                   className="hover-bg"
                 >
-                  <img 
-                    src={partner.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${partner.username}`} 
+                  <img
+                    src={partner.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${partner.username}`}
                     alt={partner.username}
                     style={{ width: '44px', height: '44px', borderRadius: '50%' }}
                   />
@@ -267,8 +267,8 @@ function MessagesContent() {
               {/* Chat Header */}
               <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--surface-color)' }}>
                 <Link href={`/${activePartner.username}`}>
-                  <img 
-                    src={activePartner.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${activePartner.username}`} 
+                  <img
+                    src={activePartner.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${activePartner.username}`}
                     alt={activePartner.username}
                     style={{ width: '40px', height: '40px', borderRadius: '50%' }}
                   />
@@ -295,7 +295,7 @@ function MessagesContent() {
                   messages.map(msg => {
                     const isMine = msg.sender_id === user.id;
                     return (
-                      <div key={msg.id} style={{ 
+                      <div key={msg.id} style={{
                         alignSelf: isMine ? 'flex-end' : 'flex-start',
                         maxWidth: '70%',
                         background: isMine ? 'var(--primary)' : 'var(--surface-highlight)',
@@ -318,8 +318,8 @@ function MessagesContent() {
               {/* Message Input */}
               <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--glass-border)', background: 'var(--surface-color)' }}>
                 <form onSubmit={sendMessage} style={{ display: 'flex', gap: '0.75rem' }}>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={newMessage}
                     onChange={e => setNewMessage(e.target.value)}
                     placeholder={`Message @${activePartner.username}...`}
@@ -327,8 +327,8 @@ function MessagesContent() {
                     style={{ flex: 1, borderRadius: '999px', paddingLeft: '1.5rem' }}
                     disabled={sending}
                   />
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     disabled={!newMessage.trim() || sending}
                     className="btn btn-primary"
                     style={{ borderRadius: '50%', width: '46px', height: '46px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
