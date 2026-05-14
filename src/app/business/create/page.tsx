@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useUser, useAuth } from '@clerk/nextjs';
-import { supabase, setSupabaseToken } from '@/lib/supabase';
+import { supabase } from "@/lib/supabase";
 import { useRouter } from 'next/navigation';
 import { Building2, Briefcase, Globe, Info, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -44,7 +44,7 @@ export default function CreateBusinessPage() {
 
     try {
       const token = await getToken({ template: 'supabase' });
-      setSupabaseToken(token);
+      
 
       const formattedSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
 

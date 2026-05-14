@@ -10,8 +10,11 @@ import { AtsMetadata } from '@/components/AtsMetadata';
 import { FollowButton } from '@/components/FollowButton';
 import { Feed } from '@/components/Feed';
 import { FollowListModal } from '@/components/FollowListModal';
+import { useUser } from '@clerk/nextjs';
+import Link from 'next/link';
 
 export function ProfileClient({ username }: { username: string }) {
+  const { user } = useUser();
   const [isMobile, setIsMobile] = useState(false);
   const [mobileScale, setMobileScale] = useState(0.45);
   const [resumeData, setResumeData] = useState<any>(null);
@@ -206,9 +209,11 @@ export function ProfileClient({ username }: { username: string }) {
                 }} 
               />
             )}
-            <button className="btn btn-secondary" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', fontWeight: 600, flex: isMobile ? 1 : 'none', justifyContent: 'center' }}>
-              <Mail size={16} /> Message
-            </button>
+            {profileData?.id && profileData.id !== user?.id && (
+              <Link href={`/messages?to=${profileData.username}`} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', fontWeight: 600, flex: isMobile ? 1 : 'none', justifyContent: 'center', textDecoration: 'none' }}>
+                <Mail size={16} /> Message
+              </Link>
+            )}
           </div>
         </div>
 

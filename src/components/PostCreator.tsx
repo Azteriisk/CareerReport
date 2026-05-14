@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useRef } from 'react';
-import { supabase, setSupabaseToken } from '@/lib/supabase';
+import { supabase } from "@/lib/supabase";
 import { useUser, useAuth } from '@clerk/nextjs';
 import { Image as ImageIcon, X, Loader2 } from 'lucide-react';
 
@@ -47,7 +47,7 @@ export function PostCreator({ onPostCreated }: { onPostCreated?: () => void }) {
     try {
       // Attach the Clerk JWT so Supabase RLS can verify the user
       const token = await getToken({ template: 'supabase' });
-      setSupabaseToken(token);
+      
       
       let image_url = null;
       

@@ -6,9 +6,9 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 // Stores a reference to Clerk's getToken function.
 // When set, every Supabase request automatically calls it to get a fresh token.
 // This is the correct long-term pattern — no manual token strings to expire.
-let tokenGetter: (() => Promise<string | null>) | null = null;
+let tokenGetter: ((skipCache?: boolean) => Promise<string | null>) | null = null;
 
-export const setTokenGetter = (getter: (() => Promise<string | null>) | null) => {
+export const setTokenGetter = (getter: ((skipCache?: boolean) => Promise<string | null>) | null) => {
   tokenGetter = getter;
 };
 
@@ -28,7 +28,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       const headers = new Headers(options.headers);
       if (tokenGetter) {
         try {
-          const token = await tokenGetter();
+          const token = await tokenGetter(false);
           if (token) {
             headers.set('Authorization', `Bearer ${token}`);
           }
@@ -37,7 +37,28 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
           console.warn('[Supabase] Token refresh failed, proceeding anonymously:', e);
         }
       }
-      return fetch(url, { ...options, headers });
+      
+      let res = await fetch(url, { ...options, headers });
+      
+      // If the token was rejected as expired (PGRST303), force a cache bypass and retry
+      if (res.status === 401 && tokenGetter) {
+        try {
+          const clone = res.clone();
+          const body = await clone.json();
+          if (body?.code === 'PGRST303') {
+            console.log('[Supabase] JWT expired detected, forcing Clerk token refresh...');
+            const freshToken = await tokenGetter(true);
+            if (freshToken) {
+              headers.set('Authorization', `Bearer ${freshToken}`);
+              res = await fetch(url, { ...options, headers });
+            }
+          }
+        } catch (e) {
+          // Ignore parsing errors
+        }
+      }
+      
+      return res;
     },
   },
 });

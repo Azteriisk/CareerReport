@@ -27,6 +27,8 @@ export function SettingsModal({ user, profileData, onClose, onUpdate }: Settings
     }
   }, [profileData?.username]);
 
+  const hasCustomUsername = profileData?.username_changed || (profileData?.username && !profileData.username.startsWith('user_'));
+
   // Debounced username check
   useEffect(() => {
     if (!newUsername || newUsername === profileData?.username) {
@@ -156,7 +158,7 @@ export function SettingsModal({ user, profileData, onClose, onUpdate }: Settings
                     style={{ flex: 1, padding: '0.75rem 1rem', border: 'none', background: 'transparent', color: 'var(--text-primary)', outline: 'none', fontSize: '0.9rem', width: '100%' }} 
                     value={newUsername}
                     onChange={(e) => setNewUsername(e.target.value.toLowerCase().trim())}
-                    disabled={profileData?.username_changed || isSaving}
+                    disabled={hasCustomUsername || isSaving}
                     placeholder="your-name"
                   />
                 </div>
@@ -170,12 +172,12 @@ export function SettingsModal({ user, profileData, onClose, onUpdate }: Settings
             </div>
 
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '1rem', lineHeight: 1.5 }}>
-              {profileData?.username_changed 
-                ? "You have already changed your username. Contact support for further changes." 
+              {hasCustomUsername 
+                ? "You have already claimed your username. Contact support for further changes." 
                 : "Choose wisely! You can only change your profile username once."}
             </p>
 
-            {!profileData?.username_changed && (
+            {!hasCustomUsername && (
               <button 
                 onClick={handleUpdateUsername}
                 disabled={!isAvailable || isSaving}

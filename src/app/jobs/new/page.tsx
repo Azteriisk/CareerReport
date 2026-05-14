@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useUser, useAuth } from '@clerk/nextjs';
-import { supabase, setSupabaseToken } from '@/lib/supabase';
+import { supabase } from "@/lib/supabase";
 import { useRouter } from 'next/navigation';
 import { Briefcase, Building2, MapPin, DollarSign, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -32,7 +32,7 @@ export default function CreateJobPage() {
       
       try {
         const token = await getToken({ template: 'supabase' });
-        setSupabaseToken(token);
+        
 
         const { data, error } = await supabase
           .from('business_profiles')
@@ -97,7 +97,7 @@ export default function CreateJobPage() {
 
     try {
       const token = await getToken({ template: 'supabase' });
-      setSupabaseToken(token);
+      
 
       const { data, error: insertError } = await supabase
         .from('jobs')

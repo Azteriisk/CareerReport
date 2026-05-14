@@ -1,9 +1,10 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { supabase, setSupabaseToken } from '@/lib/supabase';
+import { supabase } from "@/lib/supabase";
 import { useUser, useAuth } from '@clerk/nextjs';
 import Link from 'next/link';
 import { Loader2, Send, Trash2 } from 'lucide-react';
+import { createNotification } from '@/lib/notifications';
 
 interface Comment {
   id: string;
@@ -13,7 +14,7 @@ interface Comment {
   profiles?: { username: string; full_name: string; avatar_url: string };
 }
 
-export function CommentSection({ postId }: { postId: string }) {
+export function CommentSection({ postId, postAuthorId }: { postId: string, postAuthorId: string }) {
   const { user, isSignedIn } = useUser();
   const { getToken } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
@@ -59,7 +60,7 @@ export function CommentSection({ postId }: { postId: string }) {
     setSubmitting(true);
 
     const token = await getToken({ template: 'supabase' });
-    setSupabaseToken(token);
+    
 
     const { error } = await supabase.from('comments').insert([{
       post_id: postId,
@@ -69,6 +70,7 @@ export function CommentSection({ postId }: { postId: string }) {
 
     if (!error) {
       setNewComment('');
+      createNotification(postAuthorId, user.id, 'comment', postId);
       await fetchComments();
     } else {
       console.error('Comment failed:', error.message, error.code);
@@ -80,7 +82,7 @@ export function CommentSection({ postId }: { postId: string }) {
 
   async function handleDeleteComment(commentId: string) {
     const token = await getToken({ template: 'supabase' });
-    setSupabaseToken(token);
+    
     const { error } = await supabase.from('comments').delete().eq('id', commentId);
     if (!error) {
       setComments(prev => prev.filter(c => c.id !== commentId));

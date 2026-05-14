@@ -9,7 +9,7 @@ import { TemplateMinimal } from '@/components/TemplateMinimal';
 import { useReactToPrint } from 'react-to-print';
 import { Download, Sparkles, LayoutTemplate, Lock, RefreshCw, Plus, Minus, Trash2, Upload, Save, CheckCircle, AlertCircle, Info, Share2, Settings, User, X, Loader2 } from 'lucide-react';
 import { useUser, useAuth, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
-import { supabase, setSupabaseToken } from '@/lib/supabase';
+import { supabase } from "@/lib/supabase";
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import Link from 'next/link';
 import { ImageCropper } from '@/components/ImageCropper';
@@ -130,7 +130,7 @@ export default function BuilderPage() {
       if (isSignedIn && user) {
         setSaveStatus('saving');
         const token = await getToken({ template: 'supabase' });
-        setSupabaseToken(token);
+        
         
         const { data: remoteData, error } = await supabase
           .from('resumes')
@@ -213,7 +213,7 @@ export default function BuilderPage() {
         // 2. Save to Supabase if signed in
         if (isSignedIn && user) {
           const token = await getToken({ template: 'supabase' });
-          setSupabaseToken(token);
+          
 
           const { error } = await supabase
             .from('resumes')
@@ -1324,7 +1324,7 @@ export default function BuilderPage() {
                   setIsPublic(next);
                   // Refresh token before writing
                   const token = await getToken({ template: 'supabase' });
-                  setSupabaseToken(token);
+                  
                   const { error } = await supabase.from('resumes').upsert({
                     user_id: user!.id,
                     data,

@@ -3,9 +3,10 @@ import React from 'react';
 import Link from 'next/link';
 import { Heart, MessageSquare, Repeat2, MoreHorizontal, Trash2, Loader2, X as CloseIcon } from 'lucide-react';
 import { useUser, useAuth } from '@clerk/nextjs';
-import { supabase, setSupabaseToken } from '@/lib/supabase';
+import { supabase } from "@/lib/supabase";
 import { RepostModal } from './RepostModal';
 import { CommentSection } from './CommentSection';
+import { createNotification } from '@/lib/notifications';
 
 export interface Post {
   id: string;
@@ -96,7 +97,7 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
     setConfirmDelete(false);
     try {
       const token = await getToken({ template: 'supabase' });
-      setSupabaseToken(token);
+      
 
       if (post.image_url) {
         const fileName = post.image_url.split('/').pop();
@@ -123,7 +124,7 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
     setLikeLoading(true);
 
     const token = await getToken({ template: 'supabase' });
-    setSupabaseToken(token);
+    
 
     if (liked) {
       // Unlike
@@ -149,6 +150,7 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
         setLiked(true);
         setLikeCount(prev => prev + 1);
         await supabase.from('posts').update({ likes_count: likeCount + 1 }).eq('id', post.id);
+        createNotification(post.user_id, user!.id, 'like', post.id);
       } else {
         console.error('Like failed:', error.message);
       }
@@ -283,7 +285,7 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
           </div>
 
           {/* Comment Section (toggles in/out) */}
-          {showComments && <CommentSection postId={post.id} />}
+          {showComments && <CommentSection postId={post.id} postAuthorId={post.user_id} />}
         </div>
       </div>
     </>

@@ -1,10 +1,11 @@
 "use client";
 import React, { useState } from 'react';
-import { supabase, setSupabaseToken } from '@/lib/supabase';
+import { supabase } from "@/lib/supabase";
 import { useUser, useAuth } from '@clerk/nextjs';
 import { Repeat2, X, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Post } from './PostCard';
+import { createNotification } from '@/lib/notifications';
 
 export function RepostModal({ post, onClose, onReposted }: { post: Post; onClose: () => void; onReposted: () => void }) {
   const { user, isSignedIn } = useUser();
@@ -19,7 +20,7 @@ export function RepostModal({ post, onClose, onReposted }: { post: Post; onClose
     setIsSubmitting(true);
     try {
       const token = await getToken({ template: 'supabase' });
-      setSupabaseToken(token);
+      
 
       const { error } = await supabase.from('posts').insert([{
         user_id: user.id,
@@ -33,6 +34,8 @@ export function RepostModal({ post, onClose, onReposted }: { post: Post; onClose
         alert(`Failed to repost: ${error.message}`);
         return;
       }
+
+      createNotification(post.user_id, user.id, 'repost', post.id);
 
       onReposted();
       onClose();

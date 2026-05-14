@@ -5,30 +5,22 @@ CareerReport is a professional networking platform for the next generation. Buil
 ## ✨ Comprehensive Feature List
 
 ### 📝 Advanced Resume Builder
-- **Real-Time WYSIWYG Editor:** Instantly preview your resume exactly as it will appear when printed or exported.
-- **Multiple Premium Templates:** Choose from Modern, Modern Split, Minimal, and Classic layouts dynamically.
-- **Responsive Design:** Fully functional builder on both mobile and desktop.
-- **Autosave & Cloud Sync:** Never lose your work. Your resume is automatically synced to the cloud via Supabase.
-- **Dynamic Columns:** Customize your Work Experience and Education sections with single or double-column layouts.
-- **Custom Image Cropping:** Upload, crop, and perfectly align your headshot directly within the browser.
-- **Public/Private Toggle:** Instantly control whether your resume is visible on your public profile.
-- **Optional Sections:** Add Projects, References, and Certifications on demand — only what you need.
+- **Real-Time Visual Editor:** Instantly edit and preview your resume exactly as it will appear when exported.
+- **Dynamic Templates:** Seamlessly switch between Modern, Split, Minimal, and Classic layouts without losing data.
+- **Autosave & Cloud Sync:** Your progress is continuously saved to the cloud via Supabase.
+- **Total Customization:** Control section visibility, column counts, and custom image crops directly in the browser.
 
 ### 🌐 Public Professional Profiles
 - **Custom URLs:** Claim a unique `careerreport.com/u/your-name` link to share with employers.
-- **Resume Tab:** View any user's published resume directly from their profile page.
-- **Posts Tab:** Browse a user's activity feed from their profile.
-- **Follower / Following Counts:** See your network size at a glance.
-- **Profile Networking:** A central hub to share your career journey openly without the noise of traditional social networks.
+- **Unified Identity:** A single destination showcasing your published resume, network size, and activity feed.
+- **Global Search Engine:** Discover professionals, companies, and opportunities across the entire platform.
 
-### 📣 Social Networking Feed
-- **Post Creator:** Share career updates, milestones, and professional thoughts with your network.
-- **Image Attachments:** Attach images to posts with a built-in lightbox viewer.
-- **Quote Reposts:** Embed and comment on existing posts in your own voice.
-- **Likes System:** Like posts from other users with real-time optimistic UI updates.
-- **Comments:** Threaded comment sections on every post, with avatar, name, and delete support.
-- **Inline Delete Confirmation:** Two-click delete flow prevents accidental post removal.
-- **Follow / Unfollow:** Follow other professionals to build your network.
+### 📣 Professional Social Network
+- **Global Activity Feed:** Share career updates, milestones, and professional thoughts with your network.
+- **Dynamic Interactions:** Engage with peers through threaded comments, quote reposts, and real-time likes.
+- **Meaningful Connections:** Follow industry leaders and colleagues to build a curated professional network.
+- **Direct Messaging:** Private, real-time messaging portal to connect directly with recruiters and peers.
+- **Smart Notifications:** Real-time in-app alerts for interactions, follows, and network updates.
 
 ### 🤖 ATS & AI Metadata Integration (Embedded PDF Data)
 - **Invisible Data Layer:** We inject semantic JSON-LD directly into the resume DOM.
@@ -46,32 +38,19 @@ CareerReport is a professional networking platform for the next generation. Buil
 
 ## 🗺️ Roadmap & Status
 
-**Current Status (May 2026):** The core resume builder, PDF generation, open-source testing architecture, premium gating, and AI contextual generation are **fully deployed and production-ready**.
+**Current Status (May 2026):** The core resume builder, PDF parsing, social networking infrastructure, and business ecosystems are **fully deployed and production-ready**.
 
-### 🤖 AI Features
-- [x] **Context-Aware AI Writer** — Synthesize entire resume contexts into a powerful professional summary
-- [x] **AI PDF Parser** — Upload an old resume PDF and map it directly into the strictly typed builder schema
-- [x] **Token Optimization** — Automatically compress and strip stopwords from payloads to drastically reduce LLM costs
-- [ ] **AI Job Match Score** — Score the user's resume against a pasted job description and highlight gaps
-- [x] **AI Pre-prompting** — Allow users to provide a "career context" system prompt that personalizes all AI suggestions (tone, industry, seniority level)
+### 🏗️ Completed Infrastructure
+- **AI Core:** Context-aware synthesis, PDF parsing, token optimization, and system pre-prompting.
+- **Social Suite:** Feed architecture, real-time messaging, notifications, search, and user interactions.
+- **Business Engine:** Employer profiles, employee tagging, and advanced job listing flows.
+- **Resumes:** Full template engine, cloud sync, metadata injection, and ATS optimization.
 
-### 💼 Job Board
-- [x] **Job Listing Improvements** — Richer job cards with salary ranges, remote/hybrid tags, and company logos
-- [x] **Job Posting Flow** — Full employer-side flow: create, preview, and publish job listings
-- [ ] **Apply with CareerReport** — One-click application that sends the user's public resume + profile link to the employer
-
-### 🏢 Business Accounts
-- [x] **Business Account Setup** — Separate account type for employers with a company profile, logo, and bio
-- [x] **Company Profile Pages** — Public pages at `/co/company-name` with open listings and follower counts
-- [x] **Employee Tagging** — Employees can link their profile to a verified company
-
-### 📣 Social Networking (Remaining)
-- [ ] **Notifications** — In-app alerts for new followers, likes, comments, and reposts
-- [ ] **Messaging / DMs** — Direct messages between connected users
-- [ ] **Hashtags & Discover** — Tag posts with topics and surface trending content
-- [x] **Search** — Global search across users, companies, and posts
-- [ ] **Verified Badges** — Manual or automated verification for notable professionals and businesses
-- [ ] **Feed Algorithm** — Ranked feed based on follows, engagement, and recency instead of purely chronological
+### 🔮 Future Horizons
+The following features are slated for future expansion as the platform scales:
+- **AI Job Match Score:** Deep semantic comparison between user resumes and real-world job descriptions to highlight application gaps.
+- **Apply with CareerReport:** One-click enterprise application pipelines.
+- **Algorithmic Discovery:** Engagement-ranked feeds, verified badges, and trending hashtag discovery.
 
 ---
 

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase, setSupabaseToken } from '@/lib/supabase';
+import { supabase } from "@/lib/supabase";
 import { useAuth, useUser } from '@clerk/nextjs';
 import { PostCard, Post } from './PostCard';
 import { PostCreator } from './PostCreator';
@@ -18,9 +18,9 @@ export function Feed({ targetUserId }: { targetUserId?: string }) {
       // Refresh or clear the Supabase token before each fetch.
       if (isSignedIn) {
         const token = await getToken({ template: 'supabase' });
-        setSupabaseToken(token);
+        
       } else {
-        setSupabaseToken(null);
+        
       }
 
       let query = supabase

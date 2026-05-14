@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Search as SearchIcon, Users, Building2, Briefcase, FileText } from 'lucide-react';
+import { Search as SearchIcon, Users, Building2, Briefcase, FileText, MapPin } from 'lucide-react';
 import Link from 'next/link';
 
 export default function SearchPage() {

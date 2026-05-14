@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@clerk/nextjs';
 import { UserPlus, UserMinus, Loader2 } from 'lucide-react';
+import { createNotification } from '@/lib/notifications';
 
 interface FollowButtonProps {
   targetUserId: string;
@@ -61,6 +62,7 @@ export function FollowButton({ targetUserId, onFollowChange }: FollowButtonProps
           
         if (!error) {
           setIsFollowing(true);
+          createNotification(targetUserId, user.id, 'follow');
           if (onFollowChange) onFollowChange(true);
         } else {
             console.error(error);

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { FileText, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SettingsModal } from '@/components/SettingsModal';
+import { NotificationsDropdown } from '@/components/NotificationsDropdown';
 import { 
   SignInButton, 
   SignUpButton, 
@@ -109,6 +110,7 @@ export function Navbar() {
             >
               <Settings size={22} />
             </motion.button>
+            <NotificationsDropdown />
             <UserButton 
               appearance={{
                 elements: {
