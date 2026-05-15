@@ -10,6 +10,9 @@ export interface ResumeData {
     };
     themeColor?: string;
     fontFamily?: string;
+    fontSize?: number;
+    pageMargin?: number;
+    scale?: number;
     minimalSidebarColor?: string;
   };
   basics: {
