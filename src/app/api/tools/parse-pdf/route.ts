@@ -1,0 +1,59 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+// Must use 'nodejs' runtime since pdf-parse requires Node.js Buffer/fs APIs
+export const runtime = 'nodejs';
+
+export async function POST(req: NextRequest) {
+  try {
+    const formData = await req.formData();
+    const file = formData.get('pdf') as File | null;
+
+    if (!file || file.type !== 'application/pdf') {
+      return NextResponse.json({ error: 'Please upload a valid PDF file.' }, { status: 400 });
+    }
+
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Dynamically import pdf-parse to avoid edge-runtime issues
+    const pdfParse = (await import('pdf-parse')).default;
+    const parsed = await pdfParse(buffer);
+    const rawText: string = parsed.text;
+
+    // --- Extract the human-readable ATS block ---
+    const atsBlockMatch = rawText.match(
+      /=== MACHINE READABLE RESUME DATA ===([\s\S]*?)=== END MACHINE READABLE DATA ===/
+    );
+    const atsBlock = atsBlockMatch ? atsBlockMatch[1].trim() : null;
+
+    // --- Extract and parse the raw JSON payload ---
+    const jsonBlockMatch = rawText.match(
+      /=== RAW JSON PAYLOAD FOR AI EXTRACTORS ===([\s\S]*?)=== END JSON PAYLOAD ===/
+    );
+    let parsedJson: object | null = null;
+    let jsonError: string | null = null;
+
+    if (jsonBlockMatch) {
+      try {
+        parsedJson = JSON.parse(jsonBlockMatch[1].trim());
+      } catch (e: any) {
+        jsonError = `JSON found but failed to parse: ${e.message}`;
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      pageCount: parsed.numpages,
+      totalTextLength: rawText.length,
+      atsBlockFound: !!atsBlock,
+      atsBlock: atsBlock,
+      jsonPayloadFound: !!jsonBlockMatch,
+      jsonPayloadValid: !!parsedJson,
+      jsonError,
+      parsedResume: parsedJson,
+    });
+  } catch (error: any) {
+    console.error('PDF parse error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

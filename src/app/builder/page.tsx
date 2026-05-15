@@ -7,7 +7,7 @@ import { TemplateModern } from '@/components/TemplateModern';
 import { TemplateClassic } from '@/components/TemplateClassic';
 import { TemplateMinimal } from '@/components/TemplateMinimal';
 import { useReactToPrint } from 'react-to-print';
-import { Download, Sparkles, LayoutTemplate, Lock, RefreshCw, Plus, Minus, Trash2, Upload, Save, CheckCircle, AlertCircle, Info, Share2, Settings, User, X, Loader2 } from 'lucide-react';
+import { Download, Sparkles, LayoutTemplate, Lock, RefreshCw, Plus, Minus, Trash2, Upload, Save, CheckCircle, AlertCircle, Info, Share2, Settings, User, X, Loader2, Wand2 } from 'lucide-react';
 import { useUser, useAuth, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
 import { supabase } from "@/lib/supabase";
 import { useAutoAnimate } from '@formkit/auto-animate/react';
@@ -264,6 +264,34 @@ export default function BuilderPage() {
   };
 
   const contentRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const [pageCount, setPageCount] = useState(1);
+
+  // Measure scrollWidth of the hidden CSS multi-column layout to determine physical page count
+  useEffect(() => {
+    const measure = () => {
+      if (measureRef.current) {
+        // scrollWidth is total width including gap.
+        // Each column + gap is 850 + 40 = 890px.
+        const width = measureRef.current.scrollWidth;
+        setPageCount(Math.max(1, Math.ceil(width / 890)));
+      }
+    };
+    
+    // ResizeObserver watches for font/image loading or content scale adjustments
+    const observer = new ResizeObserver(() => {
+      // Small debounce to let browser settle
+      setTimeout(measure, 50);
+    });
+    
+    if (measureRef.current) {
+      observer.observe(measureRef.current);
+    }
+    
+    measure();
+    return () => observer.disconnect();
+  }, [data, template, data.metadata?.scale]);
+
   const handlePrint = useReactToPrint({
     contentRef
   });
@@ -313,6 +341,58 @@ export default function BuilderPage() {
       alert("AI Generation failed. Please try again.");
     } finally {
       setAiLoading(prev => ({ ...prev, [`${jobId}-${type}`]: false }));
+    }
+  };
+
+  const handleGenerateSkills = async (skillGroupId: string) => {
+    if (!isPremium) {
+      setUpgradeFeature('AI Skill Generation');
+      setUpgradeModalOpen(true);
+      return;
+    }
+
+    const skillGroup = data.skills.find(s => s.id === skillGroupId);
+    if (!skillGroup) return;
+
+    if (!skillGroup.name) {
+      alert("Please provide a Category Name for the skill group first (e.g., 'Languages', 'Frameworks').");
+      return;
+    }
+
+    setAiLoading(prev => ({ ...prev, [`skill-${skillGroupId}`]: true }));
+    try {
+      const response = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          context: { 
+            categoryName: skillGroup.name,
+            currentKeywords: skillGroup.keywords,
+            fullResume: data
+          }, 
+          type: 'skills', 
+          careerContext 
+        })
+      });
+      if (!response.ok) throw new Error('Failed to generate');
+      const text = await response.text();
+      
+      saveUndoState();
+      setData(prev => ({
+        ...prev,
+        skills: prev.skills.map(s => {
+          if (s.id === skillGroupId) {
+            const generatedSkills = text.split(',').map(k => k.trim()).filter(k => k.length > 0);
+            return { ...s, keywords: generatedSkills };
+          }
+          return s;
+        })
+      }));
+    } catch (e) {
+      console.error(e);
+      alert('Failed to generate skills. Please try again.');
+    } finally {
+      setAiLoading(prev => ({ ...prev, [`skill-${skillGroupId}`]: false }));
     }
   };
 
@@ -796,54 +876,87 @@ export default function BuilderPage() {
             </button>
 
             {showOverrides && (
-              <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--surface-highlight)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
+              <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--surface-highlight)', borderRadius: '8px', border: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                
+                {/* Font Family */}
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="label" style={{ fontSize: '0.8rem' }}>Font Family</label>
+                  <select className="input-field" value={data.metadata?.fontFamily || ''} onChange={(e) => setData(prev => ({ ...prev, metadata: { ...prev.metadata, fontFamily: e.target.value } }))} style={{ padding: '0.5rem', fontFamily: data.metadata?.fontFamily || 'inherit' }}>
+                    <optgroup label="Sans-Serif">
+                      <option value="Inter, sans-serif" style={{ fontFamily: 'Inter' }}>Inter (Default Modern)</option>
+                      <option value="Lato, sans-serif" style={{ fontFamily: 'Lato' }}>Lato</option>
+                      <option value="DM Sans, sans-serif" style={{ fontFamily: 'DM Sans' }}>DM Sans</option>
+                      <option value="Raleway, sans-serif" style={{ fontFamily: 'Raleway' }}>Raleway</option>
+                      <option value="Nunito Sans, sans-serif" style={{ fontFamily: 'Nunito Sans' }}>Nunito Sans</option>
+                    </optgroup>
+                    <optgroup label="Serif">
+                      <option value="Libre Baskerville, serif" style={{ fontFamily: 'Libre Baskerville' }}>Libre Baskerville (Default Classic)</option>
+                      <option value="Merriweather, serif" style={{ fontFamily: 'Merriweather' }}>Merriweather</option>
+                      <option value="Playfair Display, serif" style={{ fontFamily: 'Playfair Display' }}>Playfair Display</option>
+                      <option value="EB Garamond, serif" style={{ fontFamily: 'EB Garamond' }}>EB Garamond</option>
+                    </optgroup>
+                    <optgroup label="Monospace">
+                      <option value="Source Code Pro, monospace" style={{ fontFamily: 'Source Code Pro' }}>Source Code Pro</option>
+                    </optgroup>
+                  </select>
+                </div>
+
+                {/* Font Size */}
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Font Size</span>
+                    <span style={{ color: 'var(--primary)', fontWeight: 700 }}>{((data.metadata?.fontSize || 1) * 100).toFixed(0)}%</span>
+                  </label>
+                  <input
+                    type="range" min="0.75" max="1.2" step="0.01"
+                    value={data.metadata?.fontSize || 1}
+                    onChange={(e) => setData(prev => ({ ...prev, metadata: { ...prev.metadata, fontSize: parseFloat(e.target.value) } }))}
+                    style={{ width: '100%' }}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    <span>75%</span><span>100%</span><span>120%</span>
+                  </div>
+                </div>
+
+                {/* Page Margin */}
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Page Margins</span>
+                    <span style={{ color: 'var(--primary)', fontWeight: 700 }}>{(data.metadata?.pageMargin || 0.42).toFixed(2)}in</span>
+                  </label>
+                  <input
+                    type="range" min="0.2" max="0.75" step="0.01"
+                    value={data.metadata?.pageMargin || 0.42}
+                    onChange={(e) => setData(prev => ({ ...prev, metadata: { ...prev.metadata, pageMargin: parseFloat(e.target.value) } }))}
+                    style={{ width: '100%' }}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    <span>Narrow</span><span>Standard</span><span>Wide</span>
+                  </div>
+                </div>
+
+                {/* Theme Color (Modern templates only) */}
                 {(template === 'modern' || template === 'modern-split') && (
-                  <>
-                    <div className="form-group" style={{ marginBottom: '1rem' }}>
-                      <label className="label" style={{ fontSize: '0.8rem' }}>Font Style</label>
-                      <select className="input-field" value={data.metadata?.fontFamily || 'sans-serif'} onChange={(e) => setData(prev => ({ ...prev, metadata: { ...prev.metadata, fontFamily: e.target.value } }))} style={{ padding: '0.5rem' }}>
-                        <option value="sans-serif">Modern Sans</option>
-                        <option value="serif">Classic Serif</option>
-                        <option value="monospace">Technical Mono</option>
-                      </select>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="label" style={{ fontSize: '0.8rem' }}>Accent Color</label>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <input type="color" value={data.metadata?.themeColor || '#3b82f6'} onChange={(e) => setData(prev => ({ ...prev, metadata: { ...prev.metadata, themeColor: e.target.value } }))} style={{ width: '32px', height: '32px', padding: '0', border: 'none', borderRadius: '4px', cursor: 'pointer', background: 'transparent' }} />
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{data.metadata?.themeColor || '#3b82f6'}</span>
                     </div>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="label" style={{ fontSize: '0.8rem' }}>Primary Accent Color</label>
-                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <input type="color" value={data.metadata?.themeColor || '#3b82f6'} onChange={(e) => setData(prev => ({ ...prev, metadata: { ...prev.metadata, themeColor: e.target.value } }))} style={{ width: '32px', height: '32px', padding: '0', border: 'none', borderRadius: '4px', cursor: 'pointer', background: 'transparent' }} />
-                      </div>
-                    </div>
-                  </>
+                  </div>
                 )}
-                {template === 'classic' && (
-                  <>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="label" style={{ fontSize: '0.8rem' }}>Font Style</label>
-                      <select className="input-field" value={data.metadata?.fontFamily || 'serif'} onChange={(e) => setData(prev => ({ ...prev, metadata: { ...prev.metadata, fontFamily: e.target.value } }))} style={{ padding: '0.5rem' }}>
-                        <option value="serif">Classic Serif (Default)</option>
-                        <option value="sans-serif">Clean Sans</option>
-                      </select>
-                    </div>
-                  </>
-                )}
+
+                {/* Sidebar Color (Minimal only) */}
                 {template === 'minimal' && (
-                  <>
-                    <div className="form-group" style={{ marginBottom: '1rem' }}>
-                      <label className="label" style={{ fontSize: '0.8rem' }}>Font Style</label>
-                      <select className="input-field" value={data.metadata?.fontFamily || 'sans-serif'} onChange={(e) => setData(prev => ({ ...prev, metadata: { ...prev.metadata, fontFamily: e.target.value } }))} style={{ padding: '0.5rem' }}>
-                        <option value="sans-serif">Minimalist Sans (Default)</option>
-                        <option value="serif">Editorial Serif</option>
-                        <option value="monospace">Developer Mono</option>
-                      </select>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="label" style={{ fontSize: '0.8rem' }}>Sidebar Background</label>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <input type="color" value={data.metadata?.minimalSidebarColor || '#fafafa'} onChange={(e) => setData(prev => ({ ...prev, metadata: { ...prev.metadata, minimalSidebarColor: e.target.value } }))} style={{ width: '32px', height: '32px', padding: '0', border: 'none', borderRadius: '4px', cursor: 'pointer', background: 'transparent' }} />
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{data.metadata?.minimalSidebarColor || '#fafafa'}</span>
                     </div>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="label" style={{ fontSize: '0.8rem' }}>Sidebar Background</label>
-                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <input type="color" value={data.metadata?.minimalSidebarColor || '#fafafa'} onChange={(e) => setData(prev => ({ ...prev, metadata: { ...prev.metadata, minimalSidebarColor: e.target.value } }))} style={{ width: '32px', height: '32px', padding: '0', border: 'none', borderRadius: '4px', cursor: 'pointer', background: 'transparent' }} />
-                      </div>
-                    </div>
-                  </>
+                  </div>
                 )}
+
               </div>
             )}
           </div>
@@ -1042,7 +1155,12 @@ export default function BuilderPage() {
                 </div>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="label" style={{ fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    Skills
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      Skills
+                      <button onClick={() => handleGenerateSkills(skillGroup.id)} disabled={aiLoading[`skill-${skillGroup.id}`]} className="btn-icon" style={{ fontSize: '0.7rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.3)', fontWeight: 600 }}>
+                        {aiLoading[`skill-${skillGroup.id}`] ? <Loader2 size={12} className="animate-spin" /> : <><Wand2 size={12} style={{ marginRight: '4px' }} /> AI Generate</>}
+                      </button>
+                    </div>
                     <button
                       onClick={() => handleSkillCategoryChange(skillGroup.id, 'keywords', [...(skillGroup.keywords || []), ''])}
                       className="btn-icon"
@@ -1416,13 +1534,52 @@ export default function BuilderPage() {
               boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
               marginLeft: '0'
             }}>
-              <div ref={contentRef} className="resume-preview" style={{ position: 'relative' }}>
-              <AtsMetadata data={data} />
-              {template === 'modern' && <TemplateModern data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
-              {template === 'modern-split' && <TemplateModernSplit data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
-              {template === 'classic' && <TemplateClassic data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
-              {template === 'minimal' && <TemplateMinimal data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
-            </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                
+                {/* Visual Vertical Pages generated by slicing the CSS Columns */}
+                {Array.from({ length: pageCount }).map((_, i) => (
+                  <div key={`page-${i}`} className="resume-ui-page">
+                    <div style={{ position: 'absolute', top: 0, left: `-${i * 890}px`, width: '850px' }}>
+                      <div className="resume-ui-layout" style={{ padding: `${(data.metadata?.pageMargin || 0.42) * 96}px 0` }}>
+                        <div style={{ zoom: data.metadata?.scale || 1 }}>
+                          <AtsMetadata data={data} />
+                          {template === 'modern' && <TemplateModern data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
+                          {template === 'modern-split' && <TemplateModernSplit data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
+                          {template === 'classic' && <TemplateClassic data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
+                          {template === 'minimal' && <TemplateMinimal data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Hidden container for layout measurement & flawless PDF printing */}
+                <div style={{ opacity: 0, position: 'absolute', top: 0, left: 0, pointerEvents: 'none', zIndex: -1 }}>
+                  {/* CSS columns for measuring how many pages we need */}
+                  <div ref={measureRef} className="resume-ui-layout" style={{ width: '850px' }}>
+                    <div style={{ zoom: data.metadata?.scale || 1 }}>
+                      <AtsMetadata data={data} />
+                      {template === 'modern' && <TemplateModern data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
+                      {template === 'modern-split' && <TemplateModernSplit data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
+                      {template === 'classic' && <TemplateClassic data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
+                      {template === 'minimal' && <TemplateMinimal data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
+                    </div>
+                  </div>
+                  
+                  {/* Pure vertical layout for react-to-print engine */}
+                  <div ref={contentRef} className="resume-print-wrapper">
+                    {/* Dynamic @page margin override - applied per document */}
+                    <style>{`@page { size: 8.5in 11in; margin: ${data.metadata?.pageMargin || 0.42}in; }`}</style>
+                    <div style={{ zoom: data.metadata?.scale || 1 }}>
+                      <AtsMetadata data={data} />
+                      {template === 'modern' && <TemplateModern data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
+                      {template === 'modern-split' && <TemplateModernSplit data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
+                      {template === 'classic' && <TemplateClassic data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
+                      {template === 'minimal' && <TemplateMinimal data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
+                    </div>
+                  </div>
+                </div>
+              </div>
           </div>
         </div>
       </div>

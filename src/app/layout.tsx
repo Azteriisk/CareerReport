@@ -30,6 +30,15 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
+        <head>
+          {/* Resume template Google Fonts */}
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+          <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Merriweather:wght@300;400;700&family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&family=Raleway:wght@300;400;600;700&family=Source+Code+Pro:wght@400;600&family=Libre+Baskerville:wght@400;700&family=Nunito+Sans:wght@300;400;600;700&family=EB+Garamond:wght@400;500;700&family=DM+Sans:wght@300;400;500;700&display=swap"
+            rel="stylesheet"
+          />
+        </head>
         <body>
           <SyncUser />
           <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh', overflowX: 'hidden' }}>

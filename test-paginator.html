@@ -1,0 +1,49 @@
+<html>
+<head>
+<style>
+.resume-ui-page {
+  background: white;
+  width: 850px;
+  height: 1100px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 40px;
+  flex-shrink: 0;
+}
+.resume-ui-layout {
+  column-width: 850px;
+  column-gap: 40px;
+  height: 1100px;
+  column-fill: auto;
+  width: max-content; /* Ensure container expands to fit all columns */
+}
+</style>
+</head>
+<body style="background: #333; padding: 50px;">
+  
+  <div class="resume-ui-page">
+    <div style="position: absolute; top: 0; left: 0px;">
+      <div class="resume-ui-layout">
+        <div style="padding: 40px; font-size: 24px;">
+           <p style="height: 1000px; background: red;">Page 1 Content</p>
+           <p style="height: 1000px; background: blue;">Page 2 Content</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="resume-ui-page">
+    <div style="position: absolute; top: 0; left: -890px;">
+      <div class="resume-ui-layout">
+        <div style="padding: 40px; font-size: 24px;">
+           <p style="height: 1000px; background: red;">Page 1 Content</p>
+           <p style="height: 1000px; background: blue;">Page 2 Content</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

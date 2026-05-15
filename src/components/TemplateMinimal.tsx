@@ -7,12 +7,13 @@ interface Props {
 }
 
 export const TemplateMinimal: React.FC<Props> = ({ data }) => {
-  const fontStyle = data.metadata?.fontFamily || 'sans-serif';
+  const fontStyle = data.metadata?.fontFamily || 'Lato, sans-serif';
   const sidebarBg = data.metadata?.minimalSidebarColor || '#fafafa';
+  const fontSize = data.metadata?.fontSize || 1;
 
   return (
-    <div className="template-minimal" style={{ padding: '40px', background: 'white', color: '#111', display: 'flex', minHeight: '1056px', fontFamily: fontStyle }}>
-      <aside style={{ width: '30%', paddingRight: '20px', borderRight: '1px solid #eaeaea', background: sidebarBg, margin: '-40px 0 -40px -40px', padding: '40px 20px 40px 40px' }}>
+    <div className="template-minimal" style={{ padding: '0 40px', background: 'white', color: '#111', display: 'flex', minHeight: '1056px', fontFamily: fontStyle, fontSize: `${fontSize}rem` }}>
+      <aside style={{ width: '30%', paddingRight: '20px', borderRight: '1px solid #eaeaea', background: sidebarBg, margin: '0 0 0 -40px', padding: '0 20px 0 40px' }}>
         {data.basics.image && (
           <img src={data.basics.image} alt="Headshot" style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', marginBottom: '20px' }} />
         )}
@@ -64,7 +65,11 @@ export const TemplateMinimal: React.FC<Props> = ({ data }) => {
                   <div style={{ fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '8px' }}>{job.position}</div>
                   <p style={{ fontSize: '0.9rem', color: '#444', marginBottom: '8px' }}>{job.summary}</p>
                   <ul style={{ paddingLeft: '15px', fontSize: '0.85rem', color: '#555', margin: 0 }}>
-                    {job.highlights.map((h, i) => <li key={i} style={{ marginBottom: '4px' }}>{h}</li>)}
+                    {job.highlights.map((h, i) => (
+                      <li key={i} style={{ marginBottom: '4px', listStyleType: h.trim() === '' ? 'none' : 'inherit' }}>
+                        {h.trim() === '' ? '\u00A0' : h}
+                      </li>
+                    ))}
                   </ul>
                 </article>
               ))}
@@ -92,9 +97,9 @@ export const TemplateMinimal: React.FC<Props> = ({ data }) => {
             <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '15px', color: '#999' }}>Projects</h3>
             {data.projects.map(proj => (
               <article key={proj.id} style={{ marginBottom: '15px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', columnGap: '12px', rowGap: '4px' }}>
                   <h4 style={{ margin: 0, fontSize: '0.95rem' }}>{proj.name}</h4>
-                  {proj.url && <a href={proj.url} style={{ fontSize: '0.8rem', color: '#666' }}>{proj.url}</a>}
+                  {proj.url && <a href={proj.url} style={{ fontSize: '0.8rem', color: '#666', overflowWrap: 'anywhere' }}>{proj.url}</a>}
                 </div>
                 <p style={{ fontSize: '0.9rem', color: '#444', margin: '5px 0 0 0' }}>{proj.description}</p>
               </article>

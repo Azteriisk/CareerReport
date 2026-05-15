@@ -7,10 +7,11 @@ interface Props {
 }
 
 export const TemplateClassic: React.FC<Props> = ({ data }) => {
-  const fontStyle = data.metadata?.fontFamily || 'serif';
+  const fontStyle = data.metadata?.fontFamily || 'Libre Baskerville, serif';
+  const fontSize = data.metadata?.fontSize || 1;
 
   return (
-    <div className="template-classic" style={{ padding: '40px', background: 'white', color: '#000', lineHeight: 1.6, fontFamily: fontStyle }}>
+    <div className="template-classic" style={{ padding: '0 40px', background: 'white', color: '#000', lineHeight: 1.6, fontFamily: fontStyle, fontSize: `${fontSize}rem` }}>
       <header className="vcard" style={{ textAlign: 'center', marginBottom: '30px' }}>
         {data.basics.image && (
           <div style={{ marginBottom: '15px' }}>
@@ -50,7 +51,9 @@ export const TemplateClassic: React.FC<Props> = ({ data }) => {
                 {job.highlights && job.highlights.length > 0 && (
                   <ul style={{ paddingLeft: '20px', fontSize: '0.95rem', margin: 0 }}>
                     {job.highlights.map((item, i) => (
-                      <li key={i}>{item}</li>
+                      <li key={i} style={{ listStyleType: item.trim() === '' ? 'none' : 'inherit' }}>
+                        {item.trim() === '' ? '\u00A0' : item}
+                      </li>
                     ))}
                   </ul>
                 )}
@@ -94,7 +97,10 @@ export const TemplateClassic: React.FC<Props> = ({ data }) => {
           <h3 style={{ fontSize: '1.1rem', textTransform: 'uppercase', borderBottom: '1px solid #000', paddingBottom: '3px', marginBottom: '10px' }}>Selected Projects</h3>
           {data.projects.map((proj) => (
             <article key={proj.id} style={{ marginBottom: '10px' }}>
-              <div style={{ fontWeight: 'bold' }}>{proj.name} {proj.url && <span style={{ fontWeight: 'normal', fontStyle: 'italic', marginLeft: '10px' }}>{proj.url}</span>}</div>
+              <div style={{ fontWeight: 'bold', display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', columnGap: '12px', rowGap: '4px' }}>
+                <span>{proj.name}</span>
+                {proj.url && <a href={proj.url} style={{ fontWeight: 'normal', fontStyle: 'italic', fontSize: '0.9rem', color: '#333', overflowWrap: 'anywhere' }}>{proj.url}</a>}
+              </div>
               <p style={{ fontSize: '0.95rem', margin: '3px 0' }}>{proj.description}</p>
             </article>
           ))}

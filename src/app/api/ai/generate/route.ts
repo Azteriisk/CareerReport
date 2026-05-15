@@ -45,6 +45,12 @@ export async function POST(req: Request) {
       Write 3 highly impactful, ATS-friendly bullet points for the specific job role provided in the context.
       If the user provided existing responsibilities, rewrite them using the "Accomplished X by doing Y" format. If they provided nothing, generate 3 highly realistic placeholder bullet points based on the job title, company, and their global skills.
       Do NOT output any conversational filler. Separate each bullet point with a newline character. Do not use asterisks or dash prefixes, just the raw text.`;
+    } else if (type === 'skills') {
+      systemPrompt = `You are an expert executive resume writer.
+      Generate a comma-separated list of 8-12 highly relevant, industry-standard professional skills for the specified skill category.
+      Use the provided resume context (work history, other skills, category name) to tailor the skills precisely to the user's career trajectory.
+      If the user provided existing skills in this category, refine, standardize, and expand upon them.
+      Output ONLY a single comma-separated line of skills (e.g., "React, TypeScript, Node.js"). Do NOT output conversational filler, prefixes, or bullet points.`;
     } else {
       systemPrompt = `You are an expert executive resume writer. 
       Write a highly professional "Professional Summary" (3-4 sentences) for the top of the user's resume.
@@ -60,7 +66,7 @@ export async function POST(req: Request) {
     const compressedContext = compressContext(context);
 
     const result = await generateText({
-      model: google('gemini-1.5-flash-latest'),
+      model: google('gemini-2.5-flash'),
       system: systemPrompt,
       prompt: `Context/Input to process:\n${JSON.stringify(compressedContext)}`,
       temperature: 0.7,

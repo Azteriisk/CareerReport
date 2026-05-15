@@ -8,10 +8,11 @@ interface Props {
 
 export const TemplateModern: React.FC<Props> = ({ data }) => {
   const themeColor = data.metadata?.themeColor || '#3b82f6';
-  const fontStyle = data.metadata?.fontFamily || 'sans-serif';
+  const fontStyle = data.metadata?.fontFamily || 'Inter, sans-serif';
+  const fontSize = data.metadata?.fontSize || 1;
 
   return (
-    <div className="template-modern" style={{ padding: '40px', background: 'white', color: '#333', fontFamily: fontStyle }}>
+    <div className="template-modern" style={{ padding: '0 40px', background: 'white', color: '#333', fontFamily: fontStyle, fontSize: `${fontSize}rem` }}>
       <header className="vcard" style={{ borderBottom: `2px solid ${themeColor}`, paddingBottom: '20px', marginBottom: '20px', display: 'flex', gap: '20px', alignItems: 'center' }}>
         {data.basics.image && (
           <img src={data.basics.image} alt="Headshot" style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: `3px solid ${themeColor}` }} />
@@ -51,7 +52,9 @@ export const TemplateModern: React.FC<Props> = ({ data }) => {
                 {job.highlights && job.highlights.length > 0 && (
                   <ul style={{ paddingLeft: '20px', fontSize: '0.9rem', color: '#475569', margin: 0 }}>
                     {job.highlights.map((item, i) => (
-                      <li key={i} style={{ marginBottom: '3px' }}>{item}</li>
+                      <li key={i} style={{ marginBottom: '3px', listStyleType: item.trim() === '' ? 'none' : 'inherit' }}>
+                        {item.trim() === '' ? '\u00A0' : item}
+                      </li>
                     ))}
                   </ul>
                 )}
@@ -100,9 +103,9 @@ export const TemplateModern: React.FC<Props> = ({ data }) => {
           <div style={{ display: 'grid', gridTemplateColumns: `repeat(${data.metadata?.layout?.projects || 1}, 1fr)`, gap: '15px' }}>
             {data.projects.map((proj) => (
               <article key={proj.id}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', columnGap: '12px', rowGap: '4px' }}>
                   <h4 style={{ fontSize: '1.05rem', color: '#1e293b', margin: 0 }}>{proj.name}</h4>
-                  {proj.url && <a href={proj.url} style={{ fontSize: '0.85rem', color: themeColor }}>{proj.url}</a>}
+                  {proj.url && <a href={proj.url} style={{ fontSize: '0.85rem', color: themeColor, overflowWrap: 'anywhere' }}>{proj.url}</a>}
                 </div>
                 <p style={{ fontSize: '0.95rem', marginTop: '5px', marginBottom: 0 }}>{proj.description}</p>
               </article>

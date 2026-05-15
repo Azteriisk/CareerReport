@@ -39,7 +39,7 @@ export async function POST(req: Request) {
 
     // Call Gemini to structure the data
     const { object } = await generateObject({
-      model: google('gemini-1.5-flash-latest'),
+      model: google('gemini-2.5-flash'),
       schema: resumeDataSchema,
       prompt: `${systemPrompt}
       

@@ -112,16 +112,37 @@ a {
 }
 
 /* Resume Templates Overrides */
-.resume-preview {
+.resume-print-wrapper {
   background: white;
   color: #334155;
+  font-family: 'Inter', sans-serif;
+  overflow: visible;
+  /* Width/padding are irrelevant in print — @page margin controls margins */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* UI Paginator container */
+.resume-ui-layout {
+  column-width: 850px;
+  column-gap: 40px;
+  height: 1100px;
+  column-fill: auto;
+  padding: 40px 0;
+  box-sizing: border-box;
+}
+
+/* A single visible physical page on the screen */
+.resume-ui-page {
+  background: white;
   width: 850px;
   height: 1100px;
-  aspect-ratio: 8.5 / 11;
   box-shadow: 0 10px 25px rgba(0,0,0,0.5);
   border-radius: 4px;
   overflow: hidden;
-  font-family: 'Inter', sans-serif; /* Default, will be overridden by templates */
+  position: relative;
+  margin-bottom: 40px; /* Gap between stacked vertical pages */
+  flex-shrink: 0;
 }
 
 .hide-scrollbar::-webkit-scrollbar {
@@ -177,20 +198,40 @@ input[type="month"].empty-date:focus::-webkit-datetime-edit {
   margin-bottom: 1.5rem;
 }
 
-/* Print specific styles to ensure good PDF output */
 @media print {
+  /* Tell the browser exactly what paper size and margin to use.
+     margin: 0.42in ≈ 40px — matches our UI padding so the PDF looks identical to the preview. */
+  @page {
+    size: 8.5in 11in;
+    margin: 0.42in;
+  }
+
   body {
     background: white;
   }
+
   .no-print {
     display: none !important;
   }
-  .resume-preview {
-    box-shadow: none;
-    border: none;
-    width: 100%;
-    margin: 0;
-    padding: 0;
+
+  /* The print wrapper fills the page naturally — @page margin handles the whitespace */
+  .resume-print-wrapper {
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Suppress visual-only page chrome */
+  .resume-ui-page,
+  .resume-ui-layout {
+    display: none !important;
+  }
+
+  /* Prevent sections from splitting mid-bullet across pages */
+  article, section {
+    break-inside: avoid;
   }
 }
 
