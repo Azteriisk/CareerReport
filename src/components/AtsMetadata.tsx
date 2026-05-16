@@ -45,15 +45,14 @@ ${JSON.stringify({ ...data, basics: { ...data.basics, image: undefined } })}
   return (
     <div 
       aria-hidden="true"
-      className="ats-metadata"
       style={{ 
         position: 'absolute',
         top: 0,
         left: 0,
-        width: 0,
-        height: 0,
+        width: '1px',
+        height: '1px',
         overflow: 'hidden',
-        clip: 'rect(0, 0, 0, 0)',
+        opacity: 0.001,
         whiteSpace: 'nowrap',
         color: 'transparent',
         fontSize: '1px',
