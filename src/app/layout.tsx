@@ -1,4 +1,12 @@
 import type { Metadata } from "next";
+import { Plus_Jakarta_Sans } from 'next/font/google';
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700', '800'],
+  display: 'swap',
+  variable: '--font-plus-jakarta',
+});
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -29,7 +37,7 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" suppressHydrationWarning>
+      <html lang="en" suppressHydrationWarning className={plusJakartaSans.className}>
         <head>
           {/* Resume template Google Fonts */}
           <link rel="preconnect" href="https://fonts.googleapis.com" />
