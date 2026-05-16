@@ -267,14 +267,11 @@ export default function BuilderPage() {
   const measureRef = useRef<HTMLDivElement>(null);
   const [pageCount, setPageCount] = useState(1);
 
-  // Measure scrollWidth of the hidden CSS multi-column layout to determine physical page count
   useEffect(() => {
     const measure = () => {
       if (measureRef.current) {
-        // scrollWidth is total width including gap.
-        // Each column + gap is 850 + 40 = 890px.
-        const width = measureRef.current.scrollWidth;
-        setPageCount(Math.max(1, Math.ceil(width / 890)));
+        const height = measureRef.current.scrollHeight;
+        setPageCount(Math.max(1, Math.ceil(height / 1100)));
       }
     };
     
@@ -1524,8 +1521,8 @@ export default function BuilderPage() {
 
         {/* Hidden containers — outside zoom wrapper so scrollWidth is read at
             native 850px, keeping pagination counts accurate. */}
-        {/* Hidden measurement div — outside the scale wrapper so scrollWidth
-            is measured at native 850px for correct pagination. */}
+        {/* Hidden measurement div — measures total vertical height at 850px width
+            to determine how many physical 1100px pages are required. */}
         <div style={{ 
           opacity: 0, 
           position: 'absolute', 
@@ -1534,9 +1531,11 @@ export default function BuilderPage() {
           pointerEvents: 'none', 
           zIndex: -1,
           width: '850px',
-          overflow: 'visible'
+          overflow: 'hidden'
         }}>
-          <div ref={measureRef} className="resume-ui-layout" style={{ width: '850px', minWidth: '850px' }}>
+          {/* Note: We do NOT use .resume-ui-layout here because we want 
+              the content to flow vertically for height measurement. */}
+          <div ref={measureRef} style={{ width: '850px', minWidth: '850px', padding: '40px 0' }}>
             <div style={{ zoom: data.metadata?.scale || 1 }}>
               <AtsMetadata data={data} />
               {template === 'modern' && <TemplateModern data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}

@@ -31,12 +31,12 @@ export function ProfileClient({ username }: { username: string }) {
   const measureRef = React.useRef<HTMLDivElement>(null);
   const [pageCount, setPageCount] = useState(1);
 
-  // Measure scrollWidth of the hidden CSS multi-column layout to determine physical page count
+  // Measure scrollHeight of the hidden CSS multi-column layout to determine physical page count
   useEffect(() => {
     const measure = () => {
       if (measureRef.current) {
-        const width = measureRef.current.scrollWidth;
-        setPageCount(Math.max(1, Math.ceil(width / 890)));
+        const height = measureRef.current.scrollHeight;
+        setPageCount(Math.max(1, Math.ceil(height / 1100)));
       }
     };
     
@@ -270,8 +270,8 @@ export function ProfileClient({ username }: { username: string }) {
         {activeTab === 'resume' ? (
           resumeData ? (
             <>
-            {/* Hidden measurement div — outside the scale wrapper so scrollWidth
-                is measured at native 850px for correct pagination. */}
+            {/* Hidden measurement div — measures total vertical height at 850px width
+                to determine how many physical 1100px pages are required. */}
             <div style={{ 
               opacity: 0, 
               position: 'absolute', 
@@ -280,9 +280,11 @@ export function ProfileClient({ username }: { username: string }) {
               pointerEvents: 'none', 
               zIndex: -1,
               width: '850px',
-              overflow: 'visible'
+              overflow: 'hidden'
             }}>
-              <div ref={measureRef} className="resume-ui-layout" style={{ width: '850px', minWidth: '850px' }}>
+              {/* Note: We do NOT use .resume-ui-layout here because we want 
+                  the content to flow vertically for height measurement. */}
+              <div ref={measureRef} style={{ width: '850px', minWidth: '850px', padding: '40px 0' }}>
                 <div style={{ zoom: resumeData.metadata?.scale || 1 }}>
                   <AtsMetadata data={resumeData} />
                   {template === 'modern' && <TemplateModern data={resumeData} />}

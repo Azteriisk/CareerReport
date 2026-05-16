@@ -183,15 +183,13 @@ a {
   text-decoration: none;
 }
 
-/* Prevent sections and titles from splitting across pages in both UI and Print */
+/* Prevent individual entries and titles from splitting across pages */
 .resume-ui-page article,
-.resume-ui-page section,
 .resume-ui-page h1,
 .resume-ui-page h2,
 .resume-ui-page h3,
 .resume-ui-page h4,
 .resume-print-wrapper article,
-.resume-print-wrapper section,
 .resume-print-wrapper h1,
 .resume-print-wrapper h2,
 .resume-print-wrapper h3,
