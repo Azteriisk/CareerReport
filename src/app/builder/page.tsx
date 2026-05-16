@@ -270,8 +270,8 @@ export default function BuilderPage() {
   useEffect(() => {
     const measure = () => {
       if (measureRef.current) {
-        const height = measureRef.current.scrollHeight;
-        setPageCount(Math.max(1, Math.ceil(height / 1100)));
+        const width = measureRef.current.scrollWidth;
+        setPageCount(Math.max(1, Math.ceil((width - 10) / 890)));
       }
     };
     
@@ -1521,8 +1521,8 @@ export default function BuilderPage() {
 
         {/* Hidden containers — outside zoom wrapper so scrollWidth is read at
             native 850px, keeping pagination counts accurate. */}
-        {/* Hidden measurement div — measures total vertical height at 850px width
-            to determine how many physical 1100px pages are required. */}
+        {/* Hidden measurement div — uses CSS columns to detect exactly how many
+            850px columns (pages) the content overflows into. */}
         <div style={{ 
           opacity: 0, 
           position: 'absolute', 
@@ -1531,11 +1531,9 @@ export default function BuilderPage() {
           pointerEvents: 'none', 
           zIndex: -1,
           width: '850px',
-          overflow: 'hidden'
+          overflow: 'visible'
         }}>
-          {/* Note: We do NOT use .resume-ui-layout here because we want 
-              the content to flow vertically for height measurement. */}
-          <div ref={measureRef} style={{ width: '850px', minWidth: '850px', padding: '40px 0' }}>
+          <div ref={measureRef} className="resume-ui-layout" style={{ width: '850px', minWidth: '850px' }}>
             <div style={{ zoom: data.metadata?.scale || 1 }}>
               <AtsMetadata data={data} />
               {template === 'modern' && <TemplateModern data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
@@ -1546,16 +1544,38 @@ export default function BuilderPage() {
           </div>
         </div>
 
-        {/* Print wrapper */}
-        <div style={{ opacity: 0, position: 'absolute', pointerEvents: 'none' }}>
-          <div ref={contentRef} className="resume-print-wrapper">
-            <style>{`@page { size: 8.5in 11in; margin: ${data.metadata?.pageMargin || 0.42}in; }`}</style>
-            <div style={{ zoom: data.metadata?.scale || 1 }}>
-              <AtsMetadata data={data} />
-              {template === 'modern' && <TemplateModern data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
-              {template === 'modern-split' && <TemplateModernSplit data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
-              {template === 'classic' && <TemplateClassic data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
-              {template === 'minimal' && <TemplateMinimal data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
+        {/* Print wrapper — USES THE SAME PAGE LOOP AS THE UI PREVIEW FOR TRUE WYSIWYG */}
+        <div style={{ opacity: 0, position: 'absolute', pointerEvents: 'none', top: 0, left: 0 }}>
+          <div ref={contentRef} className="resume-print-container">
+            <style>{`
+              @page { size: 8.5in 11in; margin: 0; }
+              @media print {
+                .resume-print-page { break-after: page; page-break-after: always; }
+              }
+            `}</style>
+            {/* We scale the 850px layout slightly to fit 8.5in (816px) paper perfectly */}
+            <div style={{ zoom: 0.96 }}> 
+              {Array.from({ length: pageCount }).map((_, i) => (
+                <div key={`print-page-${i}`} className="resume-print-page" style={{ 
+                  width: '850px', 
+                  height: '1100px', 
+                  overflow: 'hidden', 
+                  position: 'relative',
+                  background: 'white'
+                }}>
+                  <div style={{ position: 'absolute', top: 0, left: `-${i * 890}px`, width: '850px' }}>
+                    <div className="resume-ui-layout" style={{ padding: `${(data.metadata?.pageMargin || 0.42) * 96}px 0` }}>
+                      <div style={{ zoom: data.metadata?.scale || 1 }}>
+                        <AtsMetadata data={data} />
+                        {template === 'modern' && <TemplateModern data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
+                        {template === 'modern-split' && <TemplateModernSplit data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
+                        {template === 'classic' && <TemplateClassic data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
+                        {template === 'minimal' && <TemplateMinimal data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

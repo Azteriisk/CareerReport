@@ -35,12 +35,11 @@ export function ProfileClient({ username }: { username: string }) {
   useEffect(() => {
     const measure = () => {
       if (measureRef.current) {
-        const height = measureRef.current.scrollHeight;
-        setPageCount(Math.max(1, Math.ceil(height / 1100)));
+        const width = measureRef.current.scrollWidth;
+        setPageCount(Math.max(1, Math.ceil((width - 10) / 890)));
       }
     };
     
-    // ResizeObserver watches for font/image loading or content scale adjustments
     const observer = new ResizeObserver(() => {
       setTimeout(measure, 50);
     });
@@ -83,8 +82,6 @@ export function ProfileClient({ username }: { username: string }) {
       setLoading(true);
       setError(null);
 
-
-      // 1. Get profile by username
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('id, full_name, avatar_url, username')
@@ -99,7 +96,6 @@ export function ProfileClient({ username }: { username: string }) {
       }
       setProfileData(profile);
 
-      // 2. Fetch follower counts (non-blocking — don't let failures kill the page)
       supabase
         .from('followers')
         .select('*', { count: 'exact', head: true })
@@ -112,7 +108,6 @@ export function ProfileClient({ username }: { username: string }) {
         .eq('follower_id', profile.id)
         .then(({ count }) => setFollowing(count || 0));
 
-      // 3. Get resume — failure here does NOT hide the profile
       const { data: resume, error: resumeError } = await supabase
         .from('resumes')
         .select('*')
@@ -126,7 +121,6 @@ export function ProfileClient({ username }: { username: string }) {
         setResumeData(resume.data);
         setTemplate(resume.template || 'modern-split');
       } else {
-        // Clear any previously loaded resume if it's now private/missing
         setResumeData(null);
         if (resumeError && resumeError.code !== 'PGRST116') {
           console.error('Resume fetch error:', resumeError.message, resumeError.code);
@@ -140,15 +134,12 @@ export function ProfileClient({ username }: { username: string }) {
     }
   }, [username]);
 
-  // Initial fetch + re-fetch on window focus (catches changes made in builder tab)
   useEffect(() => {
     fetchProfile();
-
     const handleFocus = () => fetchProfile();
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
   }, [fetchProfile]);
-
 
   if (loading) {
     return (
@@ -161,8 +152,6 @@ export function ProfileClient({ username }: { username: string }) {
     );
   }
 
-  // Only show the full error screen if the PROFILE itself wasn't found.
-  // Missing resume data is handled gracefully inside the tab.
   if (error) {
     return (
       <div style={{ minHeight: '100dvh', background: 'var(--bg-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', padding: '2rem' }}>
@@ -270,64 +259,62 @@ export function ProfileClient({ username }: { username: string }) {
         {activeTab === 'resume' ? (
           resumeData ? (
             <>
-            {/* Hidden measurement div — measures total vertical height at 850px width
-                to determine how many physical 1100px pages are required. */}
-            <div style={{ 
-              opacity: 0, 
-              position: 'absolute', 
-              top: 0, 
-              left: 0, 
-              pointerEvents: 'none', 
-              zIndex: -1,
-              width: '850px',
-              overflow: 'hidden'
-            }}>
-              {/* Note: We do NOT use .resume-ui-layout here because we want 
-                  the content to flow vertically for height measurement. */}
-              <div ref={measureRef} style={{ width: '850px', minWidth: '850px', padding: '40px 0' }}>
-                <div style={{ zoom: resumeData.metadata?.scale || 1 }}>
-                  <AtsMetadata data={resumeData} />
-                  {template === 'modern' && <TemplateModern data={resumeData} />}
-                  {template === 'modern-split' && <TemplateModernSplit data={resumeData} />}
-                  {template === 'classic' && <TemplateClassic data={resumeData} />}
-                  {template === 'minimal' && <TemplateMinimal data={resumeData} />}
+              {/* Hidden measurement div — uses CSS columns to detect exactly how many
+                  850px columns (pages) the content overflows into. */}
+              <div style={{ 
+                opacity: 0, 
+                position: 'absolute', 
+                top: 0, 
+                left: 0, 
+                pointerEvents: 'none', 
+                zIndex: -1,
+                width: '850px',
+                overflow: 'visible'
+              }}>
+                <div ref={measureRef} className="resume-ui-layout" style={{ width: '850px', minWidth: '850px' }}>
+                  <div style={{ zoom: resumeData.metadata?.scale || 1 }}>
+                    <AtsMetadata data={resumeData} />
+                    {template === 'modern' && <TemplateModern data={resumeData} />}
+                    {template === 'modern-split' && <TemplateModernSplit data={resumeData} />}
+                    {template === 'classic' && <TemplateClassic data={resumeData} />}
+                    {template === 'minimal' && <TemplateMinimal data={resumeData} />}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* We use transform: scale for pixel-perfect fidelity. 
-                To avoid layout gaps, we wrap it in a container with the scaled dimensions. */}
-            <div style={{ 
-              width: isMobile ? `${850 * mobileScale}px` : '850px',
-              height: isMobile ? `${(1100 * pageCount + (pageCount - 1) * 40) * mobileScale}px` : 'auto',
-              flexShrink: 0,
-              overflow: 'hidden'
-            }}>
+              {/* We use transform: scale for pixel-perfect fidelity. 
+                  To avoid layout gaps, we wrap it in a container with the scaled dimensions. */}
               <div style={{ 
-                transform: isMobile ? `scale(${mobileScale})` : 'none',
-                transformOrigin: 'top left',
-                width: '850px',
-                display: 'flex', 
-                flexDirection: 'column', 
-                alignItems: 'center' 
+                width: isMobile ? `${850 * mobileScale}px` : '850px',
+                height: isMobile ? `${(1100 * pageCount + (pageCount - 1) * 40) * mobileScale}px` : 'auto',
+                flexShrink: 0,
+                overflow: 'hidden'
               }}>
-                {Array.from({ length: pageCount }).map((_, i) => (
-                  <div key={`page-${i}`} className="resume-ui-page">
-                    <div style={{ position: 'absolute', top: 0, left: `-${i * 890}px`, width: '850px' }}>
-                      <div className="resume-ui-layout">
-                        <div style={{ zoom: resumeData.metadata?.scale || 1 }}>
-                          <AtsMetadata data={resumeData} />
-                          {template === 'modern' && <TemplateModern data={resumeData} />}
-                          {template === 'modern-split' && <TemplateModernSplit data={resumeData} />}
-                          {template === 'classic' && <TemplateClassic data={resumeData} />}
-                          {template === 'minimal' && <TemplateMinimal data={resumeData} />}
+                <div style={{ 
+                  transform: isMobile ? `scale(${mobileScale})` : 'none',
+                  transformOrigin: 'top left',
+                  width: '850px',
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'center' 
+                }}>
+                  {Array.from({ length: pageCount }).map((_, i) => (
+                    <div key={`page-${i}`} className="resume-ui-page">
+                      <div style={{ position: 'absolute', top: 0, left: `-${i * 890}px`, width: '850px' }}>
+                        <div className="resume-ui-layout">
+                          <div style={{ zoom: resumeData.metadata?.scale || 1 }}>
+                            <AtsMetadata data={resumeData} />
+                            {template === 'modern' && <TemplateModern data={resumeData} />}
+                            {template === 'modern-split' && <TemplateModernSplit data={resumeData} />}
+                            {template === 'classic' && <TemplateClassic data={resumeData} />}
+                            {template === 'minimal' && <TemplateMinimal data={resumeData} />}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
             </>
           ) : (
             <div style={{ width: isMobile ? '90%' : '850px', textAlign: 'center', padding: '3rem 1rem', background: 'var(--surface-color)', borderRadius: '16px', border: '1px solid var(--glass-border)', color: 'var(--text-secondary)' }}>
