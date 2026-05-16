@@ -45,9 +45,9 @@ export const TemplateModern: React.FC<Props> = ({ data }) => {
               <article key={job.id} className="experience vevent">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <h4 className="summary" style={{ fontSize: '1.05rem', color: '#1e293b', margin: 0 }}>{job.position}</h4>
-                  <span className="dtstart" style={{ fontSize: '0.85rem', color: '#64748b' }}>{formatResumeDate(job.startDate)} - {formatResumeDate(job.endDate)}</span>
+                  <span className="dtstart" style={{ fontSize: '0.85rem', color: '#64748b', whiteSpace: 'nowrap' }}>{formatResumeDate(job.startDate)} - {formatResumeDate(job.endDate)}</span>
                 </div>
-                <div className="location" style={{ fontSize: '0.95rem', color: themeColor, fontWeight: 500, marginBottom: '8px' }}>{job.name}</div>
+                <div className="location" style={{ fontSize: '1rem', color: themeColor, fontWeight: 600, marginBottom: '8px' }}>{job.name}</div>
                 <p className="description" style={{ fontSize: '0.95rem', marginBottom: '5px' }}>{job.summary}</p>
                 {job.highlights && job.highlights.length > 0 && (
                   <ul style={{ paddingLeft: '20px', fontSize: '0.9rem', color: '#475569', margin: 0 }}>
@@ -68,12 +68,17 @@ export const TemplateModern: React.FC<Props> = ({ data }) => {
         <section className="vcalendar" style={{ marginBottom: '25px' }}>
           <h3 style={{ fontSize: '1.2rem', color: '#1e293b', borderBottom: '1px solid #e2e8f0', paddingBottom: '5px', marginBottom: '15px' }}>Education</h3>
           {data.education.map((edu) => (
-            <article key={edu.id} className="education vevent" style={{ marginBottom: '10px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <h4 className="summary" style={{ fontSize: '1.05rem', color: '#1e293b', margin: 0 }}>{edu.studyType} in {edu.area}</h4>
-                <span className="dtstart" style={{ fontSize: '0.85rem', color: '#64748b' }}>{formatResumeDate(edu.startDate)} - {formatResumeDate(edu.endDate)}</span>
+            <article key={edu.id} className="education vevent" style={{ marginBottom: '15px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '20px' }}>
+                <div style={{ flex: 1 }}>
+                  <h4 className="summary" style={{ fontSize: '1.05rem', color: '#1e293b', margin: 0, fontWeight: 600 }}>{edu.studyType}</h4>
+                  <div style={{ fontSize: '1rem', color: themeColor, fontWeight: 600, marginTop: '2px' }}>{edu.area}</div>
+                  <div className="location" style={{ fontSize: '0.95rem', color: '#475569', marginTop: '2px' }}>{edu.institution}</div>
+                </div>
+                <span className="dtstart" style={{ fontSize: '0.85rem', color: '#64748b', whiteSpace: 'nowrap', paddingTop: '4px' }}>
+                  {formatResumeDate(edu.startDate)} - {formatResumeDate(edu.endDate)}
+                </span>
               </div>
-              <div className="location" style={{ fontSize: '0.95rem', color: '#475569' }}>{edu.institution}</div>
             </article>
           ))}
         </section>
@@ -136,7 +141,7 @@ export const TemplateModern: React.FC<Props> = ({ data }) => {
               <article key={cert.id}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <h4 style={{ fontSize: '1.05rem', color: '#1e293b', margin: 0 }}>{cert.name}</h4>
-                  <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{cert.date}</span>
+                  <span style={{ fontSize: '0.85rem', color: '#64748b', whiteSpace: 'nowrap' }}>{cert.date}</span>
                 </div>
                 <div style={{ fontSize: '0.95rem', color: '#475569', marginTop: '2px' }}>
                   {cert.issuer}

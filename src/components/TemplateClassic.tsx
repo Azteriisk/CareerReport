@@ -67,12 +67,17 @@ export const TemplateClassic: React.FC<Props> = ({ data }) => {
         <section className="vcalendar" style={{ marginBottom: '20px' }}>
           <h3 style={{ fontSize: '1.1rem', textTransform: 'uppercase', borderBottom: '1px solid #000', paddingBottom: '3px', marginBottom: '10px' }}>Education</h3>
           {data.education.map((edu) => (
-            <article key={edu.id} style={{ marginBottom: '10px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <div style={{ fontWeight: 'bold' }}>{edu.institution}</div>
-                <div style={{ fontSize: '0.9rem', color: '#333' }}>{formatResumeDate(edu.startDate)} - {formatResumeDate(edu.endDate)}</div>
+            <article key={edu.id} style={{ marginBottom: '15px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '20px' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 'bold' }}>{edu.institution}</div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 600 }}>{edu.studyType}</div>
+                  <div style={{ fontSize: '0.95rem', fontWeight: 600, fontStyle: 'italic' }}>{edu.area}</div>
+                </div>
+                <div style={{ fontSize: '0.9rem', color: '#333', whiteSpace: 'nowrap' }}>
+                  {formatResumeDate(edu.startDate)} - {formatResumeDate(edu.endDate)}
+                </div>
               </div>
-              <div>{edu.studyType} in {edu.area}</div>
             </article>
           ))}
         </section>

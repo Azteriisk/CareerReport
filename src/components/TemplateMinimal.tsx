@@ -82,11 +82,16 @@ export const TemplateMinimal: React.FC<Props> = ({ data }) => {
             <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '15px', color: '#999' }}>Education</h3>
             {data.education.map(edu => (
               <article key={edu.id} style={{ marginBottom: '15px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h4 style={{ margin: 0, fontSize: '0.95rem' }}>{edu.institution}</h4>
-                  <div style={{ fontSize: '0.8rem', color: '#888' }}>{formatResumeDate(edu.startDate)} - {formatResumeDate(edu.endDate)}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '20px' }}>
+                  <div style={{ flex: 1 }}>
+                    <h4 style={{ margin: 0, fontSize: '0.95rem' }}>{edu.institution}</h4>
+                    <div style={{ fontSize: '0.95rem', color: '#444', fontWeight: 600, marginTop: '2px' }}>{edu.studyType}</div>
+                    <div style={{ fontSize: '0.95rem', color: '#666', fontStyle: 'italic', fontWeight: 600 }}>{edu.area}</div>
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: '#888', whiteSpace: 'nowrap' }}>
+                    {formatResumeDate(edu.startDate)} - {formatResumeDate(edu.endDate)}
+                  </div>
                 </div>
-                <div style={{ fontSize: '0.9rem', color: '#444' }}>{edu.studyType} in {edu.area}</div>
               </article>
             ))}
           </section>

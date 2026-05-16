@@ -37,9 +37,9 @@ export const TemplateModernSplit: React.FC<Props> = ({ data }) => {
                 <article key={job.id}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '5px' }}>
                     <h4 style={{ fontSize: '1.1rem', color: '#0f172a', margin: 0, fontWeight: 600 }}>{job.position}</h4>
-                    <span style={{ fontSize: '0.9rem', color: themeColor, fontWeight: 500 }}>{formatResumeDate(job.startDate)} - {formatResumeDate(job.endDate)}</span>
+                    <span style={{ fontSize: '0.9rem', color: themeColor, fontWeight: 500, whiteSpace: 'nowrap' }}>{formatResumeDate(job.startDate)} - {formatResumeDate(job.endDate)}</span>
                   </div>
-                  <div style={{ fontSize: '1rem', color: '#475569', fontWeight: 500, marginBottom: '10px' }}>{job.name}</div>
+                  <div style={{ fontSize: '1rem', color: themeColor, fontWeight: 600, marginBottom: '10px' }}>{job.name}</div>
                   <p style={{ fontSize: '0.95rem', color: '#475569', marginBottom: '8px', lineHeight: 1.5 }}>{job.summary}</p>
                   {job.highlights && job.highlights.length > 0 && (
                     <ul style={{ paddingLeft: '18px', fontSize: '0.9rem', color: '#475569', margin: 0, lineHeight: 1.5 }}>
@@ -65,11 +65,16 @@ export const TemplateModernSplit: React.FC<Props> = ({ data }) => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               {data.education.map((edu) => (
                 <article key={edu.id}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '5px' }}>
-                    <h4 style={{ fontSize: '1.05rem', color: '#0f172a', margin: 0, fontWeight: 600 }}>{edu.studyType} in {edu.area}</h4>
-                    <span style={{ fontSize: '0.9rem', color: themeColor, fontWeight: 500 }}>{formatResumeDate(edu.startDate)} - {formatResumeDate(edu.endDate)}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '20px', marginBottom: '5px' }}>
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{ fontSize: '1.05rem', color: '#0f172a', margin: 0, fontWeight: 600 }}>{edu.studyType}</h4>
+                      <div style={{ fontSize: '1rem', color: themeColor, fontWeight: 600, marginTop: '2px' }}>{edu.area}</div>
+                      <div style={{ fontSize: '1rem', color: '#475569', marginTop: '2px' }}>{edu.institution}</div>
+                    </div>
+                    <span style={{ fontSize: '0.9rem', color: themeColor, fontWeight: 500, whiteSpace: 'nowrap', paddingTop: '2px' }}>
+                      {formatResumeDate(edu.startDate)} - {formatResumeDate(edu.endDate)}
+                    </span>
                   </div>
-                  <div style={{ fontSize: '1rem', color: '#475569' }}>{edu.institution}</div>
                 </article>
               ))}
             </div>
@@ -154,7 +159,7 @@ export const TemplateModernSplit: React.FC<Props> = ({ data }) => {
               {data.certifications.map(cert => (
                 <article key={cert.id}>
                   <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#334155', marginBottom: '3px' }}>{cert.name}</div>
-                  <div style={{ fontSize: '0.85rem', color: themeColor, fontWeight: 500, marginBottom: '2px' }}>{cert.date}</div>
+                  <div style={{ fontSize: '0.85rem', color: themeColor, fontWeight: 500, marginBottom: '2px', whiteSpace: 'nowrap' }}>{cert.date}</div>
                   <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{cert.issuer}</div>
                 </article>
               ))}
