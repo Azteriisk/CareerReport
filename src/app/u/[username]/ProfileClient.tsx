@@ -271,7 +271,11 @@ export function ProfileClient({ username }: { username: string }) {
                 width: '850px',
                 overflow: 'visible'
               }}>
-                <div ref={measureRef} className="resume-ui-layout" style={{ width: 'auto', minWidth: '850px', padding: `${(resumeData.metadata?.pageMargin || 0.42) * 96}px 0` }}>
+                <div ref={measureRef} className="resume-ui-layout" style={{ 
+                  width: 'auto', 
+                  minWidth: '850px', 
+                  padding: `${(resumeData.metadata?.pageMargin || 0.42) * 96}px 0` 
+                }}>
                   <div style={{ zoom: resumeData.metadata?.scale || 1 }}>
                     {template === 'modern' && <TemplateModern data={resumeData} />}
                     {template === 'modern-split' && <TemplateModernSplit data={resumeData} />}
