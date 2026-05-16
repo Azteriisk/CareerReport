@@ -1524,8 +1524,19 @@ export default function BuilderPage() {
 
         {/* Hidden containers — outside zoom wrapper so scrollWidth is read at
             native 850px, keeping pagination counts accurate. */}
-        <div style={{ opacity: 0, position: 'absolute', top: 0, left: 0, pointerEvents: 'none', zIndex: -1 }}>
-          <div ref={measureRef} className="resume-ui-layout" style={{ width: '850px' }}>
+        {/* Hidden measurement div — outside the scale wrapper so scrollWidth
+            is measured at native 850px for correct pagination. */}
+        <div style={{ 
+          opacity: 0, 
+          position: 'absolute', 
+          top: 0, 
+          left: 0, 
+          pointerEvents: 'none', 
+          zIndex: -1,
+          width: '850px',
+          overflow: 'visible'
+        }}>
+          <div ref={measureRef} className="resume-ui-layout" style={{ width: '850px', minWidth: '850px' }}>
             <div style={{ zoom: data.metadata?.scale || 1 }}>
               <AtsMetadata data={data} />
               {template === 'modern' && <TemplateModern data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
@@ -1534,6 +1545,10 @@ export default function BuilderPage() {
               {template === 'minimal' && <TemplateMinimal data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
             </div>
           </div>
+        </div>
+
+        {/* Print wrapper */}
+        <div style={{ opacity: 0, position: 'absolute', pointerEvents: 'none' }}>
           <div ref={contentRef} className="resume-print-wrapper">
             <style>{`@page { size: 8.5in 11in; margin: ${data.metadata?.pageMargin || 0.42}in; }`}</style>
             <div style={{ zoom: data.metadata?.scale || 1 }}>
@@ -1546,8 +1561,8 @@ export default function BuilderPage() {
           </div>
         </div>
 
-        {/* Scrollable preview — CSS zoom is layout-affecting so no blank gaps,
-            no position:absolute tricks needed. Pagination just works. */}
+        {/* Scrollable preview — transform: scale provides pixel-perfect 
+            fidelity by scaling the rendered 850px layout. */}
         <div className={!isMobile ? "sidebar-scroll" : ""} style={{
           flex: 1,
           overflowY: 'auto',
@@ -1558,8 +1573,22 @@ export default function BuilderPage() {
           alignItems: 'flex-start',
           direction: 'ltr'
         }}>
-          <div style={{ zoom: isMobile ? mobileScale : 1, flexShrink: 0 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          {/* We use transform: scale for pixel-perfect fidelity. 
+              To avoid layout gaps, we wrap it in a container with the scaled dimensions. */}
+          <div style={{ 
+            width: isMobile ? `${850 * mobileScale}px` : '850px',
+            height: isMobile ? `${(1100 * pageCount + (pageCount - 1) * 40) * mobileScale}px` : 'auto',
+            flexShrink: 0,
+            overflow: 'hidden'
+          }}>
+            <div style={{ 
+              transform: isMobile ? `scale(${mobileScale})` : 'none',
+              transformOrigin: 'top left',
+              width: '850px',
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center' 
+            }}>
               {Array.from({ length: pageCount }).map((_, i) => (
                 <div key={`page-${i}`} className="resume-ui-page">
                   <div style={{ position: 'absolute', top: 0, left: `-${i * 890}px`, width: '850px' }}>

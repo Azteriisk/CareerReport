@@ -270,40 +270,62 @@ export function ProfileClient({ username }: { username: string }) {
         {activeTab === 'resume' ? (
           resumeData ? (
             <>
-              {/* Hidden measurement div — outside zoom wrapper so scrollWidth
-                  is measured at native 850px for correct pagination. */}
-              <div style={{ opacity: 0, position: 'absolute', top: 0, left: 0, pointerEvents: 'none', zIndex: -1 }}>
-                <div ref={measureRef} className="resume-ui-layout" style={{ width: '850px' }}>
-                  <div style={{ zoom: resumeData.metadata?.scale || 1 }}>
-                    <AtsMetadata data={resumeData} />
-                    {template === 'modern' && <TemplateModern data={resumeData} />}
-                    {template === 'modern-split' && <TemplateModernSplit data={resumeData} />}
-                    {template === 'classic' && <TemplateClassic data={resumeData} />}
-                    {template === 'minimal' && <TemplateMinimal data={resumeData} />}
-                  </div>
+            {/* Hidden measurement div — outside the scale wrapper so scrollWidth
+                is measured at native 850px for correct pagination. */}
+            <div style={{ 
+              opacity: 0, 
+              position: 'absolute', 
+              top: 0, 
+              left: 0, 
+              pointerEvents: 'none', 
+              zIndex: -1,
+              width: '850px',
+              overflow: 'visible'
+            }}>
+              <div ref={measureRef} className="resume-ui-layout" style={{ width: '850px', minWidth: '850px' }}>
+                <div style={{ zoom: resumeData.metadata?.scale || 1 }}>
+                  <AtsMetadata data={resumeData} />
+                  {template === 'modern' && <TemplateModern data={resumeData} />}
+                  {template === 'modern-split' && <TemplateModernSplit data={resumeData} />}
+                  {template === 'classic' && <TemplateClassic data={resumeData} />}
+                  {template === 'minimal' && <TemplateMinimal data={resumeData} />}
                 </div>
               </div>
+            </div>
 
-              {/* CSS zoom is layout-affecting — no blank gaps, no position tricks. */}
-              <div style={{ zoom: isMobile ? mobileScale : 1, flexShrink: 0 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  {Array.from({ length: pageCount }).map((_, i) => (
-                    <div key={`page-${i}`} className="resume-ui-page">
-                      <div style={{ position: 'absolute', top: 0, left: `-${i * 890}px`, width: '850px' }}>
-                        <div className="resume-ui-layout">
-                          <div style={{ zoom: resumeData.metadata?.scale || 1 }}>
-                            <AtsMetadata data={resumeData} />
-                            {template === 'modern' && <TemplateModern data={resumeData} />}
-                            {template === 'modern-split' && <TemplateModernSplit data={resumeData} />}
-                            {template === 'classic' && <TemplateClassic data={resumeData} />}
-                            {template === 'minimal' && <TemplateMinimal data={resumeData} />}
-                          </div>
+            {/* We use transform: scale for pixel-perfect fidelity. 
+                To avoid layout gaps, we wrap it in a container with the scaled dimensions. */}
+            <div style={{ 
+              width: isMobile ? `${850 * mobileScale}px` : '850px',
+              height: isMobile ? `${(1100 * pageCount + (pageCount - 1) * 40) * mobileScale}px` : 'auto',
+              flexShrink: 0,
+              overflow: 'hidden'
+            }}>
+              <div style={{ 
+                transform: isMobile ? `scale(${mobileScale})` : 'none',
+                transformOrigin: 'top left',
+                width: '850px',
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center' 
+              }}>
+                {Array.from({ length: pageCount }).map((_, i) => (
+                  <div key={`page-${i}`} className="resume-ui-page">
+                    <div style={{ position: 'absolute', top: 0, left: `-${i * 890}px`, width: '850px' }}>
+                      <div className="resume-ui-layout">
+                        <div style={{ zoom: resumeData.metadata?.scale || 1 }}>
+                          <AtsMetadata data={resumeData} />
+                          {template === 'modern' && <TemplateModern data={resumeData} />}
+                          {template === 'modern-split' && <TemplateModernSplit data={resumeData} />}
+                          {template === 'classic' && <TemplateClassic data={resumeData} />}
+                          {template === 'minimal' && <TemplateMinimal data={resumeData} />}
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
+            </div>
             </>
           ) : (
             <div style={{ width: isMobile ? '90%' : '850px', textAlign: 'center', padding: '3rem 1rem', background: 'var(--surface-color)', borderRadius: '16px', border: '1px solid var(--glass-border)', color: 'var(--text-secondary)' }}>

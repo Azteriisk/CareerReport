@@ -35,6 +35,8 @@ body {
   background-image: radial-gradient(circle at top right, rgba(250, 189, 47, 0.12), transparent 40%),
                     radial-gradient(circle at bottom left, rgba(184, 187, 38, 0.12), transparent 40%);
   background-attachment: fixed;
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -128,9 +130,13 @@ a {
 
 /* UI Paginator container */
 .resume-ui-layout {
+  width: 850px;
+  min-width: 850px;
   column-width: 850px;
   column-gap: 40px;
   height: 1100px;
+  min-height: 1100px;
+  max-height: 1100px;
   column-fill: auto;
   padding: 40px 0;
   box-sizing: border-box;
