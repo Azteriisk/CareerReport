@@ -202,32 +202,56 @@ body {
   text-decoration: none;
 }
 
-/* Prevent titles from splitting across pages, but allow articles (jobs) to flow */
-.resume-ui-page h1,
-.resume-ui-page h2,
-.resume-ui-page h3,
-.resume-ui-page h4,
-.resume-print-wrapper h1,
-.resume-print-wrapper h2,
-.resume-print-wrapper h3,
-.resume-print-wrapper h4 {
-  break-inside: avoid;
-  page-break-inside: avoid;
-  /* Hardening for mobile Safari/Chrome: inline-block often forces 
-     the avoidance rule more strictly than block. */
-  display: inline-block;
-  width: 100%;
-}
-
-/* Let articles break if they are long, to avoid giant gaps */
+/* Let articles and all their sub-components break freely across pages */
 .resume-ui-page article,
-.resume-print-wrapper article {
-  break-inside: auto;
-  page-break-inside: auto;
+.resume-print-wrapper article,
+.resume-ui-page section,
+.resume-print-wrapper section,
+.resume-ui-page p,
+.resume-print-wrapper p,
+.resume-ui-page div:not(.resume-ui-layout):not(.resume-ui-page),
+.resume-print-wrapper div {
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+  -webkit-column-break-inside: auto !important;
+  break-before: auto !important;
+  break-after: auto !important;
   display: block;
+  orphans: 1 !important;
+  widows: 1 !important;
+  max-width: 100%;
 }
 
-/* Ensure titles don't get orphaned at the bottom of a page */
+.resume-ui-page ul,
+.resume-print-wrapper ul {
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+  -webkit-column-break-inside: auto !important;
+  display: block;
+  list-style-position: inside;
+}
+
+.resume-ui-page li,
+.resume-print-wrapper li {
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+  -webkit-column-break-inside: auto !important;
+  display: list-item;
+}
+
+/* Hard reset for headers specifically */
+.resume-ui-page h1, .resume-ui-page h2, .resume-ui-page h3, .resume-ui-page h4,
+.resume-print-wrapper h1, .resume-print-wrapper h2, .resume-print-wrapper h3, .resume-print-wrapper h4 {
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+  -webkit-column-break-inside: auto !important;
+  break-after: auto !important;
+  break-before: auto !important;
+  display: block !important;
+  width: 100% !important;
+}
+
+/* Titles can be separated from their content if a page break occurs */
 .resume-ui-page h1,
 .resume-ui-page h2,
 .resume-ui-page h3,
@@ -236,7 +260,7 @@ body {
 .resume-print-wrapper h2,
 .resume-print-wrapper h3,
 .resume-print-wrapper h4 {
-  break-after: avoid;
+  break-after: auto !important;
 }
 
 .hide-scrollbar::-webkit-scrollbar {

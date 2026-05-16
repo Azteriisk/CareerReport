@@ -48,9 +48,9 @@ export const TemplateModern: React.FC<Props> = ({ data }) => {
       {data.work.length > 0 && (
         <section className="vcalendar" style={{ marginBottom: '25px' }}>
           <h3 style={{ fontSize: '1.2rem', color: '#1e293b', borderBottom: '1px solid #e2e8f0', paddingBottom: '5px', marginBottom: '15px' }}>Experience</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${data.metadata?.layout?.work || 1}, 1fr)`, gap: '20px' }}>
+          <div style={{ display: (data.metadata?.layout?.work || 1) > 1 ? 'grid' : 'block', gridTemplateColumns: `repeat(${data.metadata?.layout?.work || 1}, 1fr)`, gap: '20px' }}>
             {data.work.map((job) => (
-              <article key={job.id} className="experience vevent">
+              <article key={job.id} className="experience vevent" style={{ marginBottom: '35px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <h4 className="summary" style={{ fontSize: '1.05rem', color: '#1e293b', margin: 0 }}>{job.position}</h4>
                   <span className="dtstart" style={{ fontSize: '0.85rem', color: '#64748b', whiteSpace: 'nowrap' }}>{formatResumeDate(job.startDate)} - {formatResumeDate(job.endDate)}</span>
@@ -75,8 +75,9 @@ export const TemplateModern: React.FC<Props> = ({ data }) => {
       {data.education.length > 0 && (
         <section className="vcalendar" style={{ marginBottom: '25px' }}>
           <h3 style={{ fontSize: '1.2rem', color: '#1e293b', borderBottom: '1px solid #e2e8f0', paddingBottom: '5px', marginBottom: '15px' }}>Education</h3>
-          {data.education.map((edu) => (
-            <article key={edu.id} className="education vevent" style={{ marginBottom: '15px' }}>
+          <div style={{ display: 'block' }}>
+            {data.education.map((edu) => (
+              <article key={edu.id} className="education vevent" style={{ marginBottom: '15px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '20px' }}>
                 <div style={{ flex: 1 }}>
                   <h4 className="summary" style={{ fontSize: '1.05rem', color: '#1e293b', margin: 0, fontWeight: 600 }}>{edu.studyType}</h4>
@@ -89,13 +90,14 @@ export const TemplateModern: React.FC<Props> = ({ data }) => {
               </div>
             </article>
           ))}
+          </div>
         </section>
       )}
 
       {data.skills.length > 0 && (
         <section style={{ marginBottom: '25px' }}>
           <h3 style={{ fontSize: '1.2rem', color: '#1e293b', borderBottom: '1px solid #e2e8f0', paddingBottom: '5px', marginBottom: '15px' }}>Skills</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${data.metadata?.layout?.skills || 3}, 1fr)`, gap: '15px' }}>
+          <div style={{ display: (data.metadata?.layout?.skills || 3) > 1 ? 'grid' : 'block', gridTemplateColumns: `repeat(${data.metadata?.layout?.skills || 3}, 1fr)`, gap: '15px' }}>
             {data.skills.map((skillGroup) => (
               <div key={skillGroup.id}>
                 <h4 style={{ fontSize: '0.95rem', color: '#1e293b', marginBottom: '5px', margin: 0 }}>{skillGroup.name}</h4>

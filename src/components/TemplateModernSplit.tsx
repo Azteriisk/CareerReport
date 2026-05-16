@@ -41,9 +41,9 @@ export const TemplateModernSplit: React.FC<Props> = ({ data }) => {
               <div style={{ width: '30px', height: '2px', background: themeColor, marginRight: '15px' }}></div>
               <h3 style={{ fontSize: '1.4rem', color: '#0f172a', margin: 0, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Experience</h3>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+            <div style={{ display: 'block' }}>
               {data.work.map((job) => (
-                <article key={job.id}>
+                <article key={job.id} style={{ marginBottom: '25px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '5px' }}>
                     <h4 style={{ fontSize: '1.1rem', color: '#0f172a', margin: 0, fontWeight: 600 }}>{job.position}</h4>
                     <span style={{ fontSize: '0.9rem', color: themeColor, fontWeight: 500, whiteSpace: 'nowrap' }}>{formatResumeDate(job.startDate)} - {formatResumeDate(job.endDate)}</span>

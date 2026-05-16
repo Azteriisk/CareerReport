@@ -48,9 +48,9 @@ export const TemplateClassic: React.FC<Props> = ({ data }) => {
       {data.work.length > 0 && (
         <section className="vcalendar" style={{ marginBottom: '20px' }}>
           <h3 style={{ fontSize: '1.1rem', textTransform: 'uppercase', borderBottom: '1px solid #000', paddingBottom: '3px', marginBottom: '10px' }}>Professional Experience</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${data.metadata?.layout?.work || 1}, 1fr)`, gap: '15px' }}>
+          <div style={{ display: (data.metadata?.layout?.work || 1) > 1 ? 'grid' : 'block', gridTemplateColumns: `repeat(${data.metadata?.layout?.work || 1}, 1fr)`, gap: '15px' }}>
             {data.work.map((job) => (
-              <article key={job.id} className="experience vevent">
+              <article key={job.id} className="experience vevent" style={{ marginBottom: '30px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
                   <span className="location">{job.name}</span>
                   <span className="dtstart">{formatResumeDate(job.startDate)} - {formatResumeDate(job.endDate)}</span>

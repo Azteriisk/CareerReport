@@ -65,9 +65,9 @@ export const TemplateMinimal: React.FC<Props> = ({ data }) => {
         {data.work.length > 0 && (
           <section style={{ marginBottom: '30px' }}>
             <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '15px', color: '#999' }}>Experience</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${data.metadata?.layout?.work || 1}, 1fr)`, gap: '20px' }}>
+            <div style={{ display: (data.metadata?.layout?.work || 1) > 1 ? 'grid' : 'block', gridTemplateColumns: `repeat(${data.metadata?.layout?.work || 1}, 1fr)`, gap: '20px' }}>
               {data.work.map(job => (
-                <article key={job.id}>
+                <article key={job.id} style={{ marginBottom: '35px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h4 style={{ margin: 0, fontSize: '0.95rem' }}>{job.name}</h4>
                     <div style={{ fontSize: '0.8rem', color: '#888' }}>{formatResumeDate(job.startDate)} - {formatResumeDate(job.endDate)}</div>
