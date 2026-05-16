@@ -72,7 +72,7 @@ export function Navbar() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', background: 'var(--primary)', borderRadius: '8px', color: 'var(--bg-color)' }}>
           <FileText size={18} />
         </div>
-        <h1 style={{ fontSize: '1.25rem', margin: 0, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, color: 'var(--text-primary)' }}>CareerReport</h1>
+        <h1 style={{ fontSize: '1.25rem', margin: 0, fontFamily: "var(--font-plus-jakarta), sans-serif", fontWeight: 700, color: 'var(--text-primary)' }}>CareerReport</h1>
       </Link>
 
       <nav style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', background: 'var(--surface-color)', padding: '0.35rem', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>

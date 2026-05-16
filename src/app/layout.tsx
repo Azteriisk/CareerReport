@@ -37,7 +37,7 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" suppressHydrationWarning className={plusJakartaSans.className}>
+      <html lang="en" suppressHydrationWarning className={plusJakartaSans.variable}>
         <head>
           {/* Resume template Google Fonts */}
           <link rel="preconnect" href="https://fonts.googleapis.com" />
