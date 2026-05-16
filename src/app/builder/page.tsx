@@ -223,7 +223,7 @@ export default function BuilderPage() {
               template,
               is_public: isPublic,
               updated_at: timestamp
-            }, { onConflict: 'user_id' }); // Currently syncing one primary resume per user
+            }, { onConflict: 'user_id' });
 
           if (error) {
             console.error('Supabase sync error:', error.message || error);
@@ -271,7 +271,7 @@ export default function BuilderPage() {
     const measure = () => {
       if (measureRef.current) {
         const width = measureRef.current.scrollWidth;
-        setPageCount(Math.max(1, Math.ceil((width - 40) / 890)));
+        setPageCount(Math.max(1, Math.round((width + 40) / 890)));
       }
     };
 
@@ -825,7 +825,7 @@ export default function BuilderPage() {
           </div>
           <div className="form-group">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-              <label className="label" style={{ margin: 0 }}>Professional Summary</label>
+              <label className="label" style={{ marginBottom: 0 }}>Professional Summary</label>
               <button
                 onClick={handleRewrite}
                 disabled={isAILoading}
@@ -1527,19 +1527,21 @@ export default function BuilderPage() {
             native 850px, keeping pagination counts accurate. */}
         {/* Hidden measurement div — uses CSS columns to detect exactly how many
             850px columns (pages) the content overflows into. */}
-        <div style={{
+        <div className="no-print" style={{
           visibility: 'hidden',
           position: 'absolute',
           top: 0,
           left: 0,
           pointerEvents: 'none',
           zIndex: -1,
-          width: '850px', /* Breaks the 1920px loop */
+          width: 'fit-content',
+          minWidth: '850px',
           overflow: 'visible'
         }}>
           <div ref={measureRef} className="resume-ui-layout" style={{
-            width: 'auto', /* Allows columns to grow horizontally beyond 850px */
+            width: 'auto',
             minWidth: '850px',
+            columnFill: 'auto',
             padding: `${(data.metadata?.pageMargin || 0.42) * 96}px 0`
           }}>
             <div style={{ zoom: data.metadata?.scale || 1 }}>
@@ -1573,7 +1575,7 @@ export default function BuilderPage() {
                 }}>
                   <div style={{ position: 'absolute', top: 0, left: `-${i * 890}px`, width: 'auto' }}>
                     <div className="resume-ui-layout" style={{ width: 'auto', minWidth: '850px', padding: `${(data.metadata?.pageMargin || 0.42) * 96}px 0` }}>
-                      <div style={{ zoom: data.metadata?.scale || 1 }}>
+                      <div style={{ zoom: data.metadata?.scale || 1, width: '850px', overflow: 'visible' }}>
                         {template === 'modern' && <TemplateModern data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
                         {template === 'modern-split' && <TemplateModernSplit data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
                         {template === 'classic' && <TemplateClassic data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
@@ -1620,7 +1622,7 @@ export default function BuilderPage() {
                 <div key={`page-${i}`} className="resume-ui-page">
                   <div style={{ position: 'absolute', top: 0, left: `-${i * 890}px`, width: 'auto' }}>
                     <div className="resume-ui-layout" style={{ width: 'auto', minWidth: '850px', padding: `${(data.metadata?.pageMargin || 0.42) * 96}px 0` }}>
-                      <div style={{ zoom: data.metadata?.scale || 1 }}>
+                      <div style={{ zoom: data.metadata?.scale || 1, width: '850px', overflow: 'visible' }}>
                         {template === 'modern' && <TemplateModern data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
                         {template === 'modern-split' && <TemplateModernSplit data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
                         {template === 'classic' && <TemplateClassic data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}

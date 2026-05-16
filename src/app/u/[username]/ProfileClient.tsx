@@ -36,7 +36,7 @@ export function ProfileClient({ username }: { username: string }) {
     const measure = () => {
       if (measureRef.current) {
         const width = measureRef.current.scrollWidth;
-        setPageCount(Math.max(1, Math.ceil((width - 40) / 890)));
+        setPageCount(Math.max(1, Math.round((width + 40) / 890)));
       }
     };
 
@@ -266,21 +266,22 @@ export function ProfileClient({ username }: { username: string }) {
             <>
               {/* Hidden measurement div — uses CSS columns to detect exactly how many
                   850px columns (pages) the content overflows into. */}
-              <div style={{ 
-                visibility: 'hidden', 
-                position: 'absolute', 
-                top: 0, 
-                left: 0, 
-                pointerEvents: 'none', 
+              <div className="no-print" style={{
+                visibility: 'hidden',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                pointerEvents: 'none',
                 zIndex: -1,
-                width: 'max-content',
+                width: 'fit-content',
                 minWidth: '850px',
                 overflow: 'visible'
               }}>
-                <div ref={measureRef} className="resume-ui-layout" style={{ 
-                  width: 'auto', 
-                  minWidth: '850px', 
-                  padding: `${(resumeData.metadata?.pageMargin || 0.42) * 96}px 0` 
+                <div ref={measureRef} className="resume-ui-layout" style={{
+                  width: 'auto',
+                  minWidth: '850px',
+                  columnFill: 'auto',
+                  padding: `${(resumeData.metadata?.pageMargin || 0.42) * 96}px 0`
                 }}>
                   <div style={{ zoom: resumeData.metadata?.scale || 1, width: '850px', overflow: 'visible' }}>
                     {template === 'modern' && <TemplateModern data={resumeData} />}
