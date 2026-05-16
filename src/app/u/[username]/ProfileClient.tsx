@@ -17,7 +17,6 @@ export function ProfileClient({ username }: { username: string }) {
   const { user } = useUser();
   const [isMobile, setIsMobile] = useState(false);
   const [mobileScale, setMobileScale] = useState(0.45);
-  const [viewportWidth, setViewportWidth] = useState(390);
   const [resumeData, setResumeData] = useState<any>(null);
   const [profileData, setProfileData] = useState<any>(null);
   const [followers, setFollowers] = useState(0);
@@ -58,7 +57,6 @@ export function ProfileClient({ username }: { username: string }) {
     const handleResize = () => {
       const width = window.innerWidth;
       setIsMobile(width <= 768);
-      setViewportWidth(width);
       const padding = 32;
       const targetWidth = 850;
       const calculatedScale = Math.min(1, (width - padding) / targetWidth);
@@ -287,7 +285,7 @@ export function ProfileClient({ username }: { username: string }) {
                   transformOrigin: 'top left',
                   position: isMobile ? 'absolute' : 'relative',
                   top: 0,
-                  left: isMobile ? `${(viewportWidth - 850 * mobileScale) / 2}px` : 'auto',
+                  left: 0,
                   boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
                 }}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

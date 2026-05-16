@@ -66,14 +66,12 @@ export default function BuilderPage() {
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
   const [isMobile, setIsMobile] = useState(false);
   const [mobileScale, setMobileScale] = useState(0.45);
-  const [viewportWidth, setViewportWidth] = useState(390);
 
   // Handle window resize for mobile detection and preview scaling
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
       setIsMobile(width <= 768);
-      setViewportWidth(width);
       
       // Calculate perfect scale to fit 850px resume into viewport width (minus padding)
       const padding = 32; // 1rem on each side
@@ -1522,15 +1520,9 @@ export default function BuilderPage() {
           direction: 'ltr' 
         }}>
           <div style={{ 
-            width: isMobile ? '100%' : '850px', 
-            // transform: scale() doesn't affect layout, so we need to
-            // account for the visual shrink manually. The inner div is 850px
-            // wide; after scaling it becomes mobileScale*850px. The leftover
-            // space is the natural size minus the scaled size.
+            width: isMobile ? `${850 * mobileScale}px` : '850px',
             height: isMobile ? `${1100 * mobileScale}px` : '1100px',
             overflow: 'hidden',
-            display: 'flex',
-            justifyContent: 'center',
             flexShrink: 0,
             position: 'relative'
           }}>
@@ -1538,10 +1530,10 @@ export default function BuilderPage() {
               width: '850px',
               transform: isMobile ? `scale(${mobileScale})` : 'none',
               transformOrigin: 'top left',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
               position: isMobile ? 'absolute' : 'relative',
               top: 0,
-              left: isMobile ? `${(viewportWidth - 850 * mobileScale) / 2}px` : 'auto'
+              left: 0,
+              boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
             }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 
