@@ -1396,16 +1396,28 @@ export default function BuilderPage() {
       <main 
         className={isMobile ? "hide-scrollbar" : ""} 
         style={{ 
-          flex: 1, 
+          flex: isMobile ? undefined : 1, 
           display: isMobile ? (activeTab === 'preview' ? 'flex' : 'none') : 'flex', 
           flexDirection: 'column', 
           background: 'var(--bg-color)',
-          height: isMobile ? 'calc(100dvh - 124px)' : 'auto',
-          overflow: isMobile ? 'auto' : 'hidden',
-          marginBottom: isMobile ? '60px' : 0
+          // Mobile: position:fixed with explicit offsets is immune to flex
+          // height distribution bugs in mobile browsers. top = navbar(60) +
+          // tab bar(57). bottom = mobile footer bar height.
+          ...(isMobile ? {
+            position: 'fixed' as const,
+            top: '117px',
+            left: 0,
+            right: 0,
+            bottom: '60px',
+            zIndex: 5,
+            overflow: 'hidden'
+          } : {
+            height: 'auto',
+            overflow: 'hidden'
+          })
         }}
       >
-        <header style={{ padding: isMobile ? '0.5rem 1rem' : '1rem 2rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--glass-bg)', backdropFilter: 'blur(10px)', position: 'sticky', top: 0, zIndex: 10 }}>
+        <header style={{ padding: isMobile ? '0.5rem 1rem' : '1rem 2rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--glass-bg)', backdropFilter: 'blur(10px)', flexShrink: 0, zIndex: 10 }}>
           <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
             {!isMobile && (
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
