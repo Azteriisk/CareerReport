@@ -62,7 +62,7 @@ ${JSON.stringify({ ...data, basics: { ...data.basics, image: undefined } })}
         wordBreak: 'break-all'
       }}
     >
-      <pre>{atsText}</pre>
+      {atsText}
     </div>
   );
 };

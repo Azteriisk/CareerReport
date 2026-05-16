@@ -1533,13 +1533,13 @@ export default function BuilderPage() {
           width: '850px',
           overflow: 'visible'
         }}>
-          <div ref={measureRef} className="resume-ui-layout" style={{ width: '850px', minWidth: '850px' }}>
+          <div ref={measureRef} className="resume-ui-layout" style={{ width: 'auto', minWidth: '850px' }}>
             <div style={{ zoom: data.metadata?.scale || 1 }}>
-              <AtsMetadata data={data} />
               {template === 'modern' && <TemplateModern data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
               {template === 'modern-split' && <TemplateModernSplit data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
               {template === 'classic' && <TemplateClassic data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
               {template === 'minimal' && <TemplateMinimal data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
+              <AtsMetadata data={data} />
             </div>
           </div>
         </div>
@@ -1563,14 +1563,14 @@ export default function BuilderPage() {
                   position: 'relative',
                   background: 'white'
                 }}>
-                  <div style={{ position: 'absolute', top: 0, left: `-${i * 890}px`, width: '850px' }}>
-                    <div className="resume-ui-layout" style={{ padding: `${(data.metadata?.pageMargin || 0.42) * 96}px 0` }}>
+                  <div style={{ position: 'absolute', top: 0, left: `-${i * 890}px`, width: 'auto' }}>
+                    <div className="resume-ui-layout" style={{ width: 'auto', minWidth: '850px', padding: `${(data.metadata?.pageMargin || 0.42) * 96}px 0` }}>
                       <div style={{ zoom: data.metadata?.scale || 1 }}>
-                        <AtsMetadata data={data} />
                         {template === 'modern' && <TemplateModern data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
                         {template === 'modern-split' && <TemplateModernSplit data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
                         {template === 'classic' && <TemplateClassic data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
                         {template === 'minimal' && <TemplateMinimal data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
+                        <AtsMetadata data={data} />
                       </div>
                     </div>
                   </div>
@@ -1610,14 +1610,14 @@ export default function BuilderPage() {
             }}>
               {Array.from({ length: pageCount }).map((_, i) => (
                 <div key={`page-${i}`} className="resume-ui-page">
-                  <div style={{ position: 'absolute', top: 0, left: `-${i * 890}px`, width: '850px' }}>
-                    <div className="resume-ui-layout" style={{ padding: `${(data.metadata?.pageMargin || 0.42) * 96}px 0` }}>
+                  <div style={{ position: 'absolute', top: 0, left: `-${i * 890}px`, width: 'auto' }}>
+                    <div className="resume-ui-layout" style={{ width: 'auto', minWidth: '850px', padding: `${(data.metadata?.pageMargin || 0.42) * 96}px 0` }}>
                       <div style={{ zoom: data.metadata?.scale || 1 }}>
-                        <AtsMetadata data={data} />
                         {template === 'modern' && <TemplateModern data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
                         {template === 'modern-split' && <TemplateModernSplit data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
                         {template === 'classic' && <TemplateClassic data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
                         {template === 'minimal' && <TemplateMinimal data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
+                        <AtsMetadata data={data} />
                       </div>
                     </div>
                   </div>

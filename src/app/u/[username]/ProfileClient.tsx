@@ -31,7 +31,7 @@ export function ProfileClient({ username }: { username: string }) {
   const measureRef = React.useRef<HTMLDivElement>(null);
   const [pageCount, setPageCount] = useState(1);
 
-  // Measure scrollHeight of the hidden CSS multi-column layout to determine physical page count
+  // Measure horizontal overflow to determine page count
   useEffect(() => {
     const measure = () => {
       if (measureRef.current) {
@@ -271,13 +271,13 @@ export function ProfileClient({ username }: { username: string }) {
                 width: '850px',
                 overflow: 'visible'
               }}>
-                <div ref={measureRef} className="resume-ui-layout" style={{ width: '850px', minWidth: '850px' }}>
+                <div ref={measureRef} className="resume-ui-layout" style={{ width: 'auto', minWidth: '850px', padding: `${(resumeData.metadata?.pageMargin || 0.42) * 96}px 0` }}>
                   <div style={{ zoom: resumeData.metadata?.scale || 1 }}>
-                    <AtsMetadata data={resumeData} />
                     {template === 'modern' && <TemplateModern data={resumeData} />}
                     {template === 'modern-split' && <TemplateModernSplit data={resumeData} />}
                     {template === 'classic' && <TemplateClassic data={resumeData} />}
                     {template === 'minimal' && <TemplateMinimal data={resumeData} />}
+                    <AtsMetadata data={resumeData} />
                   </div>
                 </div>
               </div>
@@ -300,14 +300,14 @@ export function ProfileClient({ username }: { username: string }) {
                 }}>
                   {Array.from({ length: pageCount }).map((_, i) => (
                     <div key={`page-${i}`} className="resume-ui-page">
-                      <div style={{ position: 'absolute', top: 0, left: `-${i * 890}px`, width: '850px' }}>
-                        <div className="resume-ui-layout">
+                      <div style={{ position: 'absolute', top: 0, left: `-${i * 890}px`, width: 'auto' }}>
+                        <div className="resume-ui-layout" style={{ width: 'auto', minWidth: '850px', padding: `${(resumeData.metadata?.pageMargin || 0.42) * 96}px 0` }}>
                           <div style={{ zoom: resumeData.metadata?.scale || 1 }}>
-                            <AtsMetadata data={resumeData} />
                             {template === 'modern' && <TemplateModern data={resumeData} />}
                             {template === 'modern-split' && <TemplateModernSplit data={resumeData} />}
                             {template === 'classic' && <TemplateClassic data={resumeData} />}
                             {template === 'minimal' && <TemplateMinimal data={resumeData} />}
+                            <AtsMetadata data={resumeData} />
                           </div>
                         </div>
                       </div>
