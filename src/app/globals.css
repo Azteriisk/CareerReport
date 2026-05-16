@@ -196,6 +196,16 @@ a {
 .resume-print-wrapper h4 {
   break-inside: avoid;
   page-break-inside: avoid;
+  /* Hardening for mobile Safari/Chrome: inline-block often forces 
+     the avoidance rule more strictly than block. */
+  display: inline-block;
+  width: 100%;
+}
+
+/* Ensure titles don't get orphaned at the bottom of a page */
+.resume-ui-page h1, .resume-ui-page h2, .resume-ui-page h3, .resume-ui-page h4,
+.resume-print-wrapper h1, .resume-print-wrapper h2, .resume-print-wrapper h3, .resume-print-wrapper h4 {
+  break-after: avoid;
 }
 
 .hide-scrollbar::-webkit-scrollbar {
