@@ -48,16 +48,18 @@ ${JSON.stringify({ ...data, basics: { ...data.basics, image: undefined } })}
       className="ats-metadata"
       style={{ 
         position: 'absolute',
-        width: '1px',
+        top: 0,
+        left: 0,
+        width: '100%',
         height: '1px',
         overflow: 'hidden',
-        color: 'transparent',
-        fontSize: '1px',
+        color: 'rgba(255,255,255,0.01)', // Near-invisible white
+        fontSize: '2px',
         lineHeight: '1px',
-        opacity: 0,
         pointerEvents: 'none',
-        zIndex: -9999,
-        userSelect: 'none'
+        zIndex: -1,
+        whiteSpace: 'pre-wrap',
+        wordBreak: 'break-all'
       }}
     >
       <pre>{atsText}</pre>

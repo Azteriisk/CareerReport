@@ -126,6 +126,11 @@ a {
   /* Width/padding are irrelevant in print — @page margin controls margins */
   width: 100%;
   box-sizing: border-box;
+  font-size: 16px;
+  line-height: 1.5;
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* UI Paginator container */
@@ -153,6 +158,29 @@ a {
   position: relative;
   margin-bottom: 40px; /* Gap between stacked vertical pages */
   flex-shrink: 0;
+  /* Reset base font-size so 'rem' units in templates are pixel-perfect
+     regardless of global browser font-size settings or mobile defaults. */
+  font-size: 16px;
+  line-height: 1.5;
+  text-align: left;
+}
+
+/* Strict reset for resume content to ensure parity between mobile/desktop browsers */
+.resume-ui-page *, 
+.resume-print-wrapper * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.resume-ui-page ul, 
+.resume-print-wrapper ul {
+  list-style-position: inside;
+}
+
+.resume-ui-page a, 
+.resume-print-wrapper a {
+  text-decoration: none;
 }
 
 .hide-scrollbar::-webkit-scrollbar {
