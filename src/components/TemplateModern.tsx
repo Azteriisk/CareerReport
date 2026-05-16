@@ -12,7 +12,15 @@ export const TemplateModern: React.FC<Props> = ({ data }) => {
   const fontSize = data.metadata?.fontSize || 1;
 
   return (
-    <div className="template-modern" style={{ padding: '0 40px', background: 'white', color: '#333', fontFamily: fontStyle, fontSize: `${fontSize}rem` }}>
+    <div className="template-modern" style={{
+      padding: '0 40px',
+      background: 'white',
+      color: '#333',
+      fontFamily: fontStyle,
+      fontSize: `${fontSize}rem`,
+      width: '100%',
+      boxSizing: 'border-box'
+    }}>
       <header className="vcard" style={{ borderBottom: `2px solid ${themeColor}`, paddingBottom: '20px', marginBottom: '20px', display: 'flex', gap: '20px', alignItems: 'center' }}>
         {data.basics.image && (
           <img src={data.basics.image} alt="Headshot" style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: `3px solid ${themeColor}` }} />

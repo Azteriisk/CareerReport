@@ -36,21 +36,26 @@ export function ProfileClient({ username }: { username: string }) {
     const measure = () => {
       if (measureRef.current) {
         const width = measureRef.current.scrollWidth;
-        setPageCount(Math.max(1, Math.ceil((width - 10) / 890)));
+        setPageCount(Math.max(1, Math.ceil((width - 40) / 890)));
       }
     };
-    
+
     const observer = new ResizeObserver(() => {
-      setTimeout(measure, 50);
+      setTimeout(measure, 100);
     });
-    
+
     if (measureRef.current) {
       observer.observe(measureRef.current);
     }
-    
+
+    // Re-measure when fonts are loaded to ensure accurate pagination
+    if (typeof document !== 'undefined' && 'fonts' in document) {
+      document.fonts.ready.then(measure);
+    }
+
     measure();
     return () => observer.disconnect();
-  }, [resumeData, template, resumeData?.metadata?.scale]);
+  }, [resumeData, template, resumeData?.metadata?.scale, resumeData?.metadata?.pageMargin]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -60,14 +65,14 @@ export function ProfileClient({ username }: { username: string }) {
       const targetWidth = 850;
       const calculatedScale = Math.min(1, (width - padding) / targetWidth);
       setMobileScale(calculatedScale);
-      
+
       if (width <= 768) {
         document.body.classList.add('hide-scrollbar');
       } else {
         document.body.classList.remove('hide-scrollbar');
       }
     };
-    
+
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => {
@@ -168,9 +173,9 @@ export function ProfileClient({ username }: { username: string }) {
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg-color)', display: 'flex', flexDirection: 'column' }}>
       <main className={isMobile ? "hide-scrollbar" : ""} style={{ flex: 1, padding: isMobile ? '1rem 0' : '3rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', overflowX: 'hidden' }}>
-        
+
         {/* Social Header */}
-        <div style={{ 
+        <div style={{
           width: isMobile ? '90%' : '850px',
           background: 'var(--surface-color)',
           borderRadius: '16px',
@@ -190,13 +195,13 @@ export function ProfileClient({ username }: { username: string }) {
               {profileData?.full_name?.charAt(0) || profileData?.username?.charAt(0) || '?'}
             </div>
           )}
-          
+
           <div style={{ flex: 1, textAlign: isMobile ? 'center' : 'left' }}>
             <h1 style={{ fontSize: '1.5rem', margin: '0 0 0.25rem 0', color: 'var(--text-primary)' }}>{profileData?.full_name || `@${profileData?.username}`}</h1>
             <p style={{ margin: '0 0 1rem 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>@{profileData?.username}</p>
-            
+
             <div style={{ display: 'flex', gap: '1.5rem', justifyContent: isMobile ? 'center' : 'flex-start', color: 'var(--text-primary)' }}>
-              <div 
+              <div
                 onClick={() => { setFollowModalType('followers'); setFollowModalOpen(true); }}
                 style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}
                 className="hover-opacity"
@@ -204,7 +209,7 @@ export function ProfileClient({ username }: { username: string }) {
                 <Users size={16} color="var(--text-secondary)" />
                 <span style={{ fontWeight: 600 }}>{followers}</span> <span style={{ color: 'var(--text-secondary)' }}>Followers</span>
               </div>
-              <div 
+              <div
                 onClick={() => { setFollowModalType('following'); setFollowModalOpen(true); }}
                 style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer' }}
                 className="hover-opacity"
@@ -213,14 +218,14 @@ export function ProfileClient({ username }: { username: string }) {
               </div>
             </div>
           </div>
-          
+
           <div style={{ display: 'flex', gap: '0.75rem', width: isMobile ? '100%' : 'auto', marginTop: isMobile ? '1rem' : 0 }}>
             {profileData?.id && (
-              <FollowButton 
-                targetUserId={profileData.id} 
+              <FollowButton
+                targetUserId={profileData.id}
                 onFollowChange={(isFollowingStatus) => {
                   setFollowers(prev => isFollowingStatus ? prev + 1 : Math.max(0, prev - 1));
-                }} 
+                }}
               />
             )}
             {profileData?.id && profileData.id !== user?.id && (
@@ -232,22 +237,22 @@ export function ProfileClient({ username }: { username: string }) {
         </div>
 
         <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', width: isMobile ? '90%' : '850px', justifyContent: 'center' }}>
-          <button 
-            onClick={() => setActiveTab('resume')} 
+          <button
+            onClick={() => setActiveTab('resume')}
             className="btn"
-            style={{ 
-              background: activeTab === 'resume' ? 'var(--primary)' : 'transparent', 
+            style={{
+              background: activeTab === 'resume' ? 'var(--primary)' : 'transparent',
               color: activeTab === 'resume' ? 'var(--bg-color)' : 'var(--text-primary)',
               flex: isMobile ? 1 : 'none',
               padding: '0.75rem 2rem'
             }}>
             Resume
           </button>
-          <button 
-            onClick={() => setActiveTab('posts')} 
+          <button
+            onClick={() => setActiveTab('posts')}
             className="btn"
-            style={{ 
-              background: activeTab === 'posts' ? 'var(--primary)' : 'transparent', 
+            style={{
+              background: activeTab === 'posts' ? 'var(--primary)' : 'transparent',
               color: activeTab === 'posts' ? 'var(--bg-color)' : 'var(--text-primary)',
               flex: isMobile ? 1 : 'none',
               padding: '0.75rem 2rem'
@@ -262,7 +267,7 @@ export function ProfileClient({ username }: { username: string }) {
               {/* Hidden measurement div — uses CSS columns to detect exactly how many
                   850px columns (pages) the content overflows into. */}
               <div style={{ 
-                opacity: 0, 
+                visibility: 'hidden', 
                 position: 'absolute', 
                 top: 0, 
                 left: 0, 
@@ -288,19 +293,19 @@ export function ProfileClient({ username }: { username: string }) {
 
               {/* We use transform: scale for pixel-perfect fidelity. 
                   To avoid layout gaps, we wrap it in a container with the scaled dimensions. */}
-              <div style={{ 
+              <div style={{
                 width: isMobile ? `${850 * mobileScale}px` : '850px',
                 height: isMobile ? `${(1100 * pageCount + (pageCount - 1) * 40) * mobileScale}px` : 'auto',
                 flexShrink: 0,
                 overflow: 'hidden'
               }}>
-                <div style={{ 
+                <div style={{
                   transform: isMobile ? `scale(${mobileScale})` : 'none',
                   transformOrigin: 'top left',
                   width: '850px',
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  alignItems: 'center' 
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center'
                 }}>
                   {Array.from({ length: pageCount }).map((_, i) => (
                     <div key={`page-${i}`} className="resume-ui-page">
@@ -334,7 +339,7 @@ export function ProfileClient({ username }: { username: string }) {
           </div>
         )}
       </main>
-      
+
       {!isMobile && (
         <footer style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.875rem', background: 'var(--surface-color)', borderTop: '1px solid var(--glass-border)' }}>
           <p>&copy; 2026 CareerReport. Built for the new generation.</p>
@@ -342,7 +347,7 @@ export function ProfileClient({ username }: { username: string }) {
       )}
 
       {profileData?.id && (
-        <FollowListModal 
+        <FollowListModal
           isOpen={followModalOpen}
           onClose={() => setFollowModalOpen(false)}
           userId={profileData.id}

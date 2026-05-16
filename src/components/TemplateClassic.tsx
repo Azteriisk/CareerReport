@@ -11,7 +11,16 @@ export const TemplateClassic: React.FC<Props> = ({ data }) => {
   const fontSize = data.metadata?.fontSize || 1;
 
   return (
-    <div className="template-classic" style={{ padding: '0 40px', background: 'white', color: '#000', lineHeight: 1.6, fontFamily: fontStyle, fontSize: `${fontSize}rem` }}>
+    <div className="template-classic" style={{
+      padding: '0 40px',
+      background: 'white',
+      color: '#000',
+      lineHeight: 1.6,
+      fontFamily: fontStyle,
+      fontSize: `${fontSize}rem`,
+      width: '100%',
+      boxSizing: 'border-box'
+    }}>
       <header className="vcard" style={{ textAlign: 'center', marginBottom: '30px' }}>
         {data.basics.image && (
           <div style={{ marginBottom: '15px' }}>

@@ -12,7 +12,16 @@ export const TemplateModernSplit: React.FC<Props> = ({ data }) => {
   const fontSize = data.metadata?.fontSize || 1;
 
   return (
-    <div className="template-modern-split" style={{ display: 'flex', background: 'white', color: '#333', fontFamily: fontStyle, fontSize: `${fontSize}rem`, minHeight: '1056px' }}>
+    <div className="template-modern-split" style={{
+      display: 'flex',
+      background: 'white',
+      color: '#333',
+      fontFamily: fontStyle,
+      fontSize: `${fontSize}rem`,
+      minHeight: '1056px',
+      width: '100%',
+      boxSizing: 'border-box'
+    }}>
       {/* Left Main Content */}
       <main style={{ flex: '0 0 65%', padding: '0 40px' }}>
         <header style={{ marginBottom: '30px' }}>

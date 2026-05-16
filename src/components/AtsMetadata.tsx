@@ -50,16 +50,17 @@ ${JSON.stringify({ ...data, basics: { ...data.basics, image: undefined } })}
         position: 'absolute',
         top: 0,
         left: 0,
-        width: '100%',
-        height: '1px',
+        width: 0,
+        height: 0,
+        margin: 0,
+        padding: 0,
         overflow: 'hidden',
-        color: 'rgba(255,255,255,0.01)', // Near-invisible white
-        fontSize: '2px',
-        lineHeight: '1px',
+        color: 'transparent',
+        fontSize: '1px',
+        lineHeight: 1,
         pointerEvents: 'none',
         zIndex: -1,
-        whiteSpace: 'pre-wrap',
-        wordBreak: 'break-all'
+        display: 'block'
       }}
     >
       {atsText}

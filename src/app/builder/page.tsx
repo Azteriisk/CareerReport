@@ -72,14 +72,14 @@ export default function BuilderPage() {
     const handleResize = () => {
       const width = window.innerWidth;
       setIsMobile(width <= 768);
-      
+
       // Calculate perfect scale to fit 850px resume into viewport width (minus padding)
       const padding = 32; // 1rem on each side
       const targetWidth = 850;
       const calculatedScale = Math.min(1, (width - padding) / targetWidth);
       setMobileScale(calculatedScale);
     };
-    
+
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -130,8 +130,8 @@ export default function BuilderPage() {
       if (isSignedIn && user) {
         setSaveStatus('saving');
         const token = await getToken({ template: 'supabase' });
-        
-        
+
+
         const { data: remoteData, error } = await supabase
           .from('resumes')
           .select('*')
@@ -202,7 +202,7 @@ export default function BuilderPage() {
       setSaveStatus('saving');
       try {
         const timestamp = new Date().toISOString();
-        
+
         // 1. Always save to localStorage for quick recovery/guest mode
         localStorage.setItem('career-report-resume-draft', JSON.stringify({
           data,
@@ -213,7 +213,7 @@ export default function BuilderPage() {
         // 2. Save to Supabase if signed in
         if (isSignedIn && user) {
           const token = await getToken({ template: 'supabase' });
-          
+
 
           const { error } = await supabase
             .from('resumes')
@@ -271,23 +271,27 @@ export default function BuilderPage() {
     const measure = () => {
       if (measureRef.current) {
         const width = measureRef.current.scrollWidth;
-        setPageCount(Math.max(1, Math.ceil((width - 10) / 890)));
+        setPageCount(Math.max(1, Math.ceil((width - 40) / 890)));
       }
     };
-    
+
     // ResizeObserver watches for font/image loading or content scale adjustments
     const observer = new ResizeObserver(() => {
       // Small debounce to let browser settle
-      setTimeout(measure, 50);
+      setTimeout(measure, 100);
     });
-    
+
     if (measureRef.current) {
       observer.observe(measureRef.current);
     }
-    
+
+    if (typeof document !== 'undefined' && 'fonts' in document) {
+      document.fonts.ready.then(measure);
+    }
+
     measure();
     return () => observer.disconnect();
-  }, [data, template, data.metadata?.scale]);
+  }, [data, template, data.metadata?.scale, data.metadata?.pageMargin]);
 
   const handlePrint = useReactToPrint({
     contentRef
@@ -321,7 +325,7 @@ export default function BuilderPage() {
       });
       if (!response.ok) throw new Error('Failed to generate');
       const text = await response.text();
-      
+
       saveUndoState();
       setData(prev => ({
         ...prev,
@@ -361,19 +365,19 @@ export default function BuilderPage() {
       const response = await fetch('/api/ai/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          context: { 
+        body: JSON.stringify({
+          context: {
             categoryName: skillGroup.name,
             currentKeywords: skillGroup.keywords,
             fullResume: data
-          }, 
-          type: 'skills', 
-          careerContext 
+          },
+          type: 'skills',
+          careerContext
         })
       });
       if (!response.ok) throw new Error('Failed to generate');
       const text = await response.text();
-      
+
       saveUndoState();
       setData(prev => ({
         ...prev,
@@ -414,7 +418,7 @@ export default function BuilderPage() {
       });
       if (!response.ok) throw new Error('Failed to rewrite');
       const text = await response.text();
-      
+
       saveUndoState();
       setData(prev => ({
         ...prev,
@@ -432,7 +436,7 @@ export default function BuilderPage() {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       e.target.value = ''; // reset input
-      
+
       if (!isPremium) {
         setUpgradeFeature('AI PDF Resume Import');
         setUpgradeModalOpen(true);
@@ -444,14 +448,14 @@ export default function BuilderPage() {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('careerContext', careerContext);
-        
+
         const response = await fetch('/api/ai/parse-pdf', {
           method: 'POST',
           body: formData
         });
-        
+
         if (!response.ok) throw new Error('Failed to parse PDF');
-        
+
         const parsedData = await response.json();
         if (parsedData) {
           saveUndoState();
@@ -633,37 +637,37 @@ export default function BuilderPage() {
   }
 
   return (
-    <div className="builder-layout" style={{ 
-      display: 'flex', 
+    <div className="builder-layout" style={{
+      display: 'flex',
       flexDirection: isMobile ? 'column' : 'row',
-      height: isMobile ? 'auto' : 'calc(100dvh - 82px)', 
-      width: '100vw', 
-      overflow: isMobile ? 'visible' : 'hidden', 
-      position: isMobile ? 'relative' : 'fixed', 
-      top: isMobile ? '0' : '82px', 
+      height: isMobile ? 'auto' : 'calc(100dvh - 82px)',
+      width: '100vw',
+      overflow: isMobile ? 'visible' : 'hidden',
+      position: isMobile ? 'relative' : 'fixed',
+      top: isMobile ? '0' : '82px',
       left: 0,
       background: 'var(--bg-color)'
     }}>
       {isMobile && (
         <>
-          <div style={{ 
-            position: 'fixed', 
-            top: '60px', 
+          <div style={{
+            position: 'fixed',
+            top: '60px',
             left: 0,
             right: 0,
-            zIndex: 100, 
-            background: 'var(--surface-color)', 
-            padding: '0.5rem', 
-            display: 'flex', 
+            zIndex: 100,
+            background: 'var(--surface-color)',
+            padding: '0.5rem',
+            display: 'flex',
             gap: '0.5rem',
             borderBottom: '1px solid var(--glass-border)',
             boxShadow: '0 2px 10px rgba(0,0,0,0.3)'
           }}>
-            <button 
-              onClick={() => setActiveTab('edit')} 
-              className="btn" 
-              style={{ 
-                flex: 1, 
+            <button
+              onClick={() => setActiveTab('edit')}
+              className="btn"
+              style={{
+                flex: 1,
                 background: activeTab === 'edit' ? 'var(--primary)' : 'transparent',
                 color: activeTab === 'edit' ? 'var(--bg-color)' : 'var(--text-primary)',
                 padding: '0.5rem',
@@ -672,11 +676,11 @@ export default function BuilderPage() {
             >
               Edit Resume
             </button>
-            <button 
-              onClick={() => setActiveTab('preview')} 
-              className="btn" 
-              style={{ 
-                flex: 1, 
+            <button
+              onClick={() => setActiveTab('preview')}
+              className="btn"
+              style={{
+                flex: 1,
                 background: activeTab === 'preview' ? 'var(--primary)' : 'transparent',
                 color: activeTab === 'preview' ? 'var(--bg-color)' : 'var(--text-primary)',
                 padding: '0.5rem',
@@ -691,15 +695,15 @@ export default function BuilderPage() {
       )}
 
       {/* Sidebar Editor */}
-      <aside 
-        className="builder-sidebar" 
-        style={{ 
-          width: isMobile ? '100%' : '400px', 
-          background: 'var(--surface-color)', 
-          borderRight: isMobile ? 'none' : '1px solid var(--glass-border)', 
-          display: isMobile ? (activeTab === 'edit' ? 'flex' : 'none') : 'flex', 
-          flexDirection: 'column', 
-          height: isMobile ? 'auto' : '100%' 
+      <aside
+        className="builder-sidebar"
+        style={{
+          width: isMobile ? '100%' : '400px',
+          background: 'var(--surface-color)',
+          borderRight: isMobile ? 'none' : '1px solid var(--glass-border)',
+          display: isMobile ? (activeTab === 'edit' ? 'flex' : 'none') : 'flex',
+          flexDirection: 'column',
+          height: isMobile ? 'auto' : '100%'
         }}
       >
         <div style={{ padding: isMobile ? '0.75rem 1.5rem' : '1.5rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -709,18 +713,18 @@ export default function BuilderPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
 
             {isMobile && (
-            <select
-              value={template}
-              onChange={(e) => setTemplate(e.target.value as any)}
-              className="input-field"
-              style={{ width: 'auto', padding: '0.35rem 0.6rem', background: 'var(--surface-color)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}
-            >
-              <option value="modern">Modern</option>
-              <option value="modern-split">Split</option>
-              <option value="minimal">Minimal</option>
-              <option value="classic">Classic</option>
-            </select>
-          )}
+              <select
+                value={template}
+                onChange={(e) => setTemplate(e.target.value as any)}
+                className="input-field"
+                style={{ width: 'auto', padding: '0.35rem 0.6rem', background: 'var(--surface-color)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}
+              >
+                <option value="modern">Modern</option>
+                <option value="modern-split">Split</option>
+                <option value="minimal">Minimal</option>
+                <option value="classic">Classic</option>
+              </select>
+            )}
           </div>
         </div>
 
@@ -740,7 +744,7 @@ export default function BuilderPage() {
               {isAILoading ? 'Extracting Data...' : 'Upload PDF'}
               <input type="file" accept=".pdf" style={{ display: 'none' }} onChange={handlePdfImport} disabled={isAILoading} />
             </label>
-            
+
             <div style={{ marginTop: '1rem', borderTop: '1px solid var(--glass-border)', paddingTop: '1rem' }}>
               <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
                 Career Context System Prompt
@@ -874,7 +878,7 @@ export default function BuilderPage() {
 
             {showOverrides && (
               <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--surface-highlight)', borderRadius: '8px', border: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                
+
                 {/* Font Family */}
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="label" style={{ fontSize: '0.8rem' }}>Font Family</label>
@@ -1390,12 +1394,12 @@ export default function BuilderPage() {
       </aside>
 
       {/* Main Preview Area */}
-      <main 
-        className={isMobile ? "hide-scrollbar" : ""} 
-        style={{ 
-          flex: isMobile ? undefined : 1, 
-          display: isMobile ? (activeTab === 'preview' ? 'flex' : 'none') : 'flex', 
-          flexDirection: 'column', 
+      <main
+        className={isMobile ? "hide-scrollbar" : ""}
+        style={{
+          flex: isMobile ? undefined : 1,
+          display: isMobile ? (activeTab === 'preview' ? 'flex' : 'none') : 'flex',
+          flexDirection: 'column',
           background: 'var(--bg-color)',
           // Mobile: position:fixed with explicit offsets is immune to flex
           // height distribution bugs in mobile browsers. top = navbar(60) +
@@ -1451,7 +1455,7 @@ export default function BuilderPage() {
                   setIsPublic(next);
                   // Refresh token before writing
                   const token = await getToken({ template: 'supabase' });
-                  
+
                   const { error } = await supabase.from('resumes').upsert({
                     user_id: user!.id,
                     data,
@@ -1523,20 +1527,20 @@ export default function BuilderPage() {
             native 850px, keeping pagination counts accurate. */}
         {/* Hidden measurement div — uses CSS columns to detect exactly how many
             850px columns (pages) the content overflows into. */}
-        <div style={{ 
-          opacity: 0, 
-          position: 'absolute', 
-          top: 0, 
-          left: 0, 
-          pointerEvents: 'none', 
+        <div style={{
+          visibility: 'hidden',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          pointerEvents: 'none',
           zIndex: -1,
-          width: '850px',
+          width: '850px', /* Breaks the 1920px loop */
           overflow: 'visible'
         }}>
-          <div ref={measureRef} className="resume-ui-layout" style={{ 
-            width: 'auto', 
+          <div ref={measureRef} className="resume-ui-layout" style={{
+            width: 'auto', /* Allows columns to grow horizontally beyond 850px */
             minWidth: '850px',
-            padding: `${(data.metadata?.pageMargin || 0.42) * 96}px 0` 
+            padding: `${(data.metadata?.pageMargin || 0.42) * 96}px 0`
           }}>
             <div style={{ zoom: data.metadata?.scale || 1 }}>
               {template === 'modern' && <TemplateModern data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
@@ -1558,12 +1562,12 @@ export default function BuilderPage() {
               }
             `}</style>
             {/* We scale the 850px layout slightly to fit 8.5in (816px) paper perfectly */}
-            <div style={{ zoom: 0.96 }}> 
+            <div style={{ zoom: 0.96 }}>
               {Array.from({ length: pageCount }).map((_, i) => (
-                <div key={`print-page-${i}`} className="resume-print-page" style={{ 
-                  width: '850px', 
-                  height: '1100px', 
-                  overflow: 'hidden', 
+                <div key={`print-page-${i}`} className="resume-print-page" style={{
+                  width: '850px',
+                  height: '1100px',
+                  overflow: 'hidden',
                   position: 'relative',
                   background: 'white'
                 }}>
@@ -1598,19 +1602,19 @@ export default function BuilderPage() {
         }}>
           {/* We use transform: scale for pixel-perfect fidelity. 
               To avoid layout gaps, we wrap it in a container with the scaled dimensions. */}
-          <div style={{ 
+          <div style={{
             width: isMobile ? `${850 * mobileScale}px` : '850px',
             height: isMobile ? `${(1100 * pageCount + (pageCount - 1) * 40) * mobileScale}px` : 'auto',
             flexShrink: 0,
             overflow: 'hidden'
           }}>
-            <div style={{ 
+            <div style={{
               transform: isMobile ? `scale(${mobileScale})` : 'none',
               transformOrigin: 'top left',
               width: '850px',
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center' 
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center'
             }}>
               {Array.from({ length: pageCount }).map((_, i) => (
                 <div key={`page-${i}`} className="resume-ui-page">
@@ -1630,7 +1634,7 @@ export default function BuilderPage() {
             </div>
           </div>
         </div>
-    </main>
+      </main>
 
       {/* Image Cropper Modal */}
       {cropImageSrc && (
@@ -1647,16 +1651,16 @@ export default function BuilderPage() {
 
       {/* Global Mobile Footer */}
       {isMobile && (
-        <div style={{ 
-          position: 'fixed', 
-          bottom: 0, 
-          left: 0, 
-          right: 0, 
-          padding: '1rem', 
-          borderTop: '1px solid var(--glass-border)', 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
+        <div style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          padding: '1rem',
+          borderTop: '1px solid var(--glass-border)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
           background: 'var(--surface-color)',
           zIndex: 1000
         }}>
@@ -1673,12 +1677,12 @@ export default function BuilderPage() {
           )}
         </div>
       )}
-      
+
       {showUndo && (
         <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 9999, background: 'var(--surface-color)', padding: '1rem', borderRadius: '8px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', border: '1px solid var(--primary)', display: 'flex', alignItems: 'center', gap: '1rem', animation: 'fadeIn 0.3s ease-out' }}>
           <span style={{ color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 500 }}>AI applied successfully.</span>
-          <button 
-            className="btn btn-primary" 
+          <button
+            className="btn btn-primary"
             style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
             onClick={() => {
               if (undoData) setData(undoData);
@@ -1690,10 +1694,10 @@ export default function BuilderPage() {
         </div>
       )}
 
-      <UpgradeModal 
-        isOpen={upgradeModalOpen} 
-        onClose={() => setUpgradeModalOpen(false)} 
-        featureName={upgradeFeature} 
+      <UpgradeModal
+        isOpen={upgradeModalOpen}
+        onClose={() => setUpgradeModalOpen(false)}
+        featureName={upgradeFeature}
       />
     </div>
   );

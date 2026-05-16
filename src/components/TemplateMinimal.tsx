@@ -12,7 +12,17 @@ export const TemplateMinimal: React.FC<Props> = ({ data }) => {
   const fontSize = data.metadata?.fontSize || 1;
 
   return (
-    <div className="template-minimal" style={{ padding: '0 40px', background: 'white', color: '#111', display: 'flex', minHeight: '1056px', fontFamily: fontStyle, fontSize: `${fontSize}rem` }}>
+    <div className="template-minimal" style={{
+      padding: '0 40px',
+      background: 'white',
+      color: '#111',
+      display: 'flex',
+      minHeight: '1056px',
+      fontFamily: fontStyle,
+      fontSize: `${fontSize}rem`,
+      width: '100%',
+      boxSizing: 'border-box'
+    }}>
       <aside style={{ width: '30%', paddingRight: '20px', borderRight: '1px solid #eaeaea', background: sidebarBg, margin: '0 0 0 -40px', padding: '0 20px 0 40px' }}>
         {data.basics.image && (
           <img src={data.basics.image} alt="Headshot" style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', marginBottom: '20px' }} />
