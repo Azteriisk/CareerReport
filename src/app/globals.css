@@ -271,26 +271,24 @@ input[type="month"].empty-date:focus::-webkit-datetime-edit {
 @media (max-width: 768px) {
   /* Global Nav */
   .mobile-header {
-    flex-direction: row !important;
-    justify-content: space-between !important;
-    padding: 0.75rem 1rem !important;
+    padding: 0 1rem !important;
     height: 60px !important;
   }
   .mobile-header h1 {
     font-size: 1rem !important;
-    display: block !important;
   }
-  .mobile-header nav {
-    gap: 0 !important;
-    padding: 2px !important;
-  }
-  .mobile-header nav a {
-    padding: 0.4rem 0.6rem !important;
-    font-size: 0.8rem !important;
+  /* Hide desktop nav pills and auth section */
+  .desktop-nav {
+    display: none !important;
   }
   .nav-auth-section {
     display: none !important;
   }
+  /* Show mobile hamburger + avatar */
+  .mobile-nav-right {
+    display: flex !important;
+  }
+
   
   /* Landing Page */
   .mobile-landing-h2 {
