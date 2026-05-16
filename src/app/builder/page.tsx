@@ -1566,7 +1566,6 @@ export default function BuilderPage() {
             </div>
           </div>
         </div>
-      </div>
     </main>
 
       {/* Image Cropper Modal */}
