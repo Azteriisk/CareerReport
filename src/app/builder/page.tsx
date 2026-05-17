@@ -88,6 +88,7 @@ export default function BuilderPage() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [template, setTemplate] = useState<'modern' | 'classic' | 'minimal' | 'modern-split'>('modern-split');
   const [isAILoading, setIsAILoading] = useState(false);
+  const [isPro, setIsPro] = useState(false);
   const [showSectionMenu, setShowSectionMenu] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -149,14 +150,15 @@ export default function BuilderPage() {
           setIsInitialLoading(false);
         }
 
-        // Also fetch the Supabase username and career context
+        // Also fetch the Supabase username, career context, and pro status
         const { data: profileRow } = await supabase
           .from('profiles')
-          .select('username, career_context')
+          .select('username, career_context, is_pro')
           .eq('id', user.id)
           .single();
         if (profileRow?.username) setProfileUsername(profileRow.username);
         if (profileRow?.career_context) setCareerContext(profileRow.career_context);
+        if (profileRow?.is_pro) setIsPro(true);
 
         if (remoteData) return;
       }
@@ -299,10 +301,8 @@ export default function BuilderPage() {
 
   const [aiLoading, setAiLoading] = useState<Record<string, boolean>>({});
 
-  const isPremium = process.env.NODE_ENV === 'development'; // Mock premium in dev
-
   const handleJobAI = async (jobId: string, type: 'summary' | 'bullets') => {
-    if (!isPremium) {
+    if (!isPro) {
       setUpgradeFeature(type === 'summary' ? 'AI Job Summaries' : 'AI Bullet Points');
       setUpgradeModalOpen(true);
       return;
@@ -346,7 +346,7 @@ export default function BuilderPage() {
   };
 
   const handleGenerateSkills = async (skillGroupId: string) => {
-    if (!isPremium) {
+    if (!isPro) {
       setUpgradeFeature('AI Skill Generation');
       setUpgradeModalOpen(true);
       return;
@@ -398,7 +398,7 @@ export default function BuilderPage() {
   };
 
   const handleRewrite = async () => {
-    if (!isPremium) {
+    if (!isPro) {
       setUpgradeFeature('AI Professional Summary');
       setUpgradeModalOpen(true);
       return;
@@ -437,7 +437,7 @@ export default function BuilderPage() {
       const file = e.target.files[0];
       e.target.value = ''; // reset input
 
-      if (!isPremium) {
+      if (!isPro) {
         setUpgradeFeature('AI PDF Resume Import');
         setUpgradeModalOpen(true);
         return;
@@ -733,7 +733,7 @@ export default function BuilderPage() {
           <div style={{ marginBottom: '2rem', padding: '1rem', background: 'var(--surface-highlight)', borderRadius: '8px', border: '1px solid var(--primary)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)' }}>
-                <Sparkles size={16} /> AI Resume Import <Lock size={12} />
+                <Sparkles size={16} /> AI Resume Import {!isPro && <Lock size={12} />}
               </span>
             </div>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
@@ -832,7 +832,7 @@ export default function BuilderPage() {
                 className="btn btn-primary"
                 style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', background: 'var(--accent)' }}
               >
-                {isAILoading ? <RefreshCw size={14} className="animate-spin" /> : <><Sparkles size={14} /> AI Rewrite <Lock size={12} /></>}
+                {isAILoading ? <RefreshCw size={14} className="animate-spin" /> : <><Sparkles size={14} /> AI Rewrite {!isPro && <Lock size={12} />}</>}
               </button>
             </div>
             <textarea
@@ -1014,7 +1014,7 @@ export default function BuilderPage() {
                       className="btn btn-primary"
                       style={{ padding: '0.15rem 0.5rem', fontSize: '0.65rem', background: 'var(--accent)', gap: '4px' }}
                     >
-                      {aiLoading[`${job.id}-summary`] ? <RefreshCw size={10} className="animate-spin" /> : <><Sparkles size={10} /> AI Generate <Lock size={8} /></>}
+                      {aiLoading[`${job.id}-summary`] ? <RefreshCw size={10} className="animate-spin" /> : <><Sparkles size={10} /> AI Generate {!isPro && <Lock size={8} />}</>}
                     </button>
                   </label>
                   <textarea className="input-field" style={{ padding: '0.5rem', minHeight: '60px' }} value={job.summary} onChange={(e) => handleJobChange(job.id, 'summary', e.target.value)} />
@@ -1029,7 +1029,7 @@ export default function BuilderPage() {
                         className="btn btn-primary"
                         style={{ padding: '0.15rem 0.5rem', fontSize: '0.65rem', background: 'var(--accent)', gap: '4px' }}
                       >
-                        {aiLoading[`${job.id}-bullets`] ? <RefreshCw size={10} className="animate-spin" /> : <><Sparkles size={10} /> AI Generate <Lock size={8} /></>}
+                        {aiLoading[`${job.id}-bullets`] ? <RefreshCw size={10} className="animate-spin" /> : <><Sparkles size={10} /> AI Generate {!isPro && <Lock size={8} />}</>}
                       </button>
                       <button
                         onClick={() => handleJobChange(job.id, 'highlights', [...(job.highlights || []), ''])}
@@ -1373,23 +1373,34 @@ export default function BuilderPage() {
                   className="btn"
                   style={{ width: '100%', justifyContent: 'flex-start', background: 'transparent', borderRadius: 0, opacity: 0.6, color: 'var(--text-secondary)' }}
                   disabled
-                  onClick={(e) => { e.preventDefault(); alert("Languages are a premium feature!"); }}
+                  onClick={(e) => { e.preventDefault(); alert(isPro ? "Languages section coming soon for Pro!" : "Languages are a premium feature!"); }}
                 >
-                  <Lock size={14} /> Languages (Premium)
+                  {isPro ? <CheckCircle size={14} color="var(--accent)" /> : <Lock size={14} />} Languages {isPro ? "(Pro Unlocked)" : "(Premium)"}
                 </button>
               </div>
             )}
           </div>
 
-          <div style={{ padding: '1rem', background: 'rgba(139, 92, 246, 0.1)', border: '1px solid rgba(139, 92, 246, 0.2)', borderRadius: '8px', marginTop: '2rem' }}>
-            <h3 style={{ fontSize: '0.9rem', color: 'var(--secondary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Lock size={16} /> Premium AI Features
-            </h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-              Upgrade your account to access our ATS-optimized AI writer for experience bullets, skills extraction, and custom cover letters.
-            </p>
-            <button onClick={() => { setUpgradeFeature('CareerReport Pro'); setUpgradeModalOpen(true); }} className="btn btn-secondary" style={{ width: '100%', fontSize: '0.875rem' }}>Upgrade to Premium ($9)</button>
-          </div>
+          {isPro ? (
+            <div style={{ padding: '1.25rem', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '8px', marginTop: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', textAlign: 'center' }}>
+              <h3 style={{ fontSize: '0.9rem', color: 'var(--accent)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}>
+                <Sparkles size={16} color="var(--accent)" /> Pro Unlocked
+              </h3>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
+                You have unlimited, lifetime access to all state-of-the-art AI parsing and generation features.
+              </p>
+            </div>
+          ) : (
+            <div style={{ padding: '1rem', background: 'rgba(139, 92, 246, 0.1)', border: '1px solid rgba(139, 92, 246, 0.2)', borderRadius: '8px', marginTop: '2rem' }}>
+              <h3 style={{ fontSize: '0.9rem', color: 'var(--secondary)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Lock size={16} /> Premium AI Features
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                Upgrade your account to access our ATS-optimized AI writer for experience bullets, skills extraction, and custom cover letters.
+              </p>
+              <button onClick={() => { setUpgradeFeature('CareerReport Pro'); setUpgradeModalOpen(true); }} className="btn btn-secondary" style={{ width: '100%', fontSize: '0.875rem' }}>Upgrade to Premium ($9)</button>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -1700,6 +1711,7 @@ export default function BuilderPage() {
         isOpen={upgradeModalOpen}
         onClose={() => setUpgradeModalOpen(false)}
         featureName={upgradeFeature}
+        onUpgradeSuccess={() => setIsPro(true)}
       />
     </div>
   );

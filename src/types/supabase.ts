@@ -385,6 +385,7 @@ export type Database = {
           username: string
           username_changed: boolean | null
           verified: boolean | null
+          is_pro: boolean | null
         }
         Insert: {
           avatar_url?: string | null
@@ -398,6 +399,7 @@ export type Database = {
           username: string
           username_changed?: boolean | null
           verified?: boolean | null
+          is_pro?: boolean | null
         }
         Update: {
           avatar_url?: string | null
@@ -411,6 +413,7 @@ export type Database = {
           username?: string
           username_changed?: boolean | null
           verified?: boolean | null
+          is_pro?: boolean | null
         }
         Relationships: []
       }
