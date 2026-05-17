@@ -343,7 +343,11 @@ export function ProfileClient({ username }: { username: string }) {
       </main>
 
       {!isMobile && (
-        <footer style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.875rem', background: 'var(--surface-color)', borderTop: '1px solid var(--glass-border)' }}>
+        <footer style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.875rem', background: 'var(--surface-color)', borderTop: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '20px' }}>
+            <Link href="/privacy" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }} className="hover-opacity">Privacy Policy</Link>
+            <Link href="/terms" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }} className="hover-opacity">Terms of Service</Link>
+          </div>
           <p>&copy; 2026 CareerReport. Built for the new generation.</p>
         </footer>
       )}
