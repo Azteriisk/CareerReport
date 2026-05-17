@@ -47,6 +47,22 @@ export async function POST(request: Request) {
           return new Response(`Database Error`, { status: 500 });
         }
       }
+    } else if (event.type === 'customer.subscription.deleted') {
+      const subscription = event.data.object as Stripe.Subscription;
+      const userId = subscription.metadata?.userId;
+
+      if (userId) {
+        console.log(`Stripe Webhook: Revoking Pro status for user ${userId} (Subscription Canceled/Expired)`);
+        const { error } = await supabase
+          .from('profiles')
+          .update({ is_pro: false })
+          .eq('id', userId);
+
+        if (error) {
+          console.error(`Supabase update error in subscription delete webhook:`, error);
+          return new Response(`Database Error`, { status: 500 });
+        }
+      }
     }
 
     return NextResponse.json({ received: true });

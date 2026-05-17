@@ -906,10 +906,10 @@ function BuilderPageContent() {
               <button
                 onClick={handleRewrite}
                 disabled={isAILoading}
-                className="btn btn-primary"
-                style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', background: 'var(--accent)' }}
+                className="btn-icon"
+                style={{ fontSize: '0.7rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.3)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
               >
-                {isAILoading ? <RefreshCw size={14} className="animate-spin" /> : <><Sparkles size={14} /> AI Rewrite {!isPro && <Lock size={12} />}</>}
+                {isAILoading ? <Loader2 size={12} className="animate-spin" /> : <><Wand2 size={12} /> AI Rewrite {!isPro && <Lock size={10} />}</>}
               </button>
             </div>
             <textarea
@@ -1088,10 +1088,10 @@ function BuilderPageContent() {
                     <button
                       onClick={() => handleJobAI(job.id, 'summary')}
                       disabled={aiLoading[`${job.id}-summary`]}
-                      className="btn btn-primary"
-                      style={{ padding: '0.15rem 0.5rem', fontSize: '0.65rem', background: 'var(--accent)', gap: '4px' }}
+                      className="btn-icon"
+                      style={{ fontSize: '0.65rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.3)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                     >
-                      {aiLoading[`${job.id}-summary`] ? <RefreshCw size={10} className="animate-spin" /> : <><Sparkles size={10} /> AI Generate {!isPro && <Lock size={8} />}</>}
+                      {aiLoading[`${job.id}-summary`] ? <Loader2 size={10} className="animate-spin" /> : <><Wand2 size={10} /> AI Generate {!isPro && <Lock size={8} />}</>}
                     </button>
                   </label>
                   <textarea className="input-field" style={{ padding: '0.5rem', minHeight: '60px' }} value={job.summary} onChange={(e) => handleJobChange(job.id, 'summary', e.target.value)} />
@@ -1103,10 +1103,10 @@ function BuilderPageContent() {
                       <button
                         onClick={() => handleJobAI(job.id, 'bullets')}
                         disabled={aiLoading[`${job.id}-bullets`]}
-                        className="btn btn-primary"
-                        style={{ padding: '0.15rem 0.5rem', fontSize: '0.65rem', background: 'var(--accent)', gap: '4px' }}
+                        className="btn-icon"
+                        style={{ fontSize: '0.65rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.3)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                       >
-                        {aiLoading[`${job.id}-bullets`] ? <RefreshCw size={10} className="animate-spin" /> : <><Sparkles size={10} /> AI Generate {!isPro && <Lock size={8} />}</>}
+                        {aiLoading[`${job.id}-bullets`] ? <Loader2 size={10} className="animate-spin" /> : <><Wand2 size={10} /> AI Generate {!isPro && <Lock size={8} />}</>}
                       </button>
                       <button
                         onClick={() => handleJobChange(job.id, 'highlights', [...(job.highlights || []), ''])}
