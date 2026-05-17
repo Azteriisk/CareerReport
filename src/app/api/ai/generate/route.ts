@@ -51,6 +51,14 @@ export async function POST(req: Request) {
       Use the provided resume context (work history, other skills, category name) to tailor the skills precisely to the user's career trajectory.
       If the user provided existing skills in this category, refine, standardize, and expand upon them.
       Output ONLY a single comma-separated line of skills (e.g., "React, TypeScript, Node.js"). Do NOT output conversational filler, prefixes, or bullet points.`;
+    } else if (type === 'cover-letter') {
+      systemPrompt = `You are an expert executive resume and career coach.
+      Write a highly personalized, compelling, and professional Cover Letter based on:
+      1. The user's entire resume profile data (basics, work history, skills).
+      2. The Target Company Name, Target Job Title, and any Job Description/Role details provided in the context.
+      Make the letter stand out by connecting the user's career achievements directly to the company and role. Use a professional, confident tone.
+      Ensure the output is formatted as a beautiful, standard business cover letter, including placeholders for date, addresses, and formal salutations.
+      Output ONLY the cover letter text. Do NOT include any introductions or conversational filler outside the letter itself.`;
     } else {
       systemPrompt = `You are an expert executive resume writer. 
       Write a highly professional "Professional Summary" (3-4 sentences) for the top of the user's resume.
