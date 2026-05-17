@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/api/'],
     },
-    sitemap: 'https://careerreport.com/sitemap.xml',
+    sitemap: 'https://careerreport.azterisk.net/sitemap.xml',
   }
 }
