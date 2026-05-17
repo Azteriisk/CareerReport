@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Sparkles, CheckCircle, Lock, Loader2 } from 'lucide-react';
-import { useUser } from '@clerk/nextjs';
+import { useUser, SignInButton, SignUpButton } from '@clerk/nextjs';
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -114,6 +114,64 @@ export function UpgradeModal({ isOpen, onClose, featureName = "Premium AI Featur
               <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5, maxWidth: '280px' }}>
                 Securing a payment session. You will be redirected to Stripe to finalize your upgrade.
               </p>
+            </div>
+          </div>
+        ) : !isSignedIn ? (
+          /* Premium Auth Prompt for Unsigned Guest Users */
+          <div>
+            <div style={{ 
+              background: 'linear-gradient(135deg, var(--surface-highlight) 0%, var(--surface-color) 100%)', 
+              padding: '2.5rem 2rem 2rem 2rem', 
+              textAlign: 'center',
+              borderBottom: '1px solid var(--glass-border)'
+            }}>
+              <div style={{ 
+                width: '64px', 
+                height: '64px', 
+                background: 'var(--primary)', 
+                borderRadius: '50%', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                margin: '0 auto 1.25rem',
+                boxShadow: '0 0 25px rgba(250, 189, 47, 0.45)'
+              }}>
+                <Sparkles size={32} color="var(--bg-color)" />
+              </div>
+              
+              <h2 style={{ fontSize: '1.65rem', fontWeight: 800, margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Account Required</h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', margin: 0, lineHeight: 1.5 }}>
+                To unlock powerful features like <strong>{featureName}</strong>, you need to create a free account or sign in first.
+              </p>
+            </div>
+
+            <div style={{ padding: '2rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
+                {[
+                  "Save multiple resumes to the cloud",
+                  "Unlock state-of-the-art AI generation tools",
+                  "Get a personalized public shareable URL",
+                  "Directly connect with top hiring employers"
+                ].map((benefit, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-primary)' }}>
+                    <CheckCircle size={16} color="var(--accent)" style={{ flexShrink: 0 }} />
+                    <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{benefit}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <SignUpButton mode="modal">
+                  <button className="btn btn-primary" style={{ width: '100%', padding: '1rem', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+                    Create Free Account
+                  </button>
+                </SignUpButton>
+                <SignInButton mode="modal">
+                  <button className="btn btn-secondary" style={{ width: '100%', padding: '1rem', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+                    Sign In to Existing Account
+                  </button>
+                </SignInButton>
+              </div>
             </div>
           </div>
         ) : (
