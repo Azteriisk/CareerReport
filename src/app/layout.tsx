@@ -29,6 +29,7 @@ import { ClerkProvider } from '@clerk/nextjs'
 import { Navbar } from "@/components/Navbar";
 import { PageTransition } from "@/components/PageTransition";
 import { SyncUser } from "@/components/SyncUser";
+import { Analytics } from "@vercel/analytics/next";
 
 export default function RootLayout({
   children,
@@ -55,6 +56,7 @@ export default function RootLayout({
               {children}
             </PageTransition>
           </div>
+          <Analytics />
         </body>
       </html>
     </ClerkProvider>
