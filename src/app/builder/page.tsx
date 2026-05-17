@@ -126,6 +126,7 @@ function BuilderPageContent() {
   const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false);
   const [copiedCoverLetter, setCopiedCoverLetter] = useState(false);
   const [showCoverLetterSection, setShowCoverLetterSection] = useState(false);
+  const [showGuestExportPrompt, setShowGuestExportPrompt] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isPublic, setIsPublic] = useState(true);
@@ -1722,7 +1723,17 @@ function BuilderPageContent() {
             >
               <Save size={18} /> Save
             </button>
-            <button onClick={() => handlePrint()} className="btn btn-primary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', gap: '0.5rem' }}>
+            <button
+              onClick={() => {
+                if (!isSignedIn) {
+                  setShowGuestExportPrompt(true);
+                } else {
+                  handlePrint();
+                }
+              }}
+              className="btn btn-primary"
+              style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', gap: '0.5rem' }}
+            >
               <Download size={18} /> Export PDF
             </button>
           </div>
@@ -1919,6 +1930,117 @@ function BuilderPageContent() {
         featureName={upgradeFeature}
         onUpgradeSuccess={() => setIsPro(true)}
       />
+
+      {/* Guest Export Call-to-Action Modal */}
+      {showGuestExportPrompt && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          backdropFilter: 'blur(8px)',
+          padding: '1rem'
+        }} onClick={() => setShowGuestExportPrompt(false)}>
+          <div style={{
+            background: 'var(--surface-color)',
+            borderRadius: '20px',
+            width: '100%',
+            maxWidth: '460px',
+            overflow: 'hidden',
+            border: '1px solid var(--glass-border)',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
+            position: 'relative'
+          }} onClick={e => e.stopPropagation()}>
+            
+            {/* Close Button */}
+            <button 
+              onClick={() => setShowGuestExportPrompt(false)}
+              className="btn-icon hover-opacity" 
+              style={{ 
+                position: 'absolute', 
+                top: '1.25rem', 
+                right: '1.25rem', 
+                color: 'var(--text-secondary)',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                zIndex: 10
+              }}
+            >
+              <X size={20} />
+            </button>
+
+            <div>
+              <div style={{ 
+                background: 'linear-gradient(135deg, var(--surface-highlight) 0%, var(--surface-color) 100%)', 
+                padding: '2.5rem 2rem 2rem 2rem', 
+                textAlign: 'center',
+                borderBottom: '1px solid var(--glass-border)'
+              }}>
+                <div style={{ 
+                  width: '64px', 
+                  height: '64px', 
+                  background: 'var(--primary)', 
+                  borderRadius: '50%', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  margin: '0 auto 1.25rem',
+                  boxShadow: '0 0 25px rgba(250, 189, 47, 0.45)'
+                }}>
+                  <Sparkles size={32} color="var(--bg-color)" />
+                </div>
+                
+                <h2 style={{ fontSize: '1.65rem', fontWeight: 800, margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Claim Your Profile Link</h2>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', margin: 0, lineHeight: 1.5 }}>
+                  Before you export, do you want to create a free account to claim your public resume page and save your work permanently?
+                </p>
+              </div>
+
+              <div style={{ padding: '2rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
+                  {[
+                    "Claim your personalized public shareable URL",
+                    "Save and edit your resume anytime in the cloud",
+                    "Unlock professional networking & direct applications"
+                  ].map((benefit, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-primary)' }}>
+                      <CheckCircle size={16} color="var(--accent)" style={{ flexShrink: 0 }} />
+                      <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{benefit}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <SignUpButton mode="modal">
+                    <button className="btn btn-primary" style={{ width: '100%', padding: '1rem', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+                      Claim Link & Export
+                    </button>
+                  </SignUpButton>
+                  
+                  <button 
+                    className="btn btn-secondary" 
+                    style={{ width: '100%', padding: '1rem', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', display: 'flex', justifyContent: 'center', gap: '0.5rem' }}
+                    onClick={() => {
+                      setShowGuestExportPrompt(false);
+                      handlePrint();
+                    }}
+                  >
+                    Just Export (Guest Session)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }

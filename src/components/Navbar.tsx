@@ -103,7 +103,7 @@ export function Navbar() {
         {/* Desktop nav pills */}
         <nav className="desktop-nav" style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', background: 'var(--surface-color)', padding: '0.35rem', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
           <NavLink href="/" active={pathname === '/'}>Home</NavLink>
-          <NavLink href="/builder" active={pathname === '/builder'}>My Resume</NavLink>
+          <NavLink href="/builder" active={pathname === '/builder'}>{isSignedIn ? 'My Resume' : 'Create Resume'}</NavLink>
           <NavLink href="/jobs" active={pathname?.startsWith('/jobs')}>Jobs</NavLink>
           {isSignedIn ? (
             <NavLink href={`/u/${displayUsername}`} active={pathname?.startsWith('/u/')}>Profile</NavLink>
@@ -191,7 +191,7 @@ export function Navbar() {
             }}
           >
             <MobileNavLink href="/" active={pathname === '/'}>Home</MobileNavLink>
-            <MobileNavLink href="/builder" active={pathname === '/builder'}>My Resume</MobileNavLink>
+            <MobileNavLink href="/builder" active={pathname === '/builder'}>{isSignedIn ? 'My Resume' : 'Create Resume'}</MobileNavLink>
             <MobileNavLink href="/jobs" active={pathname?.startsWith('/jobs')}>Jobs</MobileNavLink>
             {isSignedIn && (
               <MobileNavLink href={`/u/${displayUsername}`} active={pathname?.startsWith('/u/')}>Profile</MobileNavLink>
