@@ -8,7 +8,12 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "supabase:start": "npx supabase start",
+    "supabase:stop": "npx supabase stop",
+    "supabase:status": "npx supabase status",
+    "supabase:gen-local": "npx supabase gen types typescript --local > src/types/supabase.ts",
+    "supabase:gen-remote": "npx supabase gen types typescript --project-id dwnleqweftibziawhqfh > src/types/supabase.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.73",
