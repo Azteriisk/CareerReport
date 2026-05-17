@@ -2,7 +2,7 @@
 
 <p align="center">
   <img src="./homepage.png" alt="CareerReport Homepage Preview" width="100%" style="border-radius: 12px; border: 1px solid var(--glass-border); box-shadow: 0 8px 30px rgba(0,0,0,0.3); margin-bottom: 1.5rem;" />
-  <img src="./whatis.png" alt="CareerReport Platform Banner" width="100%" style="border-radius: 12px; border: 1px solid var(--glass-border); box-shadow: 0 8px 30px rgba(0,0,0,0.3);" />
+  <img src="./whatisthis.png" alt="CareerReport Platform Banner" width="100%" style="border-radius: 12px; border: 1px solid var(--glass-border); box-shadow: 0 8px 30px rgba(0,0,0,0.3);" />
 </p>
 
 <p align="center">
