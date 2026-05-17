@@ -30,6 +30,7 @@ import { Navbar } from "@/components/Navbar";
 import { PageTransition } from "@/components/PageTransition";
 import { SyncUser } from "@/components/SyncUser";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export default function RootLayout({
   children,
@@ -57,6 +58,7 @@ export default function RootLayout({
             </PageTransition>
           </div>
           <Analytics />
+          <SpeedInsights />
         </body>
       </html>
     </ClerkProvider>
