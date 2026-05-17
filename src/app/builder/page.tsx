@@ -12,6 +12,7 @@ import { useUser, useAuth, SignInButton, SignUpButton, UserButton } from '@clerk
 import { supabase } from "@/lib/supabase";
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { ImageCropper } from '@/components/ImageCropper';
 import { AtsMetadata } from '@/components/AtsMetadata';
 import { TemplateModernSplit } from '@/components/TemplateModernSplit';
@@ -60,10 +61,38 @@ const MonthYearPicker = ({ value, onChange, disabled }: { value: string, onChang
   );
 };
 
-export default function BuilderPage() {
+function BuilderPageContent() {
   const { isSignedIn, isLoaded, user } = useUser();
   const { getToken } = useAuth();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
+
+  // Verify Stripe payment on redirect
+  useEffect(() => {
+    const success = searchParams?.get('success');
+    const sessionId = searchParams?.get('session_id');
+
+    if (success === 'true' && sessionId) {
+      const verifyPayment = async () => {
+        try {
+          const res = await fetch(`/api/checkout/verify?session_id=${sessionId}`);
+          if (res.ok) {
+            const result = await res.json();
+            if (result.success) {
+              setIsPro(true);
+              // Clean up query parameters so we don't repeat this on refresh
+              const newUrl = window.location.pathname;
+              window.history.replaceState({}, '', newUrl);
+              alert("Payment successful! Welcome to CareerReport Pro. All premium AI features are now unlocked.");
+            }
+          }
+        } catch (err) {
+          console.error("Stripe payment verification failed:", err);
+        }
+      };
+      verifyPayment();
+    }
+  }, [searchParams]);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileScale, setMobileScale] = useState(0.45);
 
@@ -1714,5 +1743,18 @@ export default function BuilderPage() {
         onUpgradeSuccess={() => setIsPro(true)}
       />
     </div>
+  );
+}
+
+export default function BuilderPage() {
+  return (
+    <React.Suspense fallback={
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg-color)', gap: '1rem', flexDirection: 'column' }}>
+        <Loader2 className="animate-spin" size={48} color="var(--primary)" />
+        <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>Loading Builder...</span>
+      </div>
+    }>
+      <BuilderPageContent />
+    </React.Suspense>
   );
 }
