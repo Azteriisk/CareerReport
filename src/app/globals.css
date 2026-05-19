@@ -540,3 +540,9 @@ input[type="month"].empty-date:focus::-webkit-datetime-edit {
 .hover-surface:hover {
   background-color: var(--surface-highlight);
 }
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
