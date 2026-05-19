@@ -18,13 +18,13 @@ export default async function Home() {
           <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(16, 185, 129, 0.1)', color: 'var(--accent)', padding: '0.5rem 1rem', borderRadius: '9999px', fontSize: '0.875rem', fontWeight: 600, marginBottom: '2rem' }}>
               <Sparkles size={16} />
-              <span>New: Shareable Profile Links & Job Matching</span>
+              <span>New: Modern Resumes with Smart, Embedded Metadata</span>
             </div>
-            
+
             <h2 className="mobile-landing-h2" style={{ fontSize: '4rem', maxWidth: '800px', margin: '0 0 1.5rem 0', lineHeight: 1.1 }}>
               Your resume. Your profile. <span className="premium-gradient-text">Your network.</span>
             </h2>
-            
+
             <p style={{ fontSize: '1.25rem', color: 'var(--text-secondary)', maxWidth: '600px', marginBottom: '3rem', lineHeight: 1.6 }}>
               CareerReport is the professional network for the next generation. Build a stunning resume, claim your public URL, apply for jobs, and connect with professionals in a modern environment.
             </p>
