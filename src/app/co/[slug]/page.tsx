@@ -43,6 +43,11 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
   const [inviteUsername, setInviteUsername] = useState('');
   const [isInviting, setIsInviting] = useState(false);
 
+  // Logo upload state
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     async function loadCompany() {
       if (!slug) return;
@@ -166,11 +171,25 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
     }
   };
 
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Logo image must be less than 5MB");
+        return;
+      }
+      setLogoFile(file);
+      setLogoPreview(URL.createObjectURL(file));
+    }
+  };
+
   const openEditModal = () => {
     setEditName(company.name || '');
     setEditBio(company.bio || '');
     setEditWebsite(company.website || '');
     setEditLogoUrl(company.logo_url || '');
+    setLogoFile(null);
+    setLogoPreview(company.logo_url || null);
     setIsEditingCompany(true);
   };
 
@@ -178,13 +197,32 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
     e.preventDefault();
     setSavingCompany(true);
     try {
+      let finalLogoUrl = editLogoUrl;
+
+      // Upload logo image to Supabase Storage if a new file is chosen
+      if (logoFile) {
+        const fileExt = logoFile.name.split('.').pop();
+        const randId = Math.random().toString(36).substring(2);
+        const fileName = `logo-${company.id}-${randId}.${fileExt}`;
+        const filePath = `public/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('post-images')
+          .upload(filePath, logoFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage.from('post-images').getPublicUrl(filePath);
+        finalLogoUrl = urlData.publicUrl;
+      }
+
       const { data, error } = await supabase
         .from('business_profiles')
         .update({
           name: editName,
           bio: editBio,
           website: editWebsite,
-          logo_url: editLogoUrl
+          logo_url: finalLogoUrl
         })
         .eq('id', company.id)
         .select()
@@ -928,23 +966,48 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
               </div>
 
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="label">Logo URL</label>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                  <div style={{ width: '56px', height: '56px', borderRadius: '8px', background: 'var(--surface-highlight)', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                    {editLogoUrl ? (
-                      <img src={editLogoUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { (e.target as HTMLImageElement).src = ''; }} />
+                <label className="label">Company Logo</label>
+                <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+                  <div style={{ 
+                    width: '72px', 
+                    height: '72px', 
+                    borderRadius: '12px', 
+                    background: 'var(--surface-highlight)', 
+                    border: '1px solid var(--glass-border)', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    overflow: 'hidden', 
+                    flexShrink: 0,
+                    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)'
+                  }}>
+                    {logoPreview ? (
+                      <img src={logoPreview} alt="Logo preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
-                      <Building2 size={22} color="var(--primary)" />
+                      <Building2 size={32} color="var(--primary)" />
                     )}
                   </div>
-                  <input 
-                    type="text" 
-                    className="input-field" 
-                    placeholder="https://example.com/logo.png"
-                    value={editLogoUrl} 
-                    onChange={e => setEditLogoUrl(e.target.value)} 
-                    style={{ flex: 1 }}
-                  />
+                  
+                  <div style={{ flex: 1 }}>
+                    <button 
+                      type="button" 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="btn btn-secondary"
+                      style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', width: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                    >
+                      Choose Logo Image
+                    </button>
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      accept="image/*" 
+                      style={{ display: 'none' }} 
+                      onChange={handleLogoChange} 
+                    />
+                    <p style={{ margin: '0.4rem 0 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                      Supports PNG, JPG, or GIF up to 5MB.
+                    </p>
+                  </div>
                 </div>
               </div>
 

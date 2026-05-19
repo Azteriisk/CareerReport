@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useUser, useAuth } from '@clerk/nextjs';
 import { supabase } from "@/lib/supabase";
 import { useRouter } from 'next/navigation';
@@ -18,6 +18,11 @@ export default function CreateBusinessPage() {
   const [website, setWebsite] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  // Logo upload state
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isLoaded) {
     return (
@@ -37,6 +42,18 @@ export default function CreateBusinessPage() {
     );
   }
 
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Logo image must be less than 5MB");
+        return;
+      }
+      setLogoFile(file);
+      setLogoPreview(URL.createObjectURL(file));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -45,9 +62,28 @@ export default function CreateBusinessPage() {
     try {
       const token = await getToken({ template: 'supabase' });
       
+      let logoUrl = null;
+
+      // 1. Upload logo image to Supabase Storage if selected
+      if (logoFile) {
+        const fileExt = logoFile.name.split('.').pop();
+        const randId = Math.random().toString(36).substring(2);
+        const fileName = `logo-new-${user.id}-${randId}.${fileExt}`;
+        const filePath = `public/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('post-images')
+          .upload(filePath, logoFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage.from('post-images').getPublicUrl(filePath);
+        logoUrl = urlData.publicUrl;
+      }
 
       const formattedSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
 
+      // 2. Insert business profile record
       const { data, error: insertError } = await supabase
         .from('business_profiles')
         .insert({
@@ -55,7 +91,8 @@ export default function CreateBusinessPage() {
           name,
           slug: formattedSlug,
           bio,
-          website
+          website,
+          logo_url: logoUrl
         })
         .select()
         .single();
@@ -128,6 +165,53 @@ export default function CreateBusinessPage() {
                 value={slug} 
                 onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))} 
               />
+            </div>
+          </div>
+
+          {/* Company Logo Upload Area */}
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="label">Company Logo</label>
+            <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+              <div style={{ 
+                width: '72px', 
+                height: '72px', 
+                borderRadius: '12px', 
+                background: 'var(--surface-highlight)', 
+                border: '1px solid var(--glass-border)', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                overflow: 'hidden', 
+                flexShrink: 0,
+                boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)'
+              }}>
+                {logoPreview ? (
+                  <img src={logoPreview} alt="Logo preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <Building2 size={32} color="var(--primary)" />
+                )}
+              </div>
+              
+              <div style={{ flex: 1 }}>
+                <button 
+                  type="button" 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="btn btn-secondary"
+                  style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', width: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                >
+                  Choose Logo Image
+                </button>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  accept="image/*" 
+                  style={{ display: 'none' }} 
+                  onChange={handleLogoChange} 
+                />
+                <p style={{ margin: '0.4rem 0 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                  Supports PNG, JPG, or GIF up to 5MB.
+                </p>
+              </div>
             </div>
           </div>
 
