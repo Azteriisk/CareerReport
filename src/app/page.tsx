@@ -3,7 +3,6 @@ import { ArrowRight, Sparkles, CheckCircle } from "lucide-react";
 import { UserSearch } from "@/components/UserSearch";
 import { Feed } from "@/components/Feed";
 import { auth } from '@clerk/nextjs/server';
-import { Footer } from "@/components/Footer";
 
 export default async function Home() {
   const { userId } = await auth();
@@ -57,8 +56,6 @@ export default async function Home() {
           </div>
         )}
       </main>
-
-      <Footer />
     </div>
   );
 }
