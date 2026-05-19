@@ -75,25 +75,30 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
         // Fetch owner profile details to list them as the team lead/owner
         const { data: ownerProfile } = await supabase
           .from('profiles')
-          .select('username, full_name, avatar_url, label')
+          .select('username, full_name, avatar_url')
           .eq('id', comp.owner_id)
           .single();
 
         const ownerRecord = {
           user_id: comp.owner_id,
           status: 'owner',
-          profiles: ownerProfile || {
+          profiles: (isSignedIn && user && comp.owner_id === user.id) ? {
+            username: user.username || 'owner',
+            full_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Company Owner',
+            avatar_url: user.imageUrl || null,
+            label: 'Owner'
+          } : (ownerProfile || {
             username: 'owner',
             full_name: 'Company Owner',
             avatar_url: null,
             label: 'Owner'
-          }
+          })
         };
 
         // Fetch all employee and request records
         const { data: empList } = await supabase
           .from('company_employees')
-          .select('user_id, status, profiles(username, full_name, avatar_url, label)')
+          .select('user_id, status, profiles(username, full_name, avatar_url)')
           .eq('business_id', comp.id);
           
         if (empList) {
@@ -368,7 +373,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
       // 1. Fetch user from profiles table
       const { data: profile, error: profileErr } = await supabase
         .from('profiles')
-        .select('id, username, full_name, avatar_url, label')
+        .select('id, username, full_name, avatar_url')
         .eq('username', inviteUsername.trim())
         .maybeSingle();
 
