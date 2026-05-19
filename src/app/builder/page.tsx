@@ -718,11 +718,9 @@ function BuilderPageContent() {
       display: 'flex',
       flexDirection: isMobile ? 'column' : 'row',
       height: isMobile ? 'auto' : 'calc(100dvh - 82px)',
-      width: '100vw',
+      width: '100%',
       overflow: isMobile ? 'visible' : 'hidden',
-      position: isMobile ? 'relative' : 'fixed',
-      top: isMobile ? '0' : '82px',
-      left: 0,
+      position: 'relative',
       background: 'var(--bg-color)'
     }}>
       {isMobile && (
