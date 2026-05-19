@@ -392,7 +392,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
   if (isLoading) {
     return (
       <div className="flex-center" style={{ minHeight: '100dvh', background: 'var(--bg-color)' }}>
-        <p style={{ color: 'var(--text-secondary)' }}>Loading company profile...</p>
+        <Loader2 className="animate-spin text-primary" size={48} />
       </div>
     );
   }
