@@ -575,13 +575,23 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
 
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="label">Logo URL</label>
-                <input 
-                  type="text" 
-                  className="input-field" 
-                  placeholder="https://example.com/logo.png"
-                  value={editLogoUrl} 
-                  onChange={e => setEditLogoUrl(e.target.value)} 
-                />
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <div style={{ width: '56px', height: '56px', borderRadius: '8px', background: 'var(--surface-highlight)', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                    {editLogoUrl ? (
+                      <img src={editLogoUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { (e.target as HTMLImageElement).src = ''; }} />
+                    ) : (
+                      <Building2 size={22} color="var(--primary)" />
+                    )}
+                  </div>
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    placeholder="https://example.com/logo.png"
+                    value={editLogoUrl} 
+                    onChange={e => setEditLogoUrl(e.target.value)} 
+                    style={{ flex: 1 }}
+                  />
+                </div>
               </div>
 
               <div className="form-group" style={{ marginBottom: 0 }}>

@@ -116,12 +116,8 @@ export function Navbar() {
           <NavLink href="/" active={pathname === '/'}>Home</NavLink>
           <NavLink href="/builder" active={pathname === '/builder'}>{isSignedIn ? 'My Resume' : 'Create Resume'}</NavLink>
           <NavLink href="/jobs" active={pathname?.startsWith('/jobs')}>Jobs</NavLink>
-          {isSignedIn && (
-            businessSlug ? (
-              <NavLink href={`/co/${businessSlug}`} active={pathname?.startsWith('/co/')}>My Company</NavLink>
-            ) : (
-              <NavLink href="/business/create" active={pathname === '/business/create'}>Post Jobs</NavLink>
-            )
+          {isSignedIn && businessSlug && (
+            <NavLink href={`/co/${businessSlug}`} active={pathname?.startsWith('/co/')}>My Company</NavLink>
           )}
           {isSignedIn ? (
             <NavLink href={`/u/${displayUsername}`} active={pathname?.startsWith('/u/')}>Profile</NavLink>
@@ -211,12 +207,8 @@ export function Navbar() {
             <MobileNavLink href="/" active={pathname === '/'}>Home</MobileNavLink>
             <MobileNavLink href="/builder" active={pathname === '/builder'}>{isSignedIn ? 'My Resume' : 'Create Resume'}</MobileNavLink>
             <MobileNavLink href="/jobs" active={pathname?.startsWith('/jobs')}>Jobs</MobileNavLink>
-            {isSignedIn && (
-              businessSlug ? (
-                <MobileNavLink href={`/co/${businessSlug}`} active={pathname?.startsWith('/co/')}>My Company</MobileNavLink>
-              ) : (
-                <MobileNavLink href="/business/create" active={pathname === '/business/create'}>Post Jobs</MobileNavLink>
-              )
+            {isSignedIn && businessSlug && (
+              <MobileNavLink href={`/co/${businessSlug}`} active={pathname?.startsWith('/co/')}>My Company</MobileNavLink>
             )}
             {isSignedIn && (
               <MobileNavLink href={`/u/${displayUsername}`} active={pathname?.startsWith('/u/')}>Profile</MobileNavLink>

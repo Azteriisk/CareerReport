@@ -3,6 +3,7 @@ import { ArrowRight, Sparkles, CheckCircle } from "lucide-react";
 import { UserSearch } from "@/components/UserSearch";
 import { Feed } from "@/components/Feed";
 import { auth } from '@clerk/nextjs/server';
+import { Footer } from "@/components/Footer";
 
 export default async function Home() {
   const { userId } = await auth();
@@ -57,16 +58,7 @@ export default async function Home() {
         )}
       </main>
 
-      <footer style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)', borderTop: '1px solid var(--glass-border)', fontSize: '0.875rem', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
-          <Link href="/how-it-works" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>How it Works</Link>
-          <Link href="/support" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Support</Link>
-          <Link href="/compatibility" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Report ATS Compatibility</Link>
-          <Link href="/privacy" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Privacy Policy</Link>
-          <Link href="/terms" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Terms of Service</Link>
-        </div>
-        <p>&copy; 2026 CareerReport. All rights reserved.</p>
-      </footer>
+      <Footer />
     </div>
   );
 }
