@@ -75,17 +75,12 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
         const ownerRecord = {
           user_id: comp.owner_id,
           status: 'owner',
-          profiles: (isSignedIn && user && comp.owner_id === user.id) ? {
-            username: user.username || 'owner',
-            full_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Company Owner',
-            avatar_url: user.imageUrl || null,
+          profiles: {
+            username: comp.profiles?.username || user?.username || 'owner',
+            full_name: comp.profiles?.full_name || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : null) || 'Company Owner',
+            avatar_url: comp.profiles?.avatar_url || user?.imageUrl || null,
             label: 'Owner'
-          } : (comp.profiles || {
-            username: 'owner',
-            full_name: 'Company Owner',
-            avatar_url: null,
-            label: 'Owner'
-          })
+          }
         };
 
         // Fetch all employee and request records
