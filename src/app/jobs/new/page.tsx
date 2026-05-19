@@ -33,17 +33,55 @@ export default function CreateJobPage() {
       try {
         const token = await getToken({ template: 'supabase' });
         
-
-        const { data, error } = await supabase
+        // 1. Fetch businesses owned by user
+        const { data: owned, error: ownedErr } = await supabase
           .from('business_profiles')
-          .select('id, name')
+          .select('id, name, slug')
           .eq('owner_id', user.id);
 
-        if (error) throw error;
+        if (ownedErr) throw ownedErr;
+
+        // 2. Fetch businesses where the user is an employee with 'jobs' permission
+        const { data: employeeData, error: empErr } = await supabase
+          .from('company_employees')
+          .select(`
+            business_id,
+            status,
+            business_profiles:business_id (
+              id,
+              name,
+              slug
+            )
+          `)
+          .eq('user_id', user.id)
+          .like('status', 'approved%');
+
+        if (empErr) {
+          console.error("Employee fetch error:", empErr);
+        }
+
+        // Combine
+        const combinedMap = new Map<string, { id: string; name: string; slug: string }>();
         
-        if (data && data.length > 0) {
-          setBusinesses(data);
-          setSelectedBusinessId(data[0].id);
+        if (owned) {
+          owned.forEach(b => combinedMap.set(b.id, b));
+        }
+        
+        if (employeeData) {
+          employeeData.forEach((record: any) => {
+            const bp = record.business_profiles as any;
+            const status = record.status || '';
+            if (bp && status.includes('jobs')) {
+              combinedMap.set(bp.id, bp);
+            }
+          });
+        }
+
+        const combinedList = Array.from(combinedMap.values());
+
+        if (combinedList.length > 0) {
+          setBusinesses(combinedList);
+          setSelectedBusinessId(combinedList[0].id);
         }
       } catch (err) {
         console.error("Failed to load businesses", err);

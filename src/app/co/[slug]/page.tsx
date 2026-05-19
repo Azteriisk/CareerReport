@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, use } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Building2, Globe, MapPin, Users, Calendar, Briefcase, Mail, FileText, X, ChevronRight, MessageSquare, BadgeCheck, Loader2, Edit } from 'lucide-react';
+import { Building2, Globe, MapPin, Users, Calendar, Briefcase, Mail, FileText, X, ChevronRight, BadgeCheck, Loader2, Edit, Check, UserMinus, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useUser } from '@clerk/nextjs';
 
@@ -14,12 +14,15 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
   const [company, setCompany] = useState<any>(null);
   const [jobs, setJobs] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
+  const [allEmployeeRecords, setAllEmployeeRecords] = useState<any[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRequesting, setIsRequesting] = useState(false);
   const [hasRequested, setHasRequested] = useState(false);
+  const [currentUserEmployee, setCurrentUserEmployee] = useState<any>(null);
 
   // Employer Dashboard State
-  const [activeTab, setActiveTab] = useState<'jobs' | 'applications'>('jobs');
+  const [activeTab, setActiveTab] = useState<'jobs' | 'applications' | 'team'>('jobs');
   const [applications, setApplications] = useState<any[]>([]);
   const [loadingApplications, setLoadingApplications] = useState(false);
   
@@ -35,6 +38,10 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
   const [editWebsite, setEditWebsite] = useState('');
   const [editLogoUrl, setEditLogoUrl] = useState('');
   const [savingCompany, setSavingCompany] = useState(false);
+
+  // Team Invite State
+  const [inviteUsername, setInviteUsername] = useState('');
+  const [isInviting, setIsInviting] = useState(false);
 
   useEffect(() => {
     async function loadCompany() {
@@ -60,24 +67,26 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
           
         if (jobList) setJobs(jobList);
 
-        // Fetch employees
+        // Fetch all employee and request records
         const { data: empList } = await supabase
           .from('company_employees')
-          .select('user_id, profiles(username, full_name, avatar_url, label)')
-          .eq('business_id', comp.id)
-          .eq('status', 'approved');
+          .select('user_id, status, profiles(username, full_name, avatar_url, label)')
+          .eq('business_id', comp.id);
           
-        if (empList) setEmployees(empList);
+        if (empList) {
+          setAllEmployeeRecords(empList);
+          // Split approved team members and pending join requests
+          setEmployees(empList.filter(e => e.status && e.status.startsWith('approved')));
+          setPendingRequests(empList.filter(e => e.status === 'pending'));
 
-        // Check if current user has already requested employee status
-        if (isSignedIn && user) {
-          const { data: existingReq } = await supabase
-            .from('company_employees')
-            .select('status')
-            .eq('business_id', comp.id)
-            .eq('user_id', user.id)
-            .maybeSingle();
-          if (existingReq) setHasRequested(true);
+          // Check if current user has already requested employee status
+          if (isSignedIn && user) {
+            const userEmpRecord = empList.find(e => e.user_id === user.id);
+            if (userEmpRecord) {
+              setHasRequested(true);
+              setCurrentUserEmployee(userEmpRecord);
+            }
+          }
         }
 
       } catch (err) {
@@ -92,11 +101,11 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
     }
   }, [slug, isSignedIn, user, isClerkLoaded]);
 
-  // Load applications if the owner views the applications tab
+  // Load applications if authorized users view the applications tab
   useEffect(() => {
+    if (!company?.id || jobs.length === 0 || activeTab !== 'applications') return;
+    setLoadingApplications(true);
     async function loadApplications() {
-      if (!company?.id || jobs.length === 0 || activeTab !== 'applications') return;
-      setLoadingApplications(true);
       try {
         const { data, error } = await supabase
           .from('job_applications')
@@ -130,6 +139,12 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
 
     loadApplications();
   }, [company?.id, activeTab, jobs]);
+
+  // Permission Checks
+  const isOwner = isSignedIn && user && company && company.owner_id === user.id;
+  const hasPostsPermission = isOwner || (currentUserEmployee?.status?.includes('posts'));
+  const hasJobsPermission = isOwner || (currentUserEmployee?.status?.includes('jobs'));
+  const hasProfilePermission = isOwner || (currentUserEmployee?.status?.includes('profile'));
 
   const viewCandidateDetails = async (app: any) => {
     setSelectedApp(app);
@@ -189,7 +204,152 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
     }
   };
 
-  const isOwner = isSignedIn && user && company && company.owner_id === user.id;
+  // Team Permissions Handlers
+  const handleTogglePermission = async (targetUserId: string, permission: 'posts' | 'jobs' | 'profile') => {
+    const emp = allEmployeeRecords.find(e => e.user_id === targetUserId);
+    if (!emp) return;
+
+    let currentPerms: string[] = [];
+    if (emp.status && emp.status.includes(':')) {
+      currentPerms = emp.status.split(':')[1].split(',');
+    }
+
+    let newPerms: string[] = [];
+    if (currentPerms.includes(permission)) {
+      newPerms = currentPerms.filter(p => p !== permission);
+    } else {
+      newPerms = [...currentPerms, permission];
+    }
+
+    const newStatus = newPerms.length > 0 ? `approved:${newPerms.join(',')}` : 'approved';
+
+    try {
+      const { error } = await supabase
+        .from('company_employees')
+        .update({ status: newStatus })
+        .eq('business_id', company.id)
+        .eq('user_id', targetUserId);
+
+      if (error) throw error;
+
+      // Update state locally
+      setAllEmployeeRecords(prev => prev.map(e => e.user_id === targetUserId ? { ...e, status: newStatus } : e));
+      setEmployees(prev => prev.map(e => e.user_id === targetUserId ? { ...e, status: newStatus } : e));
+    } catch (err: any) {
+      alert("Failed to update permissions: " + (err.message || err));
+    }
+  };
+
+  const handleApproveRequest = async (targetUserId: string) => {
+    try {
+      const { error } = await supabase
+        .from('company_employees')
+        .update({ status: 'approved' })
+        .eq('business_id', company.id)
+        .eq('user_id', targetUserId);
+
+      if (error) throw error;
+
+      setAllEmployeeRecords(prev => prev.map(e => e.user_id === targetUserId ? { ...e, status: 'approved' } : e));
+      const approvedEmp = allEmployeeRecords.find(e => e.user_id === targetUserId);
+      if (approvedEmp) {
+        setEmployees(prev => [...prev, { ...approvedEmp, status: 'approved' }]);
+      }
+      setPendingRequests(prev => prev.filter(e => e.user_id !== targetUserId));
+    } catch (err: any) {
+      alert("Failed to approve request: " + (err.message || err));
+    }
+  };
+
+  const handleRejectRequest = async (targetUserId: string) => {
+    try {
+      const { error } = await supabase
+        .from('company_employees')
+        .delete()
+        .eq('business_id', company.id)
+        .eq('user_id', targetUserId);
+
+      if (error) throw error;
+
+      setAllEmployeeRecords(prev => prev.filter(e => e.user_id !== targetUserId));
+      setPendingRequests(prev => prev.filter(e => e.user_id !== targetUserId));
+    } catch (err: any) {
+      alert("Failed to reject request: " + (err.message || err));
+    }
+  };
+
+  const handleRemoveMember = async (targetUserId: string) => {
+    if (!confirm("Are you sure you want to remove this member from your business team?")) return;
+    try {
+      const { error } = await supabase
+        .from('company_employees')
+        .delete()
+        .eq('business_id', company.id)
+        .eq('user_id', targetUserId);
+
+      if (error) throw error;
+
+      setAllEmployeeRecords(prev => prev.filter(e => e.user_id !== targetUserId));
+      setEmployees(prev => prev.filter(e => e.user_id !== targetUserId));
+    } catch (err: any) {
+      alert("Failed to remove member: " + (err.message || err));
+    }
+  };
+
+  const handleInviteMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteUsername.trim()) return;
+    setIsInviting(true);
+    try {
+      // 1. Fetch user from profiles table
+      const { data: profile, error: profileErr } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url, label')
+        .eq('username', inviteUsername.trim())
+        .maybeSingle();
+
+      if (profileErr) throw profileErr;
+      if (!profile) {
+        alert(`User with username "@${inviteUsername}" was not found.`);
+        setIsInviting(false);
+        return;
+      }
+
+      // Check if user is already a team member or pending
+      const exists = allEmployeeRecords.some(e => e.user_id === profile.id);
+      if (exists) {
+        alert("This user is already a team member or has a pending request.");
+        setIsInviting(false);
+        return;
+      }
+
+      // 2. Insert into company_employees table as immediately approved
+      const { error: insertErr } = await supabase
+        .from('company_employees')
+        .insert({
+          business_id: company.id,
+          user_id: profile.id,
+          status: 'approved'
+        });
+
+      if (insertErr) throw insertErr;
+
+      // Add to local state
+      const newRecord = {
+        user_id: profile.id,
+        status: 'approved',
+        profiles: profile
+      };
+      setAllEmployeeRecords(prev => [...prev, newRecord]);
+      setEmployees(prev => [...prev, newRecord]);
+      setInviteUsername('');
+      alert(`Successfully added @${profile.username} to your team!`);
+    } catch (err: any) {
+      alert("Failed to invite member: " + (err.message || err));
+    } finally {
+      setIsInviting(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -227,9 +387,14 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
               <h1 style={{ margin: 0, fontSize: '2.5rem', color: 'var(--text-primary)', fontWeight: 800 }}>{company.name}</h1>
               <span title="Verified Business Account" style={{ display: 'flex' }}><BadgeCheck size={26} color="var(--primary)" /></span>
-              {isOwner && (
+              
+              {hasProfilePermission && (
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <span style={{ background: 'rgba(250, 189, 47, 0.15)', color: 'var(--primary)', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>Owner View</span>
+                  {isOwner ? (
+                    <span style={{ background: 'rgba(250, 189, 47, 0.15)', color: 'var(--primary)', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>Owner View</span>
+                  ) : (
+                    <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: 'var(--success)', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>Team Member (Authorized)</span>
+                  )}
                   <button 
                     onClick={openEditModal}
                     className="btn btn-secondary"
@@ -262,8 +427,8 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
       {/* Main Panel */}
       <div style={{ maxWidth: '1000px', margin: '3rem auto', padding: '0 1.5rem' }}>
         
-        {/* Tab Selection (For Owners) */}
-        {isOwner && (
+        {/* Tab Selection */}
+        {(isOwner || hasJobsPermission) && (
           <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--glass-border)', marginBottom: '2.5rem', paddingBottom: '0.25rem' }}>
             <button 
               onClick={() => setActiveTab('jobs')}
@@ -299,11 +464,30 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
             >
               Candidate Applications ({applications.length})
             </button>
+            {isOwner && (
+              <button 
+                onClick={() => setActiveTab('team')}
+                className={`btn-tab ${activeTab === 'team' ? 'active' : ''}`}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: activeTab === 'team' ? 'var(--primary)' : 'var(--text-secondary)',
+                  fontSize: '1.05rem',
+                  fontWeight: 600,
+                  padding: '0.75rem 1.5rem',
+                  cursor: 'pointer',
+                  borderBottom: activeTab === 'team' ? '2px solid var(--primary)' : 'none',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Team Management
+              </button>
+            )}
           </div>
         )}
 
         {/* Tab 1: Positions Grid */}
-        {activeTab === 'jobs' ? (
+        {activeTab === 'jobs' && (
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '3rem', alignItems: 'flex-start' }}>
             {/* Jobs Board Section */}
             <div>
@@ -311,7 +495,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                 <h2 style={{ color: 'var(--text-primary)', fontSize: '1.5rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <Briefcase size={24} color="var(--primary)" /> Jobs Board
                 </h2>
-                {isOwner && (
+                {hasJobsPermission && (
                   <Link href="/jobs/new" className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
                     Post New Job
                   </Link>
@@ -368,7 +552,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                 <h2 style={{ color: 'var(--text-primary)', fontSize: '1.25rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <Users size={20} color="var(--primary)" /> Team
                 </h2>
-                {!isOwner && (
+                {!isOwner && !hasRequested && (
                   <button 
                     onClick={async () => {
                       if (hasRequested) return;
@@ -380,17 +564,24 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                       }
                       const { error } = await supabase.from('company_employees').insert({
                         business_id: company.id,
-                        user_id: user!.id
+                        user_id: user!.id,
+                        status: 'pending'
                       });
-                      if (!error) setHasRequested(true);
+                      if (!error) {
+                        setHasRequested(true);
+                        alert("Join request successfully sent! The company owner will review it.");
+                      }
                       setIsRequesting(false);
                     }}
                     disabled={isRequesting || hasRequested}
-                    className={`btn ${hasRequested ? 'btn-secondary' : ''}`}
+                    className={`btn ${hasRequested ? 'btn-secondary' : 'btn-primary'}`}
                     style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem' }}
                   >
                     {hasRequested ? 'Request Pending' : 'I work here'}
                   </button>
+                )}
+                {hasRequested && !currentUserEmployee?.status?.startsWith('approved') && (
+                  <span style={{ fontSize: '0.8rem', background: 'rgba(250, 189, 47, 0.12)', color: 'var(--primary)', padding: '4px 10px', borderRadius: '100px', fontWeight: 600 }}>Request Pending</span>
                 )}
               </div>
               
@@ -402,7 +593,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                     const profile = emp.profiles || {};
                     const name = profile.full_name || profile.username || 'Team Member';
                     return (
-                      <Link key={emp.user_id} href={`/${profile.username}`} style={{ textDecoration: 'none' }}>
+                      <Link key={emp.user_id} href={`/u/${profile.username}`} style={{ textDecoration: 'none' }}>
                         <div className="hover-bg" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: 'var(--surface-color)', border: '1px solid var(--glass-border)', borderRadius: '12px' }}>
                           <img 
                             src={profile.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${profile.username}`} 
@@ -421,8 +612,10 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
               )}
             </div>
           </div>
-        ) : (
-          /* Tab 2: Applications Panel */
+        )}
+
+        {/* Tab 2: Applications Panel */}
+        {activeTab === 'applications' && hasJobsPermission && (
           <div>
             <h2 style={{ color: 'var(--text-primary)', fontSize: '1.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <Users size={24} color="var(--primary)" /> Candidate Applications
@@ -508,6 +701,167 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                 })}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Tab 3: Team Management & Granular Permissions */}
+        {activeTab === 'team' && isOwner && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+            
+            {/* Invite team members directly */}
+            <div style={{ background: 'var(--surface-color)', border: '1px solid var(--glass-border)', padding: '2rem', borderRadius: '16px' }}>
+              <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 700 }}>Add Team Member</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0 0 1.5rem 0' }}>Search and add registered professionals directly by their unique username.</p>
+              
+              <form onSubmit={handleInviteMember} style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ position: 'relative', flex: 1, minWidth: '240px' }}>
+                  <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', fontWeight: 600 }}>@</span>
+                  <input 
+                    type="text"
+                    required
+                    placeholder="johndoe"
+                    className="input-field"
+                    value={inviteUsername}
+                    onChange={e => setInviteUsername(e.target.value)}
+                    style={{ paddingLeft: '2.2rem', marginBottom: 0 }}
+                  />
+                </div>
+                <button type="submit" disabled={isInviting} className="btn btn-primary" style={{ padding: '0.75rem 1.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {isInviting ? <Loader2 size={16} className="animate-spin" /> : <><Plus size={16} /> Add to Team</>}
+                </button>
+              </form>
+            </div>
+
+            {/* Pending join requests review */}
+            {pendingRequests.length > 0 && (
+              <div style={{ background: 'rgba(250, 189, 47, 0.03)', border: '1px solid rgba(250, 189, 47, 0.2)', padding: '2rem', borderRadius: '16px' }}>
+                <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ width: '8px', height: '8px', background: 'var(--primary)', borderRadius: '50%', display: 'inline-block' }}></span>
+                  Join Requests ({pendingRequests.length})
+                </h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0 0 1.5rem 0' }}>Review professionals requesting to be listed on your business team.</p>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {pendingRequests.map(req => {
+                    const profile = req.profiles || {};
+                    const name = profile.full_name || profile.username || 'Applicant';
+                    return (
+                      <div key={req.user_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface-color)', border: '1px solid var(--glass-border)', padding: '1.25rem 1.5rem', borderRadius: '12px', flexWrap: 'wrap', gap: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          <img 
+                            src={profile.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${profile.username}`} 
+                            alt={name}
+                            style={{ width: '40px', height: '40px', borderRadius: '50%', border: '1px solid var(--glass-border)', objectFit: 'cover' }}
+                          />
+                          <div>
+                            <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.95rem', fontWeight: 700 }}>{name}</h4>
+                            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.8rem' }}>@{profile.username} • {profile.label || 'Professional'}</p>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                          <button onClick={() => handleApproveRequest(req.user_id)} className="btn btn-primary" style={{ padding: '0.45rem 1rem', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <Check size={14} /> Approve
+                          </button>
+                          <button onClick={() => handleRejectRequest(req.user_id)} className="btn btn-secondary" style={{ padding: '0.45rem 1rem', fontSize: '0.85rem', color: 'var(--danger)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <X size={14} /> Reject
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Current team members permissions grid */}
+            <div style={{ background: 'var(--surface-color)', border: '1px solid var(--glass-border)', padding: '2rem', borderRadius: '16px' }}>
+              <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 700 }}>Team Members & Permissions</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0 0 2rem 0' }}>Assign granular permissions to team members. Unchecked capacities grant standard "Team Member Only" listing.</p>
+              
+              {employees.length === 0 ? (
+                <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic', margin: 0 }}>No approved team members yet.</p>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
+                        <th style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase' }}>Member</th>
+                        <th style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', textAlign: 'center' }}>Make Posts</th>
+                        <th style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', textAlign: 'center' }}>Manage Jobs</th>
+                        <th style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', textAlign: 'center' }}>Update Profile</th>
+                        <th style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', textAlign: 'right' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {employees.map(emp => {
+                        const profile = emp.profiles || {};
+                        const name = profile.full_name || profile.username || 'Team Member';
+                        const status = emp.status || 'approved';
+                        const canPosts = status.includes('posts');
+                        const canJobs = status.includes('jobs');
+                        const canProfile = status.includes('profile');
+
+                        return (
+                          <tr key={emp.user_id} style={{ borderBottom: '1px solid var(--glass-border)', transition: 'background 0.2s' }}>
+                            <td style={{ padding: '1.25rem 1rem' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <img 
+                                  src={profile.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${profile.username}`} 
+                                  alt={name}
+                                  style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1px solid var(--glass-border)', objectFit: 'cover' }}
+                                />
+                                <div>
+                                  <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 600 }}>{name}</h4>
+                                  <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.75rem' }}>@{profile.username}</p>
+                                </div>
+                              </div>
+                            </td>
+                            
+                            <td style={{ padding: '1.25rem 1rem', textAlign: 'center' }}>
+                              <input 
+                                type="checkbox"
+                                checked={canPosts}
+                                onChange={() => handleTogglePermission(emp.user_id, 'posts')}
+                                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                              />
+                            </td>
+                            
+                            <td style={{ padding: '1.25rem 1rem', textAlign: 'center' }}>
+                              <input 
+                                type="checkbox"
+                                checked={canJobs}
+                                onChange={() => handleTogglePermission(emp.user_id, 'jobs')}
+                                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                              />
+                            </td>
+                            
+                            <td style={{ padding: '1.25rem 1rem', textAlign: 'center' }}>
+                              <input 
+                                type="checkbox"
+                                checked={canProfile}
+                                onChange={() => handleTogglePermission(emp.user_id, 'profile')}
+                                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                              />
+                            </td>
+                            
+                            <td style={{ padding: '1.25rem 1rem', textAlign: 'right' }}>
+                              <button 
+                                onClick={() => handleRemoveMember(emp.user_id)}
+                                className="btn btn-secondary" 
+                                style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', color: 'var(--danger)', border: '1px solid rgba(255, 68, 68, 0.15)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                              >
+                                <UserMinus size={12} /> Remove
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
           </div>
         )}
 
@@ -837,6 +1191,9 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
         }
         .btn-tab:hover {
           color: var(--primary) !important;
+        }
+        .hover-row:hover {
+          background: rgba(255, 255, 255, 0.02);
         }
       `}} />
     </main>
