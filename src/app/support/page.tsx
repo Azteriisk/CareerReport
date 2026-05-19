@@ -131,12 +131,12 @@ export default function SupportPage() {
                   disabled={isSubmitting}
                   value={issueType}
                   onChange={(e) => setIssueType(e.target.value)}
-                  style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: '#18181b', color: 'var(--text-primary)', cursor: 'pointer', appearance: 'none' }}
+                  style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'rgba(255, 255, 255, 0.03)', color: 'var(--text-primary)', cursor: 'pointer', appearance: 'none' }}
                 >
-                  <option value="bug">Report a Bug</option>
-                  <option value="feature">Feature Request</option>
-                  <option value="account">Account / Billing</option>
-                  <option value="other">Other</option>
+                  <option value="bug" style={{ background: 'var(--surface-color)', color: 'var(--text-primary)' }}>Report a Bug</option>
+                  <option value="feature" style={{ background: 'var(--surface-color)', color: 'var(--text-primary)' }}>Feature Request</option>
+                  <option value="account" style={{ background: 'var(--surface-color)', color: 'var(--text-primary)' }}>Account / Billing</option>
+                  <option value="other" style={{ background: 'var(--surface-color)', color: 'var(--text-primary)' }}>Other</option>
                 </select>
               </div>
             </div>
