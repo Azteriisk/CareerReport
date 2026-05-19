@@ -53,10 +53,10 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
       if (!slug) return;
       setIsLoading(true);
       try {
-        // Fetch company profile
+        // Fetch company profile with joined owner profile details
         const { data: comp, error: compErr } = await supabase
           .from('business_profiles')
-          .select('*')
+          .select('*, profiles(username, full_name, avatar_url)')
           .eq('slug', slug)
           .single();
 
@@ -72,13 +72,6 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
           
         if (jobList) setJobs(jobList);
 
-        // Fetch owner profile details to list them as the team lead/owner
-        const { data: ownerProfile } = await supabase
-          .from('profiles')
-          .select('username, full_name, avatar_url')
-          .eq('id', comp.owner_id)
-          .single();
-
         const ownerRecord = {
           user_id: comp.owner_id,
           status: 'owner',
@@ -87,7 +80,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
             full_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Company Owner',
             avatar_url: user.imageUrl || null,
             label: 'Owner'
-          } : (ownerProfile || {
+          } : (comp.profiles || {
             username: 'owner',
             full_name: 'Company Owner',
             avatar_url: null,
