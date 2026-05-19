@@ -93,17 +93,30 @@ We follow a **"Diamond" testing strategy** to ensure full stability during rapid
 ## 🗺️ Roadmap & Known Issues
 
 > [!IMPORTANT]
-> The core layout engines, social infrastructure, and AI modules are fully operational. However, we are actively tracking and refining several known bugs and feature expansions.
+> The core layout engines, social infrastructure, and AI modules are fully operational. We actively maintain a checklist of recently implemented user flow improvements alongside upcoming milestones.
+
+### ✅ Recent Accomplishments (Completed Tasks)
+* [x] **Universal Spinner Standard:** Unified the spinner placement and visual styling in the resume builder to match the exact top-left positioning used on other sub-pages.
+* [x] **Sleek Builder Footer Mechanics:** Configured the resume builder's footer visibility to remain hidden unless the user scrolls all the way to the bottom of the builder.
+* [x] **Redundant Footer Cleans:** Fixed double footer rendering on the HomePage and removed the redundant footer on the Profile Page for perfect visual consistency.
+* [x] **Form Select Styling Harmonization:** Re-designed the support ticket select background color and border styles to match the premium, custom-colored input fields of the surrounding form.
+* [x] **Supabase Profile URL Integrity:** Standardized team owner resolution to prioritize database profile usernames first, preventing Clerk empty username handles from defaulting owner links to `/u/owner`.
+* [x] **Dynamic Title Customization & Encoding:** Implemented inline custom employee title updates (e.g., "CEO" or "Lead Developer") in the Team Management dashboard without database schema bloat, utilizing a robust pipe-delimited suffix encoder directly on the `status` column.
+* [x] **Secure Ownership Transfer:** Introduced dual-tier safety confirmation popups allowing owners to safely delegate page ownership to senior team members, with automatic demotion of the former owner to a `"Former Owner"` high-authority status.
+* [x] **Decentralized Team Administration:** Expanded dashboard access to employees with `profile` permissions, allowing them to manage standard member details and customize titles.
 
 ### 🐛 Known Issues & DPI Syncing (Active Tasks)
-* **Mobile PDF Export Scaling:** PDF printing layout margins and zoom scaling factors can behave inconsistently during direct mobile browser exports. Work is underway to standardize `@media print` queries for mobile viewport boundaries.
-* **Multi-DPI Display Layout Synchronization:** Variations in device hardware DPI can occasionally trigger minor layout offsets or slight pixel-spacing differences in resume templates when switching between high-DPI (Retina/4K) monitors and standard-definition screens. We are refining absolute sizing calculations to guarantee pixel-for-pixel rendering symmetry across all resolutions.
+* [ ] **Mobile PDF Export Margins:** PDF printing layout margins and zoom scaling factors can behave inconsistently during direct mobile browser exports. Work is underway to standardize `@media print` queries for mobile viewport boundaries.
+* [ ] **Multi-DPI Display Layout Synchronization:** Variations in device hardware DPI can occasionally trigger minor layout offsets or slight pixel-spacing differences in resume templates when switching between high-DPI (Retina/4K) monitors and standard-definition screens. We are refining absolute sizing calculations to guarantee pixel-for-pixel rendering symmetry across all resolutions.
 
-### 🔮 Feature Roadmap
-* **Full Enterprise Job Board:** Integrate robust job matching dashboards, employer profiles, employee tag indexing, and one-click application systems.
-* **Automated ATS Parser Success Test:** Deploy a standardized suite of automated extraction tests using mock resumes to measure the extraction accuracy of our invisible metadata layers against industry-standard parsers, ensuring we remain at 100% readability.
-* **Expanded Social Feed Metrics:** Add direct like, share, and comment count indicators to post feeds.
-* **Instant Post Conversation Snippets:** Enable feed cards to display the most recent comment inline immediately on posts that have discussions, avoiding the need to click or open comments first.
+### 🔮 Feature Roadmap & Action Items (Remaining Tasks)
+* [ ] **Expand Testing Suite:** Expand the testing suite to cover more edge cases and UI interactions as the sites features continue to grow.
+* [ ] **Enterprise Job Matching Dashboards:** Add automated skill-gap analysis comparing resume bullet points against newly posted jobs to highlight missing competencies for applicants.
+* [ ] **Automated ATS Success Testing Suite:** Deploy a programmatic testing harness that runs mock resumes through industry-standard ATS parsers (like Lever or Greenhouse) to measure parsing accuracy and refine the `AtsMetadata` invisible layers.
+* [ ] **Instant Post Thread Previews:** Render the top three most recent conversation bubbles directly on the homepage social card feeds so users can preview discussions without clicking into full post dialogs.
+* [ ] **Advanced RLS Audit & DB Triggers:** Add Supabase database triggers to automatically clean up orphaned post comments, likes, or messaging channels if a user profile is deleted or updated.
+* [ ] **Roster RLS Safeguards:** Solidify backend RLS validation checks preventing a non-owner with team permissions from editing/modifying the owner's status record directly via API actions.
+* [ ] **Expanded Social Feed Metrics:** Add direct like, share, and comment count indicators to post feeds.
 
 ---
 

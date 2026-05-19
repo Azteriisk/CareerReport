@@ -6,6 +6,40 @@ import { Building2, Globe, MapPin, Users, Calendar, Briefcase, Mail, FileText, X
 import Link from 'next/link';
 import { useUser } from '@clerk/nextjs';
 
+function parseEmployeeStatus(status: string | null) {
+  if (!status) return { approved: false, permissions: [] as string[], title: '' };
+  
+  const parts = status.split('|');
+  const mainPart = parts[0];
+  let title = '';
+  
+  for (let i = 1; i < parts.length; i++) {
+    if (parts[i].startsWith('title=')) {
+      title = decodeURIComponent(parts[i].substring(6));
+    }
+  }
+  
+  const isOwner = mainPart === 'owner';
+  const approved = mainPart.startsWith('approved') || isOwner;
+  let permissions: string[] = [];
+  if (mainPart.includes(':')) {
+    permissions = mainPart.split(':')[1].split(',');
+  }
+  
+  return { approved, permissions, title, isOwner };
+}
+
+function encodeEmployeeStatus(baseStatus: 'approved' | 'owner', permissions: string[], title: string) {
+  let main = baseStatus === 'owner' ? 'owner' : 'approved';
+  if (permissions.length > 0 && baseStatus !== 'owner') {
+    main = `approved:${permissions.join(',')}`;
+  }
+  if (title) {
+    main = `${main}|title=${encodeURIComponent(title)}`;
+  }
+  return main;
+}
+
 export default function CompanyProfilePage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = use(params);
   const slug = resolvedParams.slug;
@@ -72,9 +106,18 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
           
         if (jobList) setJobs(jobList);
 
+        // Fetch all employee and request records
+        const { data: empList } = await supabase
+          .from('company_employees')
+          .select('user_id, status, profiles(username, full_name, avatar_url)')
+          .eq('business_id', comp.id);
+
+        const ownerEmpRow = empList?.find(e => e.user_id === comp.owner_id);
+        const ownerStatus = ownerEmpRow?.status || 'owner';
+
         const ownerRecord = {
           user_id: comp.owner_id,
-          status: 'owner',
+          status: ownerStatus,
           profiles: {
             username: comp.profiles?.username || user?.username || 'owner',
             full_name: comp.profiles?.full_name || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : null) || 'Company Owner',
@@ -83,12 +126,6 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
           }
         };
 
-        // Fetch all employee and request records
-        const { data: empList } = await supabase
-          .from('company_employees')
-          .select('user_id, status, profiles(username, full_name, avatar_url)')
-          .eq('business_id', comp.id);
-          
         if (empList) {
           setAllEmployeeRecords(empList);
           // Split approved team members (excluding the owner to avoid duplicates) and pending requests
@@ -266,19 +303,15 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
     const emp = allEmployeeRecords.find(e => e.user_id === targetUserId);
     if (!emp) return;
 
-    let currentPerms: string[] = [];
-    if (emp.status && emp.status.includes(':')) {
-      currentPerms = emp.status.split(':')[1].split(',');
-    }
-
+    const parsed = parseEmployeeStatus(emp.status);
     let newPerms: string[] = [];
-    if (currentPerms.includes(permission)) {
-      newPerms = currentPerms.filter(p => p !== permission);
+    if (parsed.permissions.includes(permission)) {
+      newPerms = parsed.permissions.filter(p => p !== permission);
     } else {
-      newPerms = [...currentPerms, permission];
+      newPerms = [...parsed.permissions, permission];
     }
 
-    const newStatus = newPerms.length > 0 ? `approved:${newPerms.join(',')}` : 'approved';
+    const newStatus = encodeEmployeeStatus('approved', newPerms, parsed.title);
 
     try {
       const { error } = await supabase
@@ -294,6 +327,118 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
       setEmployees(prev => prev.map(e => e.user_id === targetUserId ? { ...e, status: newStatus } : e));
     } catch (err: any) {
       alert("Failed to update permissions: " + (err.message || err));
+    }
+  };
+
+  const handleUpdateTitle = async (targetUserId: string, newTitle: string) => {
+    const isTargetOwner = targetUserId === company.owner_id;
+    const emp = allEmployeeRecords.find(e => e.user_id === targetUserId);
+    
+    // For owner, synthesize status if not present in records
+    const currentStatus = emp?.status || (isTargetOwner ? 'owner' : 'approved');
+    const parsed = parseEmployeeStatus(currentStatus);
+    
+    const baseStatus = isTargetOwner ? 'owner' : 'approved';
+    const newStatus = encodeEmployeeStatus(baseStatus, parsed.permissions, newTitle);
+
+    try {
+      // 1. Perform an upsert in the database
+      const { error } = await supabase
+        .from('company_employees')
+        .upsert({
+          business_id: company.id,
+          user_id: targetUserId,
+          status: newStatus
+        }, { onConflict: 'business_id,user_id' });
+
+      if (error) {
+        // Fallback to direct update if upsert fails
+        const { error: updateErr } = await supabase
+          .from('company_employees')
+          .update({ status: newStatus })
+          .eq('business_id', company.id)
+          .eq('user_id', targetUserId);
+          
+        if (updateErr) {
+          // Fallback to direct insert
+          const { error: insertErr } = await supabase
+            .from('company_employees')
+            .insert({
+              business_id: company.id,
+              user_id: targetUserId,
+              status: newStatus
+            });
+          if (insertErr) throw insertErr;
+        }
+      }
+
+      // Update state locally
+      setAllEmployeeRecords(prev => {
+        const exists = prev.some(e => e.user_id === targetUserId);
+        if (exists) {
+          return prev.map(e => e.user_id === targetUserId ? { ...e, status: newStatus } : e);
+        } else {
+          return [...prev, { user_id: targetUserId, status: newStatus }];
+        }
+      });
+
+      setEmployees(prev => prev.map(e => e.user_id === targetUserId ? { ...e, status: newStatus } : e));
+    } catch (err: any) {
+      alert("Failed to update title: " + (err.message || err));
+    }
+  };
+
+  const handleGrantOwnership = async (targetUserId: string, targetName: string) => {
+    if (!isOwner) return;
+    
+    const confirm1 = confirm(`WARNING: Are you sure you want to transfer ownership of ${company.name} to ${targetName}? You will lose owner privileges.`);
+    if (!confirm1) return;
+    
+    const confirm2 = confirm(`FINAL CONFIRMATION: You are about to transfer complete ownership of this business page. This action CANNOT be undone. Proceed?`);
+    if (!confirm2) return;
+
+    try {
+      // 1. Update the business_profiles table's owner_id
+      const { error: profileErr } = await supabase
+        .from('business_profiles')
+        .update({ owner_id: targetUserId })
+        .eq('id', company.id);
+
+      if (profileErr) throw profileErr;
+
+      // 2. Change the old owner's employee record to standard approved employee in company_employees
+      // And change the new owner's record to status 'owner'
+      const oldOwnerStatus = encodeEmployeeStatus('approved', ['posts', 'jobs', 'profile'], 'Former Owner');
+      const { error: oldOwnerErr } = await supabase
+        .from('company_employees')
+        .upsert({
+          business_id: company.id,
+          user_id: user!.id,
+          status: oldOwnerStatus
+        }, { onConflict: 'business_id,user_id' });
+      
+      if (oldOwnerErr) {
+        // Fallback update
+        await supabase
+          .from('company_employees')
+          .update({ status: oldOwnerStatus })
+          .eq('business_id', company.id)
+          .eq('user_id', user!.id);
+      }
+
+      // 3. Update the new owner's status in company_employees to 'owner'
+      const { error: newOwnerErr } = await supabase
+        .from('company_employees')
+        .update({ status: 'owner' })
+        .eq('business_id', company.id)
+        .eq('user_id', targetUserId);
+
+      if (newOwnerErr) console.warn("Failed to update new owner status row:", newOwnerErr);
+
+      alert(`Ownership of ${company.name} has been successfully transferred to ${targetName}!`);
+      window.location.reload();
+    } catch (err: any) {
+      alert("Failed to transfer ownership: " + (err.message || err));
     }
   };
 
@@ -521,7 +666,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
             >
               Candidate Applications ({applications.length})
             </button>
-            {isOwner && (
+            {hasProfilePermission && (
               <button 
                 onClick={() => setActiveTab('team')}
                 className={`btn-tab ${activeTab === 'team' ? 'active' : ''}`}
@@ -658,11 +803,26 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                             style={{ width: '40px', height: '40px', borderRadius: '50%', border: '1px solid var(--glass-border)' }}
                           />
                           <div>
-                            <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.95rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                              {name}
-                              {emp.status === 'owner' && <span style={{ fontSize: '0.7rem', background: 'rgba(250, 189, 47, 0.15)', color: 'var(--primary)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>Owner</span>}
-                            </h4>
-                            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{emp.status === 'owner' ? 'Owner' : (profile.label || 'Team Member')}</p>
+                            {(() => {
+                              const parsed = parseEmployeeStatus(emp.status);
+                              const isOwnerRole = emp.status && emp.status.startsWith('owner');
+                              const displayTitle = parsed.title || (isOwnerRole ? 'Owner' : 'Team Member');
+                              return (
+                                <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.95rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  {name}
+                                  <span style={{ 
+                                    fontSize: '0.7rem', 
+                                    background: isOwnerRole ? 'rgba(250, 189, 47, 0.15)' : 'rgba(255, 255, 255, 0.06)', 
+                                    color: isOwnerRole ? 'var(--primary)' : 'var(--text-secondary)', 
+                                    padding: '2px 8px', 
+                                    borderRadius: '4px', 
+                                    fontWeight: 600 
+                                  }}>
+                                    {displayTitle}
+                                  </span>
+                                </h4>
+                              );
+                            })()}
                           </div>
                         </div>
                       </Link>
@@ -765,7 +925,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
         )}
 
         {/* Tab 3: Team Management & Granular Permissions */}
-        {activeTab === 'team' && isOwner && (
+        {activeTab === 'team' && hasProfilePermission && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
             
             {/* Invite team members directly */}
@@ -846,6 +1006,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                     <thead>
                       <tr style={{ borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
                         <th style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase' }}>Member</th>
+                        <th style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase' }}>Title</th>
                         <th style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', textAlign: 'center' }}>Make Posts</th>
                         <th style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', textAlign: 'center' }}>Manage Jobs</th>
                         <th style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', textAlign: 'center' }}>Update Profile</th>
@@ -857,9 +1018,15 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                         const profile = emp.profiles || {};
                         const name = profile.full_name || profile.username || 'Team Member';
                         const status = emp.status || 'approved';
-                        const canPosts = status.includes('posts');
-                        const canJobs = status.includes('jobs');
-                        const canProfile = status.includes('profile');
+                        
+                        const isOwnerRole = status && status.startsWith('owner');
+                        const parsed = parseEmployeeStatus(status);
+                        const isTitleEditable = (!isOwnerRole && hasProfilePermission) || (isOwnerRole && isOwner);
+                        const displayTitle = parsed.title || (isOwnerRole ? 'Owner' : 'Team Member');
+
+                        const canPosts = parsed.permissions.includes('posts');
+                        const canJobs = parsed.permissions.includes('jobs');
+                        const canProfile = parsed.permissions.includes('profile');
 
                         return (
                           <tr key={emp.user_id} style={{ borderBottom: '1px solid var(--glass-border)', transition: 'background 0.2s' }}>
@@ -873,55 +1040,99 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                                 <div>
                                   <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                                     {name}
-                                    {status === 'owner' && <span style={{ fontSize: '0.7rem', background: 'rgba(250, 189, 47, 0.15)', color: 'var(--primary)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>Owner</span>}
+                                    {isOwnerRole && <span style={{ fontSize: '0.7rem', background: 'rgba(250, 189, 47, 0.15)', color: 'var(--primary)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>Owner</span>}
                                   </h4>
                                   <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.75rem' }}>@{profile.username}</p>
                                 </div>
                               </div>
                             </td>
                             
+                            <td style={{ padding: '1.25rem 1rem' }}>
+                              {isTitleEditable ? (
+                                <input 
+                                  type="text"
+                                  defaultValue={parsed.title}
+                                  placeholder={isOwnerRole ? 'Owner' : 'Team Member'}
+                                  onBlur={async (e) => {
+                                    const val = e.target.value.trim();
+                                    if (val !== parsed.title) {
+                                      await handleUpdateTitle(emp.user_id, val);
+                                    }
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.currentTarget.blur();
+                                    }
+                                  }}
+                                  style={{ 
+                                    background: 'rgba(255, 255, 255, 0.03)', 
+                                    border: '1px solid var(--glass-border)', 
+                                    color: 'var(--text-primary)', 
+                                    padding: '0.35rem 0.65rem', 
+                                    borderRadius: '6px', 
+                                    fontSize: '0.85rem',
+                                    width: '140px'
+                                  }}
+                                />
+                              ) : (
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{displayTitle}</span>
+                              )}
+                            </td>
+                            
                             <td style={{ padding: '1.25rem 1rem', textAlign: 'center' }}>
                               <input 
                                 type="checkbox"
-                                checked={status === 'owner' ? true : canPosts}
-                                disabled={status === 'owner'}
+                                checked={isOwnerRole ? true : canPosts}
+                                disabled={isOwnerRole}
                                 onChange={() => handleTogglePermission(emp.user_id, 'posts')}
-                                style={{ width: '18px', height: '18px', cursor: status === 'owner' ? 'default' : 'pointer', accentColor: 'var(--primary)' }}
+                                style={{ width: '18px', height: '18px', cursor: isOwnerRole ? 'default' : 'pointer', accentColor: 'var(--primary)' }}
                               />
                             </td>
                             
                             <td style={{ padding: '1.25rem 1rem', textAlign: 'center' }}>
                               <input 
                                 type="checkbox"
-                                checked={status === 'owner' ? true : canJobs}
-                                disabled={status === 'owner'}
+                                checked={isOwnerRole ? true : canJobs}
+                                disabled={isOwnerRole}
                                 onChange={() => handleTogglePermission(emp.user_id, 'jobs')}
-                                style={{ width: '18px', height: '18px', cursor: status === 'owner' ? 'default' : 'pointer', accentColor: 'var(--primary)' }}
+                                style={{ width: '18px', height: '18px', cursor: isOwnerRole ? 'default' : 'pointer', accentColor: 'var(--primary)' }}
                               />
                             </td>
                             
                             <td style={{ padding: '1.25rem 1rem', textAlign: 'center' }}>
                               <input 
                                 type="checkbox"
-                                checked={status === 'owner' ? true : canProfile}
-                                disabled={status === 'owner'}
+                                checked={isOwnerRole ? true : canProfile}
+                                disabled={isOwnerRole}
                                 onChange={() => handleTogglePermission(emp.user_id, 'profile')}
-                                style={{ width: '18px', height: '18px', cursor: status === 'owner' ? 'default' : 'pointer', accentColor: 'var(--primary)' }}
+                                style={{ width: '18px', height: '18px', cursor: isOwnerRole ? 'default' : 'pointer', accentColor: 'var(--primary)' }}
                               />
                             </td>
                             
                             <td style={{ padding: '1.25rem 1rem', textAlign: 'right' }}>
-                              {status === 'owner' ? (
-                                <span style={{ fontSize: '0.75rem', background: 'rgba(250, 189, 47, 0.15)', color: 'var(--primary)', padding: '4px 10px', borderRadius: '100px', fontWeight: 700 }}>Owner</span>
-                              ) : (
-                                <button 
-                                  onClick={() => handleRemoveMember(emp.user_id)}
-                                  className="btn btn-secondary" 
-                                  style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', color: 'var(--danger)', border: '1px solid rgba(255, 68, 68, 0.15)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
-                                >
-                                  <UserMinus size={12} /> Remove
-                                </button>
-                              )}
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                {isOwner && !isOwnerRole && (
+                                  <button 
+                                    onClick={() => handleGrantOwnership(emp.user_id, name)}
+                                    className="btn btn-secondary" 
+                                    style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', color: 'var(--primary)', border: '1px solid rgba(250, 189, 47, 0.25)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                                  >
+                                    <BadgeCheck size={12} /> Make Owner
+                                  </button>
+                                )}
+                                
+                                {isOwnerRole ? (
+                                  <span style={{ fontSize: '0.75rem', background: 'rgba(250, 189, 47, 0.15)', color: 'var(--primary)', padding: '4px 10px', borderRadius: '100px', fontWeight: 700 }}>Owner</span>
+                                ) : (
+                                  <button 
+                                    onClick={() => handleRemoveMember(emp.user_id)}
+                                    className="btn btn-secondary" 
+                                    style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', color: 'var(--danger)', border: '1px solid rgba(255, 68, 68, 0.15)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                                  >
+                                    <UserMinus size={12} /> Remove
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         );
