@@ -72,6 +72,24 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
           
         if (jobList) setJobs(jobList);
 
+        // Fetch owner profile details to list them as the team lead/owner
+        const { data: ownerProfile } = await supabase
+          .from('profiles')
+          .select('username, full_name, avatar_url, label')
+          .eq('id', comp.owner_id)
+          .single();
+
+        const ownerRecord = {
+          user_id: comp.owner_id,
+          status: 'owner',
+          profiles: ownerProfile || {
+            username: 'owner',
+            full_name: 'Company Owner',
+            avatar_url: null,
+            label: 'Owner'
+          }
+        };
+
         // Fetch all employee and request records
         const { data: empList } = await supabase
           .from('company_employees')
@@ -80,8 +98,9 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
           
         if (empList) {
           setAllEmployeeRecords(empList);
-          // Split approved team members and pending join requests
-          setEmployees(empList.filter(e => e.status && e.status.startsWith('approved')));
+          // Split approved team members (excluding the owner to avoid duplicates) and pending requests
+          const approvedEmployees = empList.filter(e => e.status && e.status.startsWith('approved') && e.user_id !== comp.owner_id);
+          setEmployees([ownerRecord, ...approvedEmployees]);
           setPendingRequests(empList.filter(e => e.status === 'pending'));
 
           // Check if current user has already requested employee status
@@ -90,7 +109,14 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
             if (userEmpRecord) {
               setHasRequested(true);
               setCurrentUserEmployee(userEmpRecord);
+            } else if (comp.owner_id === user.id) {
+              setCurrentUserEmployee(ownerRecord);
             }
+          }
+        } else {
+          setEmployees([ownerRecord]);
+          if (isSignedIn && user && comp.owner_id === user.id) {
+            setCurrentUserEmployee(ownerRecord);
           }
         }
 
@@ -353,10 +379,10 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
         return;
       }
 
-      // Check if user is already a team member or pending
-      const exists = allEmployeeRecords.some(e => e.user_id === profile.id);
+      // Check if user is already a team member, pending, or the owner themselves
+      const exists = allEmployeeRecords.some(e => e.user_id === profile.id) || profile.id === company.owner_id;
       if (exists) {
-        alert("This user is already a team member or has a pending request.");
+        alert("This user is already a team member, the owner, or has a pending request.");
         setIsInviting(false);
         return;
       }
@@ -639,8 +665,11 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                             style={{ width: '40px', height: '40px', borderRadius: '50%', border: '1px solid var(--glass-border)' }}
                           />
                           <div>
-                            <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.95rem', fontWeight: 600 }}>{name}</h4>
-                            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{profile.label || 'Team Member'}</p>
+                            <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.95rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              {name}
+                              {emp.status === 'owner' && <span style={{ fontSize: '0.7rem', background: 'rgba(250, 189, 47, 0.15)', color: 'var(--primary)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>Owner</span>}
+                            </h4>
+                            <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{emp.status === 'owner' ? 'Owner' : (profile.label || 'Team Member')}</p>
                           </div>
                         </div>
                       </Link>
@@ -849,7 +878,10 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                                   style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1px solid var(--glass-border)', objectFit: 'cover' }}
                                 />
                                 <div>
-                                  <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 600 }}>{name}</h4>
+                                  <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                    {name}
+                                    {status === 'owner' && <span style={{ fontSize: '0.7rem', background: 'rgba(250, 189, 47, 0.15)', color: 'var(--primary)', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>Owner</span>}
+                                  </h4>
                                   <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.75rem' }}>@{profile.username}</p>
                                 </div>
                               </div>
@@ -858,38 +890,45 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                             <td style={{ padding: '1.25rem 1rem', textAlign: 'center' }}>
                               <input 
                                 type="checkbox"
-                                checked={canPosts}
+                                checked={status === 'owner' ? true : canPosts}
+                                disabled={status === 'owner'}
                                 onChange={() => handleTogglePermission(emp.user_id, 'posts')}
-                                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                                style={{ width: '18px', height: '18px', cursor: status === 'owner' ? 'default' : 'pointer', accentColor: 'var(--primary)' }}
                               />
                             </td>
                             
                             <td style={{ padding: '1.25rem 1rem', textAlign: 'center' }}>
                               <input 
                                 type="checkbox"
-                                checked={canJobs}
+                                checked={status === 'owner' ? true : canJobs}
+                                disabled={status === 'owner'}
                                 onChange={() => handleTogglePermission(emp.user_id, 'jobs')}
-                                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                                style={{ width: '18px', height: '18px', cursor: status === 'owner' ? 'default' : 'pointer', accentColor: 'var(--primary)' }}
                               />
                             </td>
                             
                             <td style={{ padding: '1.25rem 1rem', textAlign: 'center' }}>
                               <input 
                                 type="checkbox"
-                                checked={canProfile}
+                                checked={status === 'owner' ? true : canProfile}
+                                disabled={status === 'owner'}
                                 onChange={() => handleTogglePermission(emp.user_id, 'profile')}
-                                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                                style={{ width: '18px', height: '18px', cursor: status === 'owner' ? 'default' : 'pointer', accentColor: 'var(--primary)' }}
                               />
                             </td>
                             
                             <td style={{ padding: '1.25rem 1rem', textAlign: 'right' }}>
-                              <button 
-                                onClick={() => handleRemoveMember(emp.user_id)}
-                                className="btn btn-secondary" 
-                                style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', color: 'var(--danger)', border: '1px solid rgba(255, 68, 68, 0.15)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
-                              >
-                                <UserMinus size={12} /> Remove
-                              </button>
+                              {status === 'owner' ? (
+                                <span style={{ fontSize: '0.75rem', background: 'rgba(250, 189, 47, 0.15)', color: 'var(--primary)', padding: '4px 10px', borderRadius: '100px', fontWeight: 700 }}>Owner</span>
+                              ) : (
+                                <button 
+                                  onClick={() => handleRemoveMember(emp.user_id)}
+                                  className="btn btn-secondary" 
+                                  style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', color: 'var(--danger)', border: '1px solid rgba(255, 68, 68, 0.15)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                                >
+                                  <UserMinus size={12} /> Remove
+                                </button>
+                              )}
                             </td>
                           </tr>
                         );
