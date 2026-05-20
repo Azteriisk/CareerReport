@@ -165,8 +165,8 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
   // Load applications if authorized users view the applications tab
   useEffect(() => {
     if (!company?.id || jobs.length === 0 || activeTab !== 'applications') return;
-    setLoadingApplications(true);
     async function loadApplications() {
+      setLoadingApplications(true);
       try {
         const { data, error } = await supabase
           .from('job_applications')
@@ -300,6 +300,17 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
 
   // Team Permissions Handlers
   const handleTogglePermission = async (targetUserId: string, permission: 'posts' | 'jobs' | 'profile') => {
+    const isTargetOwner = targetUserId === company.owner_id;
+    if (isTargetOwner) {
+      alert("Permission denied: Cannot edit the owner's permissions.");
+      return;
+    }
+
+    if (!isOwner && !hasProfilePermission) {
+      alert("Permission denied: You do not have permission to manage team permissions.");
+      return;
+    }
+
     const emp = allEmployeeRecords.find(e => e.user_id === targetUserId);
     if (!emp) return;
 
@@ -332,6 +343,16 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
 
   const handleUpdateTitle = async (targetUserId: string, newTitle: string) => {
     const isTargetOwner = targetUserId === company.owner_id;
+    if (isTargetOwner && !isOwner) {
+      alert("Permission denied: Only the business owner can edit the owner's title.");
+      return;
+    }
+
+    if (!isOwner && !hasProfilePermission) {
+      alert("Permission denied: You do not have permission to update employee titles.");
+      return;
+    }
+
     const emp = allEmployeeRecords.find(e => e.user_id === targetUserId);
     
     // For owner, synthesize status if not present in records
@@ -389,7 +410,10 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
   };
 
   const handleGrantOwnership = async (targetUserId: string, targetName: string) => {
-    if (!isOwner) return;
+    if (!isOwner) {
+      alert("Permission denied: Only the business owner can transfer ownership.");
+      return;
+    }
     
     const confirm1 = confirm(`WARNING: Are you sure you want to transfer ownership of ${company.name} to ${targetName}? You will lose owner privileges.`);
     if (!confirm1) return;
@@ -443,6 +467,11 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
   };
 
   const handleApproveRequest = async (targetUserId: string) => {
+    if (!isOwner && !hasProfilePermission) {
+      alert("Permission denied: You do not have permission to approve team requests.");
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('company_employees')
@@ -464,6 +493,11 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
   };
 
   const handleRejectRequest = async (targetUserId: string) => {
+    if (!isOwner && !hasProfilePermission) {
+      alert("Permission denied: You do not have permission to reject team requests.");
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('company_employees')
@@ -481,6 +515,17 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
   };
 
   const handleRemoveMember = async (targetUserId: string) => {
+    const isTargetOwner = targetUserId === company.owner_id;
+    if (isTargetOwner) {
+      alert("Permission denied: The business owner cannot be removed from the team.");
+      return;
+    }
+
+    if (!isOwner && !hasProfilePermission) {
+      alert("Permission denied: You do not have permission to remove team members.");
+      return;
+    }
+
     if (!confirm("Are you sure you want to remove this member from your business team?")) return;
     try {
       const { error } = await supabase
@@ -501,6 +546,12 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
   const handleInviteMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteUsername.trim()) return;
+
+    if (!isOwner && !hasProfilePermission) {
+      alert("Permission denied: You do not have permission to invite team members.");
+      return;
+    }
+
     setIsInviting(true);
     try {
       // 1. Fetch user from profiles table
@@ -631,7 +682,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
         
         {/* Tab Selection */}
         {(isOwner || hasJobsPermission) && (
-          <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--glass-border)', marginBottom: '2.5rem', paddingBottom: '0.25rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', borderBottom: '1px solid var(--glass-border)', marginBottom: '2.5rem', paddingBottom: '0.25rem' }}>
             <button 
               onClick={() => setActiveTab('jobs')}
               className={`btn-tab ${activeTab === 'jobs' ? 'active' : ''}`}
@@ -690,7 +741,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
 
         {/* Tab 1: Positions Grid */}
         {activeTab === 'jobs' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '3rem', alignItems: 'flex-start' }}>
+          <div className="company-positions-grid">
             {/* Jobs Board Section */}
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>

@@ -1,22 +1,26 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { defaultResume } from '@/lib/default-resume';
 import { ResumeData } from '@/lib/resume-schema';
-import { TemplateModern } from '@/components/TemplateModern';
-import { TemplateClassic } from '@/components/TemplateClassic';
-import { TemplateMinimal } from '@/components/TemplateMinimal';
 import { useReactToPrint } from 'react-to-print';
-import { Download, Sparkles, LayoutTemplate, Lock, RefreshCw, Plus, Minus, Trash2, Upload, Save, CheckCircle, AlertCircle, Info, Share2, Settings, User, X, Loader2, Wand2, FileText } from 'lucide-react';
+import { Download, Sparkles, LayoutTemplate, Lock, RefreshCw, Plus, Minus, Trash2, Upload, Save, CheckCircle, AlertCircle, Info, Share2, X, Loader2, Wand2, FileText, Edit, Copy, Check } from 'lucide-react';
 import { useUser, useAuth, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
 import { supabase } from "@/lib/supabase";
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ImageCropper } from '@/components/ImageCropper';
 import { AtsMetadata } from '@/components/AtsMetadata';
-import { TemplateModernSplit } from '@/components/TemplateModernSplit';
-import { UpgradeModal } from '@/components/UpgradeModal';
+import { BuilderErrorBoundary } from '@/components/BuilderErrorBoundary';
+
+// Dynamically import heavy components so they're code-split from the initial bundle
+const TemplateModern = dynamic(() => import('@/components/TemplateModern').then(m => ({ default: m.TemplateModern })));
+const TemplateClassic = dynamic(() => import('@/components/TemplateClassic').then(m => ({ default: m.TemplateClassic })));
+const TemplateMinimal = dynamic(() => import('@/components/TemplateMinimal').then(m => ({ default: m.TemplateMinimal })));
+const TemplateModernSplit = dynamic(() => import('@/components/TemplateModernSplit').then(m => ({ default: m.TemplateModernSplit })));
+const ImageCropper = dynamic(() => import('@/components/ImageCropper').then(m => ({ default: m.ImageCropper })));
+const UpgradeModal = dynamic(() => import('@/components/UpgradeModal').then(m => ({ default: m.UpgradeModal })));
 
 const months = [
   { v: '01', l: 'Jan.' }, { v: '02', l: 'Feb.' }, { v: '03', l: 'Mar.' },
@@ -67,32 +71,6 @@ function BuilderPageContent() {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
 
-  // Verify Stripe payment on redirect
-  useEffect(() => {
-    const success = searchParams?.get('success');
-    const sessionId = searchParams?.get('session_id');
-
-    if (success === 'true' && sessionId) {
-      const verifyPayment = async () => {
-        try {
-          const res = await fetch(`/api/checkout/verify?session_id=${sessionId}`);
-          if (res.ok) {
-            const result = await res.json();
-            if (result.success) {
-              setIsPro(true);
-              // Clean up query parameters so we don't repeat this on refresh
-              const newUrl = window.location.pathname;
-              window.history.replaceState({}, '', newUrl);
-              alert("Payment successful! Welcome to CareerReport Pro. All premium AI features are now unlocked.");
-            }
-          }
-        } catch (err) {
-          console.error("Stripe payment verification failed:", err);
-        }
-      };
-      verifyPayment();
-    }
-  }, [searchParams]);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileScale, setMobileScale] = useState(0.45);
 
@@ -133,6 +111,21 @@ function BuilderPageContent() {
   const [profileUsername, setProfileUsername] = useState<string | null>(null);
   const [sharingCopied, setSharingCopied] = useState(false);
 
+  // Multiple resumes interface and state variables
+  interface SavedResume {
+    id: string;
+    name: string;
+    data: ResumeData;
+    template: 'modern' | 'classic' | 'minimal' | 'modern-split';
+    isPublic: boolean;
+    updatedAt: string;
+  }
+  const [savedResumes, setSavedResumes] = useState<SavedResume[]>([]);
+  const [activeResumeId, setActiveResumeId] = useState<string | null>(null);
+  const [showResumesDropdown, setShowResumesDropdown] = useState(false);
+  const [resumeRenameId, setResumeRenameId] = useState<string | null>(null);
+  const [renameText, setRenameText] = useState('');
+
   // Track which optional sections are actively in the editor
   const [hasProjectsSection, setHasProjectsSection] = useState(false);
   const [hasReferencesSection, setHasReferencesSection] = useState(false);
@@ -160,67 +153,166 @@ function BuilderPageContent() {
   const [certificationsRef] = useAutoAnimate<HTMLDivElement>();
   const [menuWrapperRef] = useAutoAnimate<HTMLDivElement>();
 
+  // Verify Stripe payment on redirect — placed after all useState/useAutoAnimate declarations
+  // to satisfy react-hooks/rules-of-hooks (no forward references to state setters)
+  useEffect(() => {
+    const success = searchParams?.get('success');
+    const sessionId = searchParams?.get('session_id');
+
+    if (success === 'true' && sessionId) {
+      const verifyPayment = async () => {
+        try {
+          const res = await fetch(`/api/checkout/verify?session_id=${sessionId}`);
+          if (res.ok) {
+            const result = await res.json();
+            if (result.success) {
+              setIsPro(true);
+              // Clean up query parameters so we don't repeat this on refresh
+              const newUrl = window.location.pathname;
+              window.history.replaceState({}, '', newUrl);
+              alert("Payment successful! Welcome to CareerReport Pro. All premium AI features are now unlocked.");
+            }
+          }
+        } catch (err) {
+          console.error("Stripe payment verification failed:", err);
+        }
+      };
+      verifyPayment();
+    }
+  }, [searchParams]);
+
   // Load data from Supabase (if signed in) or localStorage (if guest)
   useEffect(() => {
+    // Safety net: if Clerk never resolves isLoaded (e.g. production keys on localhost),
+    // fall through to guest/localStorage mode after 3s so the builder is never stuck.
+    const clerkTimeout = setTimeout(() => {
+      setIsInitialLoading(false);
+    }, 3000);
+
     async function loadInitialData() {
       if (!isLoaded) return;
+      clearTimeout(clerkTimeout);
 
-      if (isSignedIn && user) {
-        setSaveStatus('saving');
-        const token = await getToken({ template: 'supabase' });
+      try {
+        if (isSignedIn && user) {
+          const { data: remoteData, error } = await supabase
+            .from('resumes')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('updated_at', { ascending: false })
+            .limit(1)
+            .single();
 
+          if (error && error.code !== 'PGRST116') {
+            console.error('Failed to load resume from Supabase:', error);
+          }
 
-        const { data: remoteData, error } = await supabase
-          .from('resumes')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('updated_at', { ascending: false })
-          .limit(1)
-          .single();
+          let activeData = remoteData?.data || defaultResume;
+          let activeTemplate = remoteData?.template || 'modern-split';
+          let activeIsPublic = typeof remoteData?.is_public === 'boolean' ? remoteData.is_public : true;
+          let activeUpdatedAt = remoteData?.updated_at || new Date().toISOString();
 
-        if (remoteData) {
-          setData(remoteData.data);
-          if (remoteData.template) setTemplate(remoteData.template);
-          if (typeof remoteData.is_public === 'boolean') setIsPublic(remoteData.is_public);
-          setSaveStatus('saved');
-          setLastSaved(new Date(remoteData.updated_at));
-          setIsInitialLoading(false);
+          if (remoteData) {
+            setData(activeData);
+            if (remoteData.template) setTemplate(remoteData.template as any);
+            if (typeof remoteData.is_public === 'boolean') setIsPublic(remoteData.is_public);
+            setSaveStatus('saved');
+            setLastSaved(new Date(remoteData.updated_at));
+          } else {
+            setSaveStatus('idle');
+          }
+
+          // Also fetch the Supabase username, career context, and pro status
+          const { data: profileRow } = await supabase
+            .from('profiles')
+            .select('username, career_context, is_pro, resume_data')
+            .eq('id', user.id)
+            .single();
+          if (profileRow?.username) setProfileUsername(profileRow.username);
+          if (profileRow?.career_context) setCareerContext(profileRow.career_context);
+          
+          const isUserPro = !!profileRow?.is_pro;
+          if (isUserPro) {
+            setIsPro(true);
+
+            let parsedResumes: SavedResume[] = [];
+            if (profileRow?.resume_data) {
+              try {
+                parsedResumes = (typeof profileRow.resume_data === 'string' 
+                  ? JSON.parse(profileRow.resume_data) 
+                  : profileRow.resume_data) as SavedResume[];
+              } catch (err) {
+                console.error("Failed to parse saved resumes from profiles:", err);
+              }
+            }
+
+            // If no saved resumes list exists (first-time Pro user), initialize it optimistically
+            if (!parsedResumes || parsedResumes.length === 0) {
+              const initialResume: SavedResume = {
+                id: 'default',
+                name: 'Default Resume',
+                data: activeData,
+                template: activeTemplate as any,
+                isPublic: activeIsPublic,
+                updatedAt: activeUpdatedAt
+              };
+              parsedResumes = [initialResume];
+              
+              // Sync initialized list back to profiles row
+              await supabase
+                .from('profiles')
+                .update({ resume_data: parsedResumes })
+                .eq('id', user.id);
+            }
+
+            setSavedResumes(parsedResumes);
+
+            // Get activeResumeId from localStorage or default to first one
+            const savedActiveId = localStorage.getItem(`cr-active-resume-id-${user.id}`);
+            const matched = parsedResumes.find(r => r.id === savedActiveId);
+            if (matched) {
+              setActiveResumeId(matched.id);
+              setData(matched.data);
+              setTemplate(matched.template);
+              setIsPublic(matched.isPublic);
+            } else {
+              setActiveResumeId(parsedResumes[0].id);
+              setData(parsedResumes[0].data);
+              setTemplate(parsedResumes[0].template);
+              setIsPublic(parsedResumes[0].isPublic);
+              localStorage.setItem(`cr-active-resume-id-${user.id}`, parsedResumes[0].id);
+            }
+          }
+
+          return;
         }
 
-        // Also fetch the Supabase username, career context, and pro status
-        const { data: profileRow } = await supabase
-          .from('profiles')
-          .select('username, career_context, is_pro')
-          .eq('id', user.id)
-          .single();
-        if (profileRow?.username) setProfileUsername(profileRow.username);
-        if (profileRow?.career_context) setCareerContext(profileRow.career_context);
-        if (profileRow?.is_pro) setIsPro(true);
-
-        if (remoteData) return;
-      }
-
-      // Fallback to localStorage if guest or no cloud data found
-      const savedData = localStorage.getItem('career-report-resume-draft');
-      if (savedData) {
-        try {
-          const parsed = JSON.parse(savedData);
-          setData(parsed.data || defaultResume);
-          if (parsed.template) setTemplate(parsed.template);
-          if (parsed.updatedAt) setLastSaved(new Date(parsed.updatedAt));
-        } catch (e) {
-          console.error("Failed to parse saved resume data", e);
+        // Fallback to localStorage if guest or no cloud data found
+        const savedData = localStorage.getItem('career-report-resume-draft');
+        if (savedData) {
+          try {
+            const parsed = JSON.parse(savedData);
+            setData(parsed.data || defaultResume);
+            if (parsed.template) setTemplate(parsed.template);
+            if (parsed.updatedAt) setLastSaved(new Date(parsed.updatedAt));
+          } catch (e) {
+            console.error("Failed to parse saved resume data", e);
+          }
         }
+      } catch (err) {
+        console.error("loadInitialData error:", err);
+      } finally {
+        // Always clear the loading state, regardless of success or error
+        setIsInitialLoading(false);
       }
-      setIsInitialLoading(false);
     }
 
     loadInitialData();
+    return () => clearTimeout(clerkTimeout);
   }, [isLoaded, isSignedIn, user?.id, getToken]);
 
-  // Autosave to localStorage
+  // Lock body scroll on desktop
   useEffect(() => {
-    // Only lock body scroll on desktop to allow natural scrolling on mobile
     if (!isMobile) {
       document.body.style.overflow = 'hidden';
       document.body.classList.remove('hide-scrollbar');
@@ -234,6 +326,7 @@ function BuilderPageContent() {
     };
   }, [isMobile]);
 
+  // Autosave
   useEffect(() => {
     if (!data) return;
 
@@ -251,8 +344,6 @@ function BuilderPageContent() {
 
         // 2. Save to Supabase if signed in
         if (isSignedIn && user) {
-          const token = await getToken({ template: 'supabase' });
-
 
           const { error } = await supabase
             .from('resumes')
@@ -267,11 +358,36 @@ function BuilderPageContent() {
           if (error) {
             console.error('Supabase sync error:', error.message || error);
           }
+
+          // 3. If Pro and have an activeResumeId, also update profiles.resume_data list
+          if (isPro && activeResumeId) {
+            setSavedResumes(prev => {
+              const updated = prev.map(r => r.id === activeResumeId ? {
+                ...r,
+                data,
+                template,
+                isPublic,
+                updatedAt: timestamp
+              } : r);
+
+              // Update in database background
+              supabase
+                .from('profiles')
+                .update({ resume_data: updated })
+                .eq('id', user.id)
+                .then(({ error: profileErr }) => {
+                  if (profileErr) {
+                    console.error('Failed to sync saved resumes list to profiles:', profileErr);
+                  }
+                });
+
+              return updated;
+            });
+          }
         }
 
         setSaveStatus('saved');
         setLastSaved(new Date());
-        // Reset status to idle after a few seconds
         setTimeout(() => setSaveStatus('idle'), 3000);
       } catch (e) {
         console.error("Failed to autosave resume data", e);
@@ -280,7 +396,7 @@ function BuilderPageContent() {
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [data, template, isPublic, isSignedIn, user?.id, getToken]);
+  }, [data, template, isPublic, isSignedIn, user?.id, getToken, isPro, activeResumeId]);
 
   const handleManualSave = () => {
     setSaveStatus('saving');
@@ -302,15 +418,211 @@ function BuilderPageContent() {
     }
   };
 
+  // Resume CRUD operations for Pro users
+  const handleCreateNewResume = async (name: string, cloneCurrent: boolean) => {
+    if (!isSignedIn || !user || !isPro) return;
+    setSaveStatus('saving');
+
+    const newId = crypto.randomUUID();
+    const timestamp = new Date().toISOString();
+    
+    const newResume: SavedResume = {
+      id: newId,
+      name: name.trim() || `New Resume`,
+      data: cloneCurrent ? { ...data } : { ...defaultResume },
+      template: cloneCurrent ? template : 'modern-split',
+      isPublic: cloneCurrent ? isPublic : true,
+      updatedAt: timestamp
+    };
+
+    const updatedList = [...savedResumes, newResume];
+    setSavedResumes(updatedList);
+    setActiveResumeId(newId);
+    localStorage.setItem(`cr-active-resume-id-${user.id}`, newId);
+
+    // Update active states
+    setData(newResume.data);
+    setTemplate(newResume.template);
+    setIsPublic(newResume.isPublic);
+
+    try {
+      // 1. Sync resumes list to profiles table
+      const { error: profileErr } = await supabase
+        .from('profiles')
+        .update({ resume_data: updatedList })
+        .eq('id', user.id);
+      if (profileErr) throw profileErr;
+
+      // 2. Sync active resume to resumes table
+      const { error: resumeErr } = await supabase
+        .from('resumes')
+        .upsert({
+          user_id: user.id,
+          data: newResume.data,
+          template: newResume.template,
+          is_public: newResume.isPublic,
+          updated_at: timestamp
+        }, { onConflict: 'user_id' });
+      if (resumeErr) throw resumeErr;
+
+      setSaveStatus('saved');
+      setLastSaved(new Date());
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } catch (err) {
+      console.error("Failed to create new resume:", err);
+      setSaveStatus('error');
+    }
+  };
+
+  const handleSwitchResume = async (targetId: string) => {
+    if (!isSignedIn || !user || !isPro) return;
+    const target = savedResumes.find(r => r.id === targetId);
+    if (!target) return;
+
+    setSaveStatus('saving');
+    const timestamp = new Date().toISOString();
+
+    // 1. Save currently active state into our local savedResumes array for old ID
+    let updatedList = savedResumes.map(r => r.id === activeResumeId ? {
+      ...r,
+      data,
+      template,
+      isPublic,
+      updatedAt: timestamp
+    } : r);
+
+    setSavedResumes(updatedList);
+    setActiveResumeId(targetId);
+    localStorage.setItem(`cr-active-resume-id-${user.id}`, targetId);
+
+    // 2. Load the target state
+    setData(target.data);
+    setTemplate(target.template);
+    setIsPublic(target.isPublic);
+
+    try {
+      // 3. Save the full lists and active mirror to database
+      const { error: profileErr } = await supabase
+        .from('profiles')
+        .update({ resume_data: updatedList })
+        .eq('id', user.id);
+      if (profileErr) throw profileErr;
+
+      const { error: resumeErr } = await supabase
+        .from('resumes')
+        .upsert({
+          user_id: user.id,
+          data: target.data,
+          template: target.template,
+          is_public: target.isPublic,
+          updated_at: timestamp
+        }, { onConflict: 'user_id' });
+      if (resumeErr) throw resumeErr;
+
+      setSaveStatus('saved');
+      setLastSaved(new Date());
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } catch (err) {
+      console.error("Failed to switch resume:", err);
+      setSaveStatus('error');
+    }
+  };
+
+  const handleRenameResume = async (targetId: string, newName: string) => {
+    if (!isSignedIn || !user || !isPro || !newName.trim()) return;
+    const updatedList = savedResumes.map(r => r.id === targetId ? { ...r, name: newName.trim() } : r);
+    setSavedResumes(updatedList);
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ resume_data: updatedList })
+        .eq('id', user.id);
+      if (error) throw error;
+    } catch (err) {
+      console.error("Failed to rename resume:", err);
+    }
+  };
+
+  const handleDeleteResume = async (targetId: string) => {
+    if (!isSignedIn || !user || !isPro) return;
+    if (savedResumes.length <= 1) {
+      alert("You must keep at least one saved resume!");
+      return;
+    }
+
+    const confirmDelete = confirm("Are you sure you want to delete this resume? This action cannot be undone.");
+    if (!confirmDelete) return;
+
+    setSaveStatus('saving');
+    const filteredList = savedResumes.filter(r => r.id !== targetId);
+    setSavedResumes(filteredList);
+
+    try {
+      // If we are deleting the active resume, switch to the first remaining one
+      if (activeResumeId === targetId) {
+        const nextActive = filteredList[0];
+        setActiveResumeId(nextActive.id);
+        localStorage.setItem(`cr-active-resume-id-${user.id}`, nextActive.id);
+        
+        setData(nextActive.data);
+        setTemplate(nextActive.template);
+        setIsPublic(nextActive.isPublic);
+
+        const timestamp = new Date().toISOString();
+        const { error: profileErr } = await supabase
+          .from('profiles')
+          .update({ resume_data: filteredList })
+          .eq('id', user.id);
+        if (profileErr) throw profileErr;
+
+        const { error: resumeErr } = await supabase
+          .from('resumes')
+          .upsert({
+            user_id: user.id,
+            data: nextActive.data,
+            template: nextActive.template,
+            is_public: nextActive.isPublic,
+            updated_at: timestamp
+          }, { onConflict: 'user_id' });
+        if (resumeErr) throw resumeErr;
+      } else {
+        const { error: profileErr } = await supabase
+          .from('profiles')
+          .update({ resume_data: filteredList })
+          .eq('id', user.id);
+        if (profileErr) throw profileErr;
+      }
+
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } catch (err) {
+      console.error("Failed to delete resume:", err);
+      setSaveStatus('error');
+    }
+  };
+
   const contentRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [pageCount, setPageCount] = useState(1);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowResumesDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const measure = () => {
       if (measureRef.current) {
-        const width = measureRef.current.scrollWidth;
-        setPageCount(Math.max(1, Math.round((width + 40) / 890)));
+        const width = measureRef.current.getBoundingClientRect().width;
+        // Adding a 5px tolerance threshold prevents high-DPI rounding offsets from causing layout shifts or phantom pages
+        setPageCount(Math.max(1, Math.round((width + 40 - 5) / 890)));
       }
     };
 
@@ -550,16 +862,6 @@ function BuilderPageContent() {
         setIsAILoading(false);
       }
     }
-  };
-
-  const handleImageToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setData(prev => ({
-      ...prev,
-      basics: {
-        ...prev.basics,
-        image: e.target.checked ? "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?fit=crop&w=300&h=300&q=80" : ""
-      }
-    }));
   };
 
   // Generic Job Handlers
@@ -859,6 +1161,7 @@ function BuilderPageContent() {
             </div>
 
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '1.5rem' }}>
+              {/* eslint-disable-next-line @next/next/no-img-element -- preview thumbnail; Next/Image not suitable for inline dynamic previews */}
               {data.basics.image && <img src={data.basics.image} alt="Headshot" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--glass-border)' }} />}
               <label className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', cursor: 'pointer', flex: 1 }}>
                 <Upload size={14} /> {data.basics.image ? 'Change Image' : 'Upload Image'}
@@ -1653,6 +1956,322 @@ function BuilderPageContent() {
               </div>
             )}
 
+            {/* Resume Selector */}
+            {!isMobile && (
+              <div ref={dropdownRef} style={{ position: 'relative' }}>
+                {!isPro ? (
+                  <button
+                    onClick={() => {
+                      setUpgradeFeature("Multiple Resumes");
+                      setUpgradeModalOpen(true);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      padding: '0.4rem 0.75rem',
+                      background: 'var(--surface-color)',
+                      border: '1px solid var(--glass-border)',
+                      borderRadius: '8px',
+                      color: 'var(--text-secondary)',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      fontSize: '0.9rem',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--primary)';
+                      e.currentTarget.style.color = 'var(--text-primary)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = 'var(--glass-border)';
+                      e.currentTarget.style.color = 'var(--text-secondary)';
+                    }}
+                  >
+                    <FileText size={16} />
+                    <span>Resume: Default</span>
+                    <Lock size={12} color="var(--primary)" />
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setShowResumesDropdown(!showResumesDropdown)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.4rem 0.75rem',
+                        background: 'var(--surface-color)',
+                        border: `1px solid ${showResumesDropdown ? 'var(--primary)' : 'var(--glass-border)'}`,
+                        borderRadius: '8px',
+                        color: 'var(--text-primary)',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        fontSize: '0.9rem',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <FileText size={16} color="var(--accent)" />
+                      <span style={{ maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        Resume: {savedResumes.find(r => r.id === activeResumeId)?.name || 'Default Resume'}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>▼</span>
+                    </button>
+
+                    {showResumesDropdown && (
+                      <div
+                        className="glass-panel"
+                        style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          marginTop: '0.5rem',
+                          width: '280px',
+                          maxHeight: '380px',
+                          overflowY: 'auto',
+                          background: 'var(--surface-color)',
+                          border: '1px solid var(--glass-border)',
+                          boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+                          zIndex: 50,
+                          padding: '0.75rem',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.5rem',
+                          borderRadius: '12px',
+                        }}
+                      >
+                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', paddingBottom: '0.25rem', borderBottom: '1px solid var(--glass-border)', marginBottom: '0.25rem' }}>
+                          Saved Resumes
+                        </div>
+                        
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '200px', overflowY: 'auto', paddingRight: '2px' }} className="sidebar-scroll">
+                          {savedResumes.map((resume) => (
+                            <div key={resume.id}>
+                              {resumeRenameId === resume.id ? (
+                                <div style={{ display: 'flex', gap: '0.25rem', width: '100%', padding: '0.25rem 0' }}>
+                                  <input
+                                    value={renameText}
+                                    onChange={(e) => setRenameText(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        handleRenameResume(resume.id, renameText);
+                                        setResumeRenameId(null);
+                                      } else if (e.key === 'Escape') {
+                                        setResumeRenameId(null);
+                                      }
+                                    }}
+                                    autoFocus
+                                    className="input-field"
+                                    style={{
+                                      padding: '0.25rem 0.5rem',
+                                      fontSize: '0.8rem',
+                                      flex: 1,
+                                      background: 'var(--bg-color)',
+                                      border: '1px solid var(--primary)',
+                                      color: 'var(--text-primary)',
+                                      borderRadius: '4px',
+                                    }}
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      handleRenameResume(resume.id, renameText);
+                                      setResumeRenameId(null);
+                                    }}
+                                    style={{
+                                      background: 'var(--accent)',
+                                      color: 'var(--bg-color)',
+                                      border: 'none',
+                                      borderRadius: '4px',
+                                      cursor: 'pointer',
+                                      padding: '0.25rem',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      width: '28px',
+                                      height: '28px',
+                                    }}
+                                  >
+                                    <Check size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => setResumeRenameId(null)}
+                                    style={{
+                                      background: 'var(--danger)',
+                                      color: '#fff',
+                                      border: 'none',
+                                      borderRadius: '4px',
+                                      cursor: 'pointer',
+                                      padding: '0.25rem',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      width: '28px',
+                                      height: '28px',
+                                    }}
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    padding: '0.5rem',
+                                    borderRadius: '6px',
+                                    background: resume.id === activeResumeId ? 'var(--surface-highlight)' : 'transparent',
+                                    border: `1px solid ${resume.id === activeResumeId ? 'rgba(142, 192, 124, 0.3)' : 'transparent'}`,
+                                    transition: 'all 0.2s',
+                                    cursor: 'pointer',
+                                  }}
+                                  onClick={() => {
+                                    if (resume.id !== activeResumeId) {
+                                      handleSwitchResume(resume.id);
+                                    }
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    if (resume.id !== activeResumeId) {
+                                      e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                                    }
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    if (resume.id !== activeResumeId) {
+                                      e.currentTarget.style.background = 'transparent';
+                                    }
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden', flex: 1 }}>
+                                    <span style={{
+                                      fontSize: '0.85rem',
+                                      fontWeight: resume.id === activeResumeId ? 700 : 500,
+                                      color: resume.id === activeResumeId ? 'var(--text-primary)' : 'var(--text-secondary)',
+                                      whiteSpace: 'nowrap',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis'
+                                    }}>
+                                      {resume.name}
+                                    </span>
+                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', opacity: 0.6 }}>
+                                      Updated {new Date(resume.updatedAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                                    </span>
+                                  </div>
+                                  
+                                  <div style={{ display: 'flex', gap: '0.25rem', marginLeft: '0.5rem' }} onClick={(e) => e.stopPropagation()}>
+                                    <button
+                                      onClick={() => {
+                                        setResumeRenameId(resume.id);
+                                        setRenameText(resume.name);
+                                      }}
+                                      className="btn-icon"
+                                      style={{ padding: '4px', borderRadius: '4px' }}
+                                      title="Rename Resume"
+                                    >
+                                      <Edit size={12} />
+                                    </button>
+                                    
+                                    <button
+                                      onClick={() => handleDeleteResume(resume.id)}
+                                      disabled={savedResumes.length <= 1}
+                                      className="btn-icon"
+                                      style={{
+                                        padding: '4px',
+                                        borderRadius: '4px',
+                                        color: savedResumes.length <= 1 ? 'rgba(255,255,255,0.1)' : 'var(--danger)',
+                                        cursor: savedResumes.length <= 1 ? 'not-allowed' : 'pointer'
+                                      }}
+                                      title="Delete Resume"
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+
+                        <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                          <button
+                            onClick={() => {
+                              const activeResume = savedResumes.find(r => r.id === activeResumeId);
+                              const baseName = activeResume ? activeResume.name : 'Resume';
+                              handleCreateNewResume(`${baseName} Copy`, true);
+                              setShowResumesDropdown(false);
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '0.4rem',
+                              padding: '0.5rem',
+                              background: 'transparent',
+                              border: '1px solid var(--glass-border)',
+                              borderRadius: '6px',
+                              color: 'var(--text-primary)',
+                              fontSize: '0.8rem',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              width: '100%',
+                              transition: 'all 0.2s',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = 'var(--surface-highlight)';
+                              e.currentTarget.style.borderColor = 'var(--accent)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'transparent';
+                              e.currentTarget.style.borderColor = 'var(--glass-border)';
+                            }}
+                          >
+                            <Copy size={13} color="var(--accent)" />
+                            <span>Clone Current Resume</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              const name = prompt("Enter a name for your new resume:");
+                              if (name !== null) {
+                                handleCreateNewResume(name, false);
+                                setShowResumesDropdown(false);
+                              }
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '0.4rem',
+                              padding: '0.5rem',
+                              background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
+                              border: 'none',
+                              borderRadius: '6px',
+                              color: 'var(--bg-color)',
+                              fontSize: '0.8rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              width: '100%',
+                              transition: 'all 0.2s',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.opacity = '0.9';
+                              e.currentTarget.style.transform = 'translateY(-1px)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.opacity = '1';
+                              e.currentTarget.style.transform = 'none';
+                            }}
+                          >
+                            <Plus size={14} />
+                            <span>Create New Resume</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
             {!isMobile && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                 {saveStatus === 'saving' && <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><RefreshCw size={14} className="animate-spin" /> Saving...</span>}
@@ -1670,7 +2289,6 @@ function BuilderPageContent() {
                   const next = !isPublic;
                   setIsPublic(next);
                   // Refresh token before writing
-                  const token = await getToken({ template: 'supabase' });
 
                   const { error } = await supabase.from('resumes').upsert({
                     user_id: user!.id,
@@ -2045,13 +2663,15 @@ function BuilderPageContent() {
 
 export default function BuilderPage() {
   return (
-    <React.Suspense fallback={
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg-color)', gap: '1rem', flexDirection: 'column' }}>
-        <Loader2 className="animate-spin" size={48} color="var(--primary)" />
-        <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>Loading Builder...</span>
-      </div>
-    }>
-      <BuilderPageContent />
-    </React.Suspense>
+    <BuilderErrorBoundary>
+      <React.Suspense fallback={
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg-color)', gap: '1rem', flexDirection: 'column' }}>
+          <Loader2 className="animate-spin" size={48} color="var(--primary)" />
+          <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>Loading Builder...</span>
+        </div>
+      }>
+        <BuilderPageContent />
+      </React.Suspense>
+    </BuilderErrorBoundary>
   );
 }

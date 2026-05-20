@@ -2,11 +2,30 @@ import { NextResponse } from 'next/server';
 import { generateObject } from 'ai';
 import { google } from '@ai-sdk/google';
 import { resumeDataSchema } from '@/lib/ai-schema';
+import { getErrorMessage } from '@/lib/api-error';
+import { aiRateLimiter } from '@/lib/rate-limit';
+import { auth } from '@clerk/nextjs/server';
 
 export const maxDuration = 60; // Allow more time for AI processing
 
 export async function POST(req: Request) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const rateCheck = aiRateLimiter.check(userId);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please wait before uploading again.' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(Math.ceil(rateCheck.resetInMs / 1000)) },
+        }
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     const careerContext = formData.get('careerContext') as string | null;
@@ -50,8 +69,8 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json(object);
-  } catch (error: any) {
-    console.error('PDF Parse API Error:', error);
-    return NextResponse.json({ error: error.message || 'Failed to parse resume' }, { status: 500 });
+  } catch (err: unknown) {
+    console.error('PDF Parse API Error:', err);
+    return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 });
   }
 }

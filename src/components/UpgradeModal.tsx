@@ -148,7 +148,7 @@ export function UpgradeModal({ isOpen, onClose, featureName = "Premium AI Featur
             <div style={{ padding: '2rem' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
                 {[
-                  "Save multiple resumes to the cloud",
+                  "Save your resume to the cloud",
                   "Unlock state-of-the-art AI generation tools",
                   "Get a personalized public shareable URL",
                   "Directly connect with top hiring employers"
@@ -212,6 +212,7 @@ export function UpgradeModal({ isOpen, onClose, featureName = "Premium AI Featur
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2.25rem' }}>
                 {[
+                  "Save and manage multiple resumes",
                   "Instantly import and parse PDF resumes",
                   "AI-powered professional summaries",
                   "Smart bullet point generation for jobs",

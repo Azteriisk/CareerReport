@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { getErrorMessage } from '@/lib/api-error';
+import { auth } from '@clerk/nextjs/server';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock_for_build', {
   apiVersion: '2025-01-27.acacia' as any,
 });
@@ -12,11 +15,13 @@ export async function POST(request: Request) {
       throw new Error('Stripe is not configured on this environment.');
     }
 
-    const { userId, email } = await request.json();
-
+    const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Use Clerk's verified userId — don't trust the client-provided one
+    const { email } = await request.json();
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://careerreport.azterisk.net';
 
@@ -49,8 +54,8 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ url: session.url });
-  } catch (error: any) {
-    console.error('Stripe Checkout Error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  } catch (err: unknown) {
+    console.error('Stripe Checkout Error:', err);
+    return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 });
   }
 }

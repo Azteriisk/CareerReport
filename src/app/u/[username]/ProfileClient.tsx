@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { supabase, setSupabaseToken } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { TemplateModern } from '@/components/TemplateModern';
 import { TemplateModernSplit } from '@/components/TemplateModernSplit';
 import { TemplateClassic } from '@/components/TemplateClassic';
@@ -35,8 +35,9 @@ export function ProfileClient({ username }: { username: string }) {
   useEffect(() => {
     const measure = () => {
       if (measureRef.current) {
-        const width = measureRef.current.scrollWidth;
-        setPageCount(Math.max(1, Math.round((width + 40) / 890)));
+        const width = measureRef.current.getBoundingClientRect().width;
+        // Adding a 5px tolerance threshold prevents high-DPI rounding offsets from causing layout shifts or phantom pages
+        setPageCount(Math.max(1, Math.round((width + 40 - 5) / 890)));
       }
     };
 

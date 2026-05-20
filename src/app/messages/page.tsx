@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { supabase, setSupabaseToken } from '@/lib/supabase';
 import { useUser, useAuth } from '@clerk/nextjs';
-import { Loader2, Send, MessageSquare } from 'lucide-react';
+import { Loader2, Send, MessageSquare, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
@@ -37,6 +37,17 @@ function MessagesContent() {
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     if (!user?.id) return;
 
@@ -44,12 +55,16 @@ function MessagesContent() {
       const { data: sentMessages } = await supabase
         .from('messages')
         .select('receiver_id, profiles!messages_receiver_id_fkey(id, username, full_name, avatar_url)')
-        .eq('sender_id', user!.id);
+        .eq('sender_id', user!.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
       const { data: receivedMessages } = await supabase
         .from('messages')
         .select('sender_id, profiles!messages_sender_id_fkey(id, username, full_name, avatar_url)')
-        .eq('receiver_id', user!.id);
+        .eq('receiver_id', user!.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
 
       const partnerMap = new Map<string, ChatPartner>();
 
@@ -207,11 +222,12 @@ function MessagesContent() {
   }
 
   return (
-    <main style={{ height: 'calc(100dvh - 82px)', background: 'var(--bg-color)', padding: '2rem 1rem' }}>
-      <div style={{ maxWidth: '1000px', margin: '0 auto', height: '100%', display: 'flex', background: 'var(--surface-color)', borderRadius: '16px', border: '1px solid var(--glass-border)', overflow: 'hidden' }}>
+    <main style={{ height: isMobile ? 'calc(100dvh - 60px)' : 'calc(100dvh - 82px)', background: 'var(--bg-color)', padding: isMobile ? '0' : '2rem 1rem' }}>
+      <div style={{ maxWidth: '1000px', margin: '0 auto', height: '100%', display: 'flex', background: 'var(--surface-color)', borderRadius: isMobile ? '0' : '16px', border: isMobile ? 'none' : '1px solid var(--glass-border)', overflow: 'hidden' }}>
 
         {/* Sidebar */}
-        <div style={{ width: '300px', borderRight: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', background: 'var(--glass-bg)' }}>
+        {(!isMobile || !activePartner) && (
+          <div style={{ width: isMobile ? '100%' : '300px', borderRight: isMobile ? 'none' : '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', background: 'var(--glass-bg)' }}>
           <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--glass-border)' }}>
             <h2 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <MessageSquare size={20} /> Messages
@@ -254,10 +270,12 @@ function MessagesContent() {
             )}
           </div>
         </div>
+        )}
 
         {/* Chat Area */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--bg-color)' }}>
-          {!activePartner ? (
+        {(!isMobile || activePartner) && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--bg-color)' }}>
+            {!activePartner ? (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', color: 'var(--text-secondary)' }}>
               <MessageSquare size={64} style={{ opacity: 0.3, marginBottom: '1rem' }} />
               <p>Select a conversation to start messaging</p>
@@ -266,6 +284,23 @@ function MessagesContent() {
             <>
               {/* Chat Header */}
               <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--surface-color)' }}>
+                {isMobile && (
+                  <button
+                    onClick={() => setActivePartner(null)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--primary)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '0.5rem 0',
+                      marginRight: '0.25rem'
+                    }}
+                  >
+                    <ArrowLeft size={20} />
+                  </button>
+                )}
                 <Link href={`/${activePartner.username}`}>
                   <img
                     src={activePartner.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${activePartner.username}`}
@@ -340,6 +375,7 @@ function MessagesContent() {
             </>
           )}
         </div>
+        )}
       </div>
     </main>
   );

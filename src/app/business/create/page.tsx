@@ -4,7 +4,7 @@ import React, { useState, useRef } from 'react';
 import { useUser, useAuth } from '@clerk/nextjs';
 import { supabase } from "@/lib/supabase";
 import { useRouter } from 'next/navigation';
-import { Building2, Briefcase, Globe, Info, Loader2 } from 'lucide-react';
+import { Building2, Briefcase, Globe, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CreateBusinessPage() {
@@ -60,8 +60,7 @@ export default function CreateBusinessPage() {
     setError('');
 
     try {
-      const token = await getToken({ template: 'supabase' });
-      
+
       let logoUrl = null;
 
       // 1. Upload logo image to Supabase Storage if selected
@@ -84,7 +83,7 @@ export default function CreateBusinessPage() {
       const formattedSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
 
       // 2. Insert business profile record
-      const { data, error: insertError } = await supabase
+      const { error: insertError } = await supabase
         .from('business_profiles')
         .insert({
           owner_id: user.id,

@@ -1,5 +1,8 @@
 import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
+import { getErrorMessage } from '@/lib/api-error';
+import { aiRateLimiter } from '@/lib/rate-limit';
+import { auth } from '@clerk/nextjs/server';
 
 export const runtime = 'edge';
 
@@ -31,6 +34,22 @@ export function compressContext(obj: any): any {
 
 export async function POST(req: Request) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+    }
+
+    const rateCheck = aiRateLimiter.check(userId);
+    if (!rateCheck.allowed) {
+      return new Response(
+        JSON.stringify({ error: 'Too many requests. Please wait before generating again.' }),
+        {
+          status: 429,
+          headers: { 'Retry-After': String(Math.ceil(rateCheck.resetInMs / 1000)) },
+        }
+      );
+    }
+
     const { context, type, careerContext } = await req.json();
 
     let systemPrompt = '';
@@ -81,8 +100,8 @@ export async function POST(req: Request) {
     });
 
     return new Response(result.text);
-  } catch (error: any) {
-    console.error('AI Generate Error:', error);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+  } catch (err: unknown) {
+    console.error('AI Generate Error:', err);
+    return new Response(JSON.stringify({ error: getErrorMessage(err) }), { status: 500 });
   }
 }

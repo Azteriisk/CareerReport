@@ -95,7 +95,10 @@ export const TemplateModernSplit: React.FC<Props> = ({ data }) => {
       <aside style={{ flex: '0 0 35%', background: '#f8fafc', padding: '0 30px', borderLeft: '1px solid #e2e8f0' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '35px' }}>
           {data.basics.image && (
-            <img src={data.basics.image} alt="Headshot" style={{ width: '140px', height: '140px', borderRadius: '50%', objectFit: 'cover', border: `4px solid white`, boxShadow: `0 4px 15px rgba(0,0,0,0.1)`, marginBottom: '20px' }} />
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element -- native <img> used intentionally: Next/Image lazy loading and wrappers break print/PDF layout */}
+              <img src={data.basics.image} alt="Headshot" style={{ width: '140px', height: '140px', borderRadius: '50%', objectFit: 'cover', border: `4px solid white`, boxShadow: `0 4px 15px rgba(0,0,0,0.1)`, marginBottom: '20px' }} />
+            </>
           )}
 
           <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.9rem', color: '#475569' }}>

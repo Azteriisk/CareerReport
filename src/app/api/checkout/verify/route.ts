@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabase } from '@/lib/supabase';
+import { getErrorMessage } from '@/lib/api-error';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock_for_build', {
   apiVersion: '2025-01-27.acacia' as any,
 });
@@ -44,8 +46,8 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ success: false, error: 'Session is not paid' }, { status: 400 });
-  } catch (error: any) {
-    console.error('Stripe Verify Error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  } catch (err: unknown) {
+    console.error('Stripe Verify Error:', err);
+    return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 });
   }
 }

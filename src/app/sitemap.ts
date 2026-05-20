@@ -1,6 +1,9 @@
 import { MetadataRoute } from 'next'
 import { supabase } from '@/lib/supabase'
 
+// Regenerate sitemap at most once per hour; avoids a DB hit on every /sitemap.xml request
+export const revalidate = 3600
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://careerreport.azterisk.net'
 

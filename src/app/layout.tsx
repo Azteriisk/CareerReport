@@ -29,7 +29,6 @@ import { ClerkProvider } from '@clerk/nextjs'
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { PageTransition } from "@/components/PageTransition";
-import { SyncUser } from "@/components/SyncUser";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -51,7 +50,6 @@ export default function RootLayout({
           />
         </head>
         <body>
-          <SyncUser />
           <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh', overflowX: 'hidden' }}>
             <Navbar />
             <PageTransition>

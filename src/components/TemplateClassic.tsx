@@ -24,11 +24,14 @@ export const TemplateClassic: React.FC<Props> = ({ data }) => {
       <header className="vcard" style={{ textAlign: 'center', marginBottom: '30px' }}>
         {data.basics.image && (
           <div style={{ marginBottom: '15px' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- native <img> used intentionally: Next/Image lazy loading and wrappers break print/PDF layout */}
             <img src={data.basics.image} alt="Headshot" style={{ width: '120px', height: '120px', objectFit: 'cover', border: '1px solid #000', padding: '4px', filter: 'grayscale(100%)' }} />
           </div>
         )}
         <h1 className="fn" style={{ fontSize: '2.8rem', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '5px' }}>{data.basics.name}</h1>
-
+        {data.basics.label && (
+          <p className="title" style={{ fontSize: '1.1rem', fontStyle: 'italic', color: '#444', marginBottom: '8px', marginTop: 0 }}>{data.basics.label}</p>
+        )}
         <div style={{ fontSize: '1rem', color: '#444' }}>
           {data.basics.location?.city && <span className="adr">{data.basics.location.city}, {data.basics.location.region}</span>}
           <span style={{ margin: '0 8px' }}>|</span>

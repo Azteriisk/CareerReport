@@ -14,7 +14,7 @@ interface Comment {
   profiles?: { username: string; full_name: string; avatar_url: string };
 }
 
-export function CommentSection({ postId, postAuthorId }: { postId: string, postAuthorId: string }) {
+export function CommentSection({ postId, postAuthorId, onCommentCountChange }: { postId: string, postAuthorId: string, onCommentCountChange?: (count: number) => void }) {
   const { user, isSignedIn } = useUser();
   const { getToken } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
@@ -34,7 +34,12 @@ export function CommentSection({ postId, postAuthorId }: { postId: string, postA
       .order('created_at', { ascending: true });
 
     if (error || !commentRows) { setLoading(false); return; }
-    if (commentRows.length === 0) { setComments([]); setLoading(false); return; }
+    if (commentRows.length === 0) { 
+      setComments([]); 
+      setLoading(false); 
+      if (onCommentCountChange) onCommentCountChange(0);
+      return; 
+    }
 
     // Batch-fetch profiles for all commenters
     const userIds = [...new Set(commentRows.map((c: any) => c.user_id))];
@@ -51,6 +56,7 @@ export function CommentSection({ postId, postAuthorId }: { postId: string, postA
       profiles: profileMap[c.user_id] || null,
     })));
     setLoading(false);
+    if (onCommentCountChange) onCommentCountChange(commentRows.length);
   }
 
 
@@ -85,7 +91,11 @@ export function CommentSection({ postId, postAuthorId }: { postId: string, postA
     
     const { error } = await supabase.from('comments').delete().eq('id', commentId);
     if (!error) {
-      setComments(prev => prev.filter(c => c.id !== commentId));
+      setComments(prev => {
+        const next = prev.filter(c => c.id !== commentId);
+        if (onCommentCountChange) onCommentCountChange(next.length);
+        return next;
+      });
     }
   }
 

@@ -23,7 +23,7 @@ export function UserSearch() {
       // Import supabase dynamically to avoid issues if this is rendered early
       const { supabase } = await import('@/lib/supabase');
       
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('username')
         .or(`username.ilike.${searchVal},email.ilike.${searchVal}`)

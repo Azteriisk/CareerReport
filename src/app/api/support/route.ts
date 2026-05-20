@@ -1,15 +1,23 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { getErrorMessage } from '@/lib/api-error';
+import { auth } from '@clerk/nextjs/server';
 
 export async function POST(request: Request) {
   try {
-    const { name, email, issueType, description, userId } = await request.json();
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { name, email, issueType, description, userId: bodyUserId } = await request.json();
 
     if (!name || !email || !issueType || !description) {
       return NextResponse.json({ error: 'All fields are required.' }, { status: 400 });
     }
 
     // Insert the ticket into the Supabase support_tickets table
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await supabase
       .from('support_tickets' as any)
       .insert([
@@ -45,8 +53,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true, data });
-  } catch (error: any) {
-    console.error('Support Ticket Error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  } catch (err: unknown) {
+    console.error('Support Ticket Error:', err);
+    return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 });
   }
 }

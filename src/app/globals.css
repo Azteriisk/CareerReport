@@ -327,27 +327,47 @@ input[type="month"].empty-date:focus::-webkit-datetime-edit {
 @media print {
 
   /* Tell the browser exactly what paper size and margin to use.
-     margin: 0.42in ≈ 40px — matches our UI padding so the PDF looks identical to the preview. */
+     We use margin: 0 because our React templates themselves apply margins dynamically. */
   @page {
     size: 8.5in 11in;
-    margin: 0.42in;
+    margin: 0;
   }
 
   body {
     background: white;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   .no-print {
     display: none !important;
   }
 
-  /* The print wrapper fills the page naturally — @page margin handles the whitespace */
+  /* The print wrapper fills the page naturally */
   .resume-print-wrapper {
     width: 100% !important;
     padding: 0 !important;
     margin: 0 !important;
     box-shadow: none !important;
     border: none !important;
+  }
+
+  /* Standardize print container dimensions to prevent mobile viewport truncation */
+  .resume-print-container {
+    width: 8.5in !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .resume-print-page {
+    width: 8.5in !important;
+    height: 11in !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    box-sizing: border-box !important;
+    position: relative !important;
+    overflow: hidden !important;
+    background: white !important;
   }
 
   /* Suppress visual-only page chrome */
@@ -384,6 +404,13 @@ input[type="month"].empty-date:focus::-webkit-datetime-edit {
 
 .sidebar-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.4);
+}
+
+.company-positions-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 3rem;
+  align-items: flex-start;
 }
 
 /* Mobile Responsiveness */
@@ -507,6 +534,11 @@ input[type="month"].empty-date:focus::-webkit-datetime-edit {
   .job-apply-box button {
     width: 100% !important;
     justify-content: center !important;
+  }
+
+  .company-positions-grid {
+    grid-template-columns: 1fr !important;
+    gap: 2rem !important;
   }
 }
 

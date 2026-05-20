@@ -84,6 +84,76 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
   const [likeCount, setLikeCount] = React.useState(post.likes_count || 0);
   const [likeLoading, setLikeLoading] = React.useState(false);
 
+  const [commentsCount, setCommentsCount] = React.useState(0);
+  const [repostsCount, setRepostsCount] = React.useState(0);
+  const [previewComments, setPreviewComments] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    async function loadMetrics() {
+      try {
+        // 1. Fetch comments count
+        const { count: commCount, error: commError } = await supabase
+          .from('comments')
+          .select('*', { count: 'exact', head: true })
+          .eq('post_id', post.id);
+        
+        if (!commError && commCount !== null && isMounted) {
+          setCommentsCount(commCount);
+        }
+
+        // 2. Fetch reposts count
+        const { count: repCount, error: repError } = await supabase
+          .from('posts')
+          .select('*', { count: 'exact', head: true })
+          .eq('repost_of', post.id);
+
+        if (!repError && repCount !== null && isMounted) {
+          setRepostsCount(repCount);
+        }
+      } catch (err) {
+        console.error('Error fetching post counts:', err);
+      }
+    }
+    loadMetrics();
+    return () => { isMounted = false; };
+  }, [post.id]);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    async function loadPreviews() {
+      try {
+        const { data: prevComments, error: prevError } = await supabase
+          .from('comments')
+          .select('id, user_id, content, created_at')
+          .eq('post_id', post.id)
+          .order('created_at', { ascending: false })
+          .limit(3);
+
+        if (!prevError && prevComments && isMounted) {
+          const userIds = [...new Set(prevComments.map((c: any) => c.user_id))];
+          let profileMap: Record<string, any> = {};
+          if (userIds.length > 0) {
+            const { data: profiles } = await supabase
+              .from('profiles')
+              .select('id, username, full_name, avatar_url')
+              .in('id', userIds);
+            (profiles || []).forEach((p: any) => { profileMap[p.id] = p; });
+          }
+          const formatted = prevComments.map((c: any) => ({
+            ...c,
+            profiles: profileMap[c.user_id] || null
+          })).reverse();
+          setPreviewComments(formatted);
+        }
+      } catch (err) {
+        console.error('Error fetching previews:', err);
+      }
+    }
+    loadPreviews();
+    return () => { isMounted = false; };
+  }, [post.id, commentsCount]);
+
   const handleDelete = async () => {
     if (!confirmDelete) {
       // First click: arm the button
@@ -254,6 +324,7 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
               style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: showComments ? 'var(--primary)' : 'var(--text-secondary)' }}
             >
               <MessageSquare size={18} />
+              {commentsCount > 0 && <span>{commentsCount}</span>}
             </button>
 
             {/* Likes — disabled for own posts */}
@@ -278,14 +349,80 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
               className="btn-icon"
               onClick={() => isSignedIn && setRepostModalOpen(true)}
               title={isSignedIn ? 'Repost' : 'Sign in to repost'}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', opacity: !isSignedIn ? 0.4 : 1 }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem',
+                opacity: !isSignedIn ? 0.4 : 1,
+                color: repostsCount > 0 ? 'var(--primary)' : 'var(--text-secondary)'
+              }}
             >
               <Repeat2 size={18} />
+              {repostsCount > 0 && <span>{repostsCount}</span>}
             </button>
           </div>
 
+          {/* Thread Preview (when showComments is false) */}
+          {!showComments && previewComments.length > 0 && (
+            <div style={{
+              marginTop: '0.85rem',
+              padding: '0.75rem 1rem',
+              borderRadius: '12px',
+              background: 'var(--bg-color)',
+              border: '1px solid var(--glass-border)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.6rem',
+              opacity: 0.9,
+              transition: 'all 0.3s ease'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.4rem', marginBottom: '0.2rem' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', background: 'var(--primary)' }}></span>
+                  Recent Activity ({commentsCount})
+                </span>
+                <button
+                  onClick={() => setShowComments(true)}
+                  style={{ background: 'none', border: 'none', padding: 0, fontSize: '0.75rem', fontWeight: 600, color: 'var(--primary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                >
+                  View All
+                </button>
+              </div>
+              {previewComments.map(comment => (
+                <div key={comment.id} style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                  <Link href={`/u/${comment.profiles?.username}`} style={{ flexShrink: 0, textDecoration: 'none' }}>
+                    {comment.profiles?.avatar_url ? (
+                      <img src={comment.profiles.avatar_url} alt="" style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bg-color)', fontWeight: 'bold', fontSize: '0.65rem' }}>
+                        {comment.profiles?.full_name?.charAt(0) || comment.profiles?.username?.charAt(0) || '?'}
+                      </div>
+                    )}
+                  </Link>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginBottom: '0.1rem' }}>
+                      <span style={{ fontWeight: 600, fontSize: '0.78rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {comment.profiles?.full_name || comment.profiles?.username}
+                      </span>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.7rem' }}>
+                        @{comment.profiles?.username}
+                      </span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-primary)', lineHeight: 1.35, wordBreak: 'break-word' }}>
+                      {comment.content}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Comment Section (toggles in/out) */}
-          {showComments && <CommentSection postId={post.id} postAuthorId={post.user_id} />}
+          {showComments && (
+            <CommentSection 
+              postId={post.id} 
+              postAuthorId={post.user_id} 
+              onCommentCountChange={(count) => setCommentsCount(count)}
+            />
+          )}
         </div>
       </div>
     </>

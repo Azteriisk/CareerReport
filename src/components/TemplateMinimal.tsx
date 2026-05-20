@@ -25,11 +25,14 @@ export const TemplateMinimal: React.FC<Props> = ({ data }) => {
     }}>
       <aside style={{ width: '30%', paddingRight: '20px', borderRight: '1px solid #eaeaea', background: sidebarBg, margin: '0 0 0 -40px', padding: '0 20px 0 40px' }}>
         {data.basics.image && (
-          <img src={data.basics.image} alt="Headshot" style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', marginBottom: '20px' }} />
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element -- native <img> used intentionally: Next/Image lazy loading and wrappers break print/PDF layout */}
+            <img src={data.basics.image} alt="Headshot" style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', marginBottom: '20px' }} />
+          </>
         )}
         <h1 className="fn" style={{ fontSize: '2rem', fontWeight: 300, lineHeight: 1.1, marginBottom: '20px' }}>
-          {data.basics.name.split(' ').map((n, i) => (
-            <div key={i}>{n}</div>
+          {data.basics.name.split(' ').map((n, i, arr) => (
+            <span key={i} style={{ display: 'block' }}>{n}{i < arr.length - 1 ? ' ' : ''}</span>
           ))}
         </h1>
 

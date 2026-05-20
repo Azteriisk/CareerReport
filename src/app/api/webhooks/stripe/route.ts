@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabase } from '@/lib/supabase';
+import { getErrorMessage } from '@/lib/api-error';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock_for_build', {
   apiVersion: '2025-01-27.acacia' as any,
 });
@@ -25,9 +27,9 @@ export async function POST(request: Request) {
         // Fallback for initial setups before webhook secret is configured
         event = JSON.parse(body);
       }
-    } catch (err: any) {
-      console.error(`Webhook Signature verification failed:`, err.message);
-      return new Response(`Webhook Error: ${err.message}`, { status: 400 });
+    } catch (err: unknown) {
+      console.error(`Webhook Signature verification failed:`, err);
+      return new Response(`Webhook Error: ${getErrorMessage(err)}`, { status: 400 });
     }
 
     // Handle successful checkout session completions
@@ -66,8 +68,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ received: true });
-  } catch (error: any) {
-    console.error('Stripe Webhook Handler Error:', error);
-    return new Response(`Webhook Handler Error: ${error.message}`, { status: 500 });
+  } catch (err: unknown) {
+    console.error('Stripe Webhook Handler Error:', err);
+    return new Response(`Webhook Handler Error: ${getErrorMessage(err)}`, { status: 500 });
   }
 }

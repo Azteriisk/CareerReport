@@ -23,7 +23,10 @@ export const TemplateModern: React.FC<Props> = ({ data }) => {
     }}>
       <header className="vcard" style={{ borderBottom: `2px solid ${themeColor}`, paddingBottom: '20px', marginBottom: '20px', display: 'flex', gap: '20px', alignItems: 'center' }}>
         {data.basics.image && (
-          <img src={data.basics.image} alt="Headshot" style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: `3px solid ${themeColor}` }} />
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element -- native <img> used intentionally: Next/Image lazy loading and wrappers break print/PDF layout */}
+            <img src={data.basics.image} alt="Headshot" style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: `3px solid ${themeColor}` }} />
+          </>
         )}
         <div style={{ flex: 1 }}>
           <h1 className="fn" style={{ fontSize: '2.5rem', color: '#1e293b', marginBottom: '5px' }}>{data.basics.name}</h1>

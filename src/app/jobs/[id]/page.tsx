@@ -162,7 +162,7 @@ export default function JobViewPage({ params }: { params: Promise<{ id: string }
             </span>
           </div>
  
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+          <div className="job-apply-box" style={{ display: 'flex', gap: '1rem', marginTop: '2rem', flexWrap: 'wrap' }}>
             <button 
               className={`btn ${hasApplied ? 'btn-secondary' : 'btn-primary'}`} 
               style={{ padding: '0.75rem 2rem', fontSize: '1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}
@@ -192,7 +192,7 @@ export default function JobViewPage({ params }: { params: Promise<{ id: string }
           {job.description}
         </div>
         
-        <div style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="job-apply-box" style={{ marginTop: '4rem', paddingTop: '2rem', borderTop: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
           <div>
             <h3 style={{ color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>Interested in this role?</h3>
             <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Apply instantly with your CareerReport profile.</p>

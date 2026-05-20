@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getErrorMessage } from '@/lib/api-error';
+import { auth } from '@clerk/nextjs/server';
 
 // Must use 'nodejs' runtime since pdf-parse requires Node.js Buffer/fs APIs
 export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   try {
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const formData = await req.formData();
     const file = formData.get('pdf') as File | null;
 
@@ -37,8 +44,8 @@ export async function POST(req: NextRequest) {
     if (jsonBlockMatch) {
       try {
         parsedJson = JSON.parse(jsonBlockMatch[1].trim());
-      } catch (e: any) {
-        jsonError = `JSON found but failed to parse: ${e.message}`;
+      } catch (parseErr: unknown) {
+        jsonError = `JSON found but failed to parse: ${getErrorMessage(parseErr)}`;
       }
     }
 
@@ -53,8 +60,8 @@ export async function POST(req: NextRequest) {
       jsonError,
       parsedResume: parsedJson,
     });
-  } catch (error: any) {
-    console.error('PDF parse error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (err: unknown) {
+    console.error('PDF parse error:', err);
+    return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 });
   }
 }
