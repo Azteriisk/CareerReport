@@ -620,9 +620,8 @@ function BuilderPageContent() {
   useEffect(() => {
     const measure = () => {
       if (measureRef.current) {
-        const width = measureRef.current.getBoundingClientRect().width;
-        // Adding a 5px tolerance threshold prevents high-DPI rounding offsets from causing layout shifts or phantom pages
-        setPageCount(Math.max(1, Math.round((width + 40 - 5) / 890)));
+        const width = measureRef.current.scrollWidth;
+        setPageCount(Math.max(1, Math.round((width + 40) / 890)));
       }
     };
 
