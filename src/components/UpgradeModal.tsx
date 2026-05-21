@@ -2,14 +2,28 @@ import React, { useState } from 'react';
 import { X, Sparkles, CheckCircle, Lock, Loader2 } from 'lucide-react';
 import { useUser, SignInButton, SignUpButton } from '@clerk/nextjs';
 
+const DEFAULT_GUEST_BENEFITS = [
+  'Save your resume to the cloud',
+  'Unlock state-of-the-art AI generation tools',
+  'Get a personalized public shareable URL',
+  'Directly connect with top hiring employers',
+];
+
 interface UpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
   featureName?: string;
+  /** Bullets shown in the guest "Account Required" view */
+  guestBenefits?: string[];
   onUpgradeSuccess?: () => void;
 }
 
-export function UpgradeModal({ isOpen, onClose, featureName = "Premium AI Features" }: UpgradeModalProps) {
+export function UpgradeModal({
+  isOpen,
+  onClose,
+  featureName = 'Premium AI Features',
+  guestBenefits = DEFAULT_GUEST_BENEFITS,
+}: UpgradeModalProps) {
   const { user, isSignedIn } = useUser();
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -147,12 +161,7 @@ export function UpgradeModal({ isOpen, onClose, featureName = "Premium AI Featur
 
             <div style={{ padding: '2rem' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
-                {[
-                  "Save your resume to the cloud",
-                  "Unlock state-of-the-art AI generation tools",
-                  "Get a personalized public shareable URL",
-                  "Directly connect with top hiring employers"
-                ].map((benefit, i) => (
+                {guestBenefits.map((benefit, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-primary)' }}>
                     <CheckCircle size={16} color="var(--accent)" style={{ flexShrink: 0 }} />
                     <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{benefit}</span>

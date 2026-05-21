@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { defaultResume } from '@/lib/default-resume';
+import { pageCountFromScrollWidth } from '@/lib/resume-pagination';
 import { ResumeData } from '@/lib/resume-schema';
 import { useReactToPrint } from 'react-to-print';
 import { Download, Sparkles, LayoutTemplate, Lock, RefreshCw, Plus, Minus, Trash2, Upload, Save, CheckCircle, AlertCircle, Info, Share2, X, Loader2, Wand2, FileText, Edit, Copy, Check } from 'lucide-react';
@@ -620,8 +621,7 @@ function BuilderPageContent() {
   useEffect(() => {
     const measure = () => {
       if (measureRef.current) {
-        const width = measureRef.current.scrollWidth;
-        setPageCount(Math.max(1, Math.round((width + 40) / 890)));
+        setPageCount(pageCountFromScrollWidth(measureRef.current.scrollWidth));
       }
     };
 
@@ -842,9 +842,16 @@ function BuilderPageContent() {
           body: formData
         });
 
-        if (!response.ok) throw new Error('Failed to parse PDF');
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          if (response.status === 403) {
+            setUpgradeFeature('AI PDF Resume Import');
+            setUpgradeModalOpen(true);
+          }
+          throw new Error(result.error || 'Failed to parse PDF');
+        }
 
-        const parsedData = await response.json();
+        const { _importMethod, ...parsedData } = result;
         if (parsedData) {
           saveUndoState();
           setData(prev => ({
@@ -852,11 +859,18 @@ function BuilderPageContent() {
             ...parsedData,
             metadata: prev.metadata
           }));
-          alert("Resume imported successfully!");
+          const methodNote =
+            _importMethod === 'pdf-vision-ai'
+              ? ' (read via AI vision — scanned or image PDF)'
+              : _importMethod === 'embedded-json'
+                ? ' (imported from embedded resume data)'
+                : '';
+          alert(`Resume imported successfully!${methodNote}`);
         }
       } catch (err) {
         console.error(err);
-        alert("Failed to parse PDF resume.");
+        const message = err instanceof Error ? err.message : 'Failed to parse PDF resume.';
+        alert(message);
       } finally {
         setIsAILoading(false);
       }

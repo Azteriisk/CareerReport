@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useUser } from '@clerk/nextjs';
 import { UserPlus, UserMinus, Loader2 } from 'lucide-react';
 import { createNotification } from '@/lib/notifications';
+import { UpgradeModal } from '@/components/UpgradeModal';
 
 interface FollowButtonProps {
   targetUserId: string;
@@ -14,31 +15,50 @@ export function FollowButton({ targetUserId, onFollowChange }: FollowButtonProps
   const { user, isLoaded, isSignedIn } = useUser();
   const [isFollowing, setIsFollowing] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   useEffect(() => {
     async function checkFollowStatus() {
-      if (!isLoaded || !isSignedIn || !user) return;
-      if (user.id === targetUserId) return; // Can't follow yourself
-      
+      if (!isLoaded) return;
+
+      if (!isSignedIn || !user) {
+        setIsFollowing(false);
+        return;
+      }
+
+      if (user.id === targetUserId) return;
+
       const { data, error } = await supabase
         .from('followers')
         .select('follower_id')
         .eq('follower_id', user.id)
         .eq('following_id', targetUserId)
         .maybeSingle();
-        
+
+      if (error) {
+        console.error('Failed to check follow status:', error);
+        setIsFollowing(false);
+        return;
+      }
+
       setIsFollowing(!!data);
     }
-    
+
     checkFollowStatus();
   }, [user?.id, targetUserId, isLoaded, isSignedIn]);
 
+  const buttonStyle: React.CSSProperties = {
+    padding: '0.5rem 1rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    fontSize: '0.9rem',
+    fontWeight: 600,
+  };
+
   const handleToggleFollow = async () => {
-    if (!isSignedIn) {
-      alert("Please sign in to follow users.");
-      return;
-    }
-    
+    if (!isSignedIn || !user) return;
+
     setIsLoading(true);
     
     try {
@@ -75,31 +95,58 @@ export function FollowButton({ targetUserId, onFollowChange }: FollowButtonProps
     }
   };
 
-  // Don't render anything if it's the user's own profile or if still checking initial state
   if (!isLoaded || user?.id === targetUserId) return null;
-  
+
+  if (!isSignedIn) {
+    return (
+      <>
+        <button
+          type="button"
+          className="btn btn-primary"
+          style={buttonStyle}
+          onClick={() => setAuthModalOpen(true)}
+        >
+          <UserPlus size={16} /> Follow
+        </button>
+        <UpgradeModal
+          isOpen={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          featureName="follow people, message professionals, and build your network"
+          guestBenefits={[
+            'Follow professionals and stay updated on their careers',
+            'Send direct messages through CareerReport',
+            'Create a free public resume profile',
+          ]}
+        />
+      </>
+    );
+  }
+
+  // Brief spinner only while resolving follow state for a signed-in viewer
   if (isFollowing === null) {
     return (
-      <button className="btn" disabled style={{ padding: '0.5rem 1rem', opacity: 0.7, background: 'var(--surface-color)', color: 'var(--text-secondary)' }}>
+      <button
+        className="btn"
+        disabled
+        aria-label="Loading follow status"
+        style={{
+          padding: '0.5rem 1rem',
+          opacity: 0.7,
+          background: 'var(--surface-color)',
+          color: 'var(--text-secondary)',
+        }}
+      >
         <Loader2 size={16} className="animate-spin" />
       </button>
     );
   }
 
   return (
-    <button 
+    <button
       onClick={handleToggleFollow}
       disabled={isLoading}
       className={`btn ${isFollowing ? 'btn-secondary' : 'btn-primary'}`}
-      style={{ 
-        padding: '0.5rem 1rem', 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '0.5rem',
-        fontSize: '0.9rem',
-        fontWeight: 600,
-        opacity: isLoading ? 0.7 : 1
-      }}
+      style={{ ...buttonStyle, opacity: isLoading ? 0.7 : 1 }}
     >
       {isLoading ? (
         <Loader2 size={16} className="animate-spin" />

@@ -28,10 +28,14 @@ Stunning, heavily styled, and multi-column resumes often fail enterprise Applica
 * **Double-Layer Extraction:**
   1. **Plaintext Summaries:** Standardized headers like `=== MACHINE READABLE RESUME DATA ===` outline your work, education, and skills.
   2. **Raw JSON Payload:** A fully serialized JSON-LD block (`=== RAW JSON PAYLOAD FOR AI EXTRACTORS ===`) for programmatic extraction by AI agents.
-* **Visually Invisible, Programmatically Clear:** Styled via absolute positioning, $1\text{px}$ dimension gates, color transparency, and sub-pixel opacity. Screen readers and automated PDF text extractors pick it up flawlessly while human eyes only see the premium layout templates.
+* **Visually Invisible, Programmatically Clear:** Styled via absolute positioning, 1px dimension gates, color transparency, and sub-pixel opacity. Screen readers and automated PDF text extractors pick it up flawlessly while human eyes only see the premium layout templates.
 
 ### 🧠 2. Advanced Context-Aware AI Suite
-* **Zero-Cold-Start AI PDF Parser:** Import existing PDF resumes instantly. The server parses text, decompresses structure, and feeds structured tokens to Google Gemini to populate all profile fields in seconds.
+* **Resilient AI PDF Import (Pro):** Multi-stage import pipeline for existing resumes:
+  1. **Embedded JSON fast-path** — CareerReport exports include a machine-readable JSON block for instant, zero-token imports.
+  2. **Text extraction + Gemini** — Standard PDFs are parsed with `pdf-parse`, then structured via `generateObject` and a strict Zod schema.
+  3. **Vision fallback** — Scanned or image-heavy PDFs with no selectable text are sent directly to Gemini as a PDF file input when text extraction fails.
+* **AI route hardening:** Server-side Pro verification, per-user rate limits (10 AI calls/min globally, 3 PDF imports/min), 8 MB file caps, 25-page limits, and sanitized career-context prompts to reduce abuse and runaway token usage.
 * **Career Context Prompt:** Users can set a global "Career Context Prompt" (e.g., *"Senior Staff Engineer targeting early-stage YC startups with high-impact, concise bullet points"*). This dynamically primes all AI writing assistants, tailoring professional summary rewrites, job bullets, and category skill generation.
 
 ### 💬 3. Professional Social Networking Suite
@@ -39,7 +43,7 @@ Transitioned from a single resume builder into a collaborative network with Cler
 * **Public Handles:** Claim a custom username (`/u/username`) that serves as a unified digital footprint featuring your public resume, follower counts, and posts.
 * **Social Engagement:** A global activity feed supporting threaded comments, real-time likes, and notifications dropdowns for incoming follows and post interactions.
 * **Quote Reposting Modal:** Reshare network thoughts with integrated confirmation gates and nested content validation.
-* **Follower Mechanics:** Follow peers and grow your circle, managed with robust Supabase relational integrity.
+* **Follower Mechanics:** Follow peers and grow your circle, managed with robust Supabase relational integrity. Guests see Follow on public profiles and get the same **Account Required** benefits modal used in the builder (not a hard redirect to sign-in).
 * **Private Direct Messages:** Seamless direct message portal with real-time syncing so recruiters and professionals can connect immediately.
 
 ---
@@ -48,9 +52,9 @@ Transitioned from a single resume builder into a collaborative network with Cler
 
 ### 📝 Advanced Resume Builder
 - **Real-Time Visual Editor:** Instantly edit and preview your resume exactly as it will appear when exported.
-- **Fluid Multi-Page Pagination:** Custom horizontal layout engine using CSS columns and real-time scrollWidth calculation:
-  $$\text{Page Count} = \max\left(1, \text{round}\left(\frac{\text{Scroll Width} + 40}{890}\right)\right)$$
-  This guarantees zero phantom pages during live preview, margin modifications, template switches, and font-scale rendering updates.
+- **Fluid Multi-Page Pagination:** Custom horizontal layout engine using CSS columns (`850px` column width, `40px` gap) and **`scrollWidth`** on a hidden measure element — not `getBoundingClientRect().width`, which only sees the first column. Shared logic lives in `src/lib/resume-pagination.ts` and drives the builder preview, PDF/print export, and public profile views (desktop and mobile).
+  $$\text{Page Count} = \max\left(1,\ \text{round}\left(\frac{\text{scrollWidth} + 40}{890}\right)\right)$$
+- **Multiple Resumes (Pro):** Premium users can save, switch, rename, and delete multiple resume drafts tied to one profile.
 - **Dynamic Templates:** Seamlessly switch between Modern, Split, Minimal, and Classic layouts without losing data.
 - **Autosave & Cloud Sync:** Your progress is continuously saved to the cloud via Supabase.
 - **Total Customization:** Control section visibility, column counts, custom overrides, and custom image crops directly in the browser.
@@ -59,6 +63,7 @@ Transitioned from a single resume builder into a collaborative network with Cler
 - **Authentication:** Passwordless, social, and standard login flows powered by Clerk.
 - **True Singleton Supabase Client:** Memory-leak-free database connections with custom JWT interceptors for seamless Clerk synchronization.
 - **Row-Level Security:** Supabase RLS policies enforce per-user data isolation across resumes, posts, likes, comments, and followers.
+- **AI guards (`src/lib/ai-guard.ts`):** Shared validation for PDF uploads, career-context length caps, and server-side Pro checks (optional `SUPABASE_SERVICE_ROLE_KEY` for reliable production lookups).
 - **SSR-Safe:** Next.js Server-Side Rendering compatible token decoding using Node `Buffer` fallbacks.
 
 ---
@@ -84,7 +89,9 @@ We follow a **"Diamond" testing strategy** to ensure full stability during rapid
 > [!TIP]
 > **Unit Tests (`/tests/unit`)**: Using [Vitest](https://vitest.dev/), we cover pure utility algorithms like the AI Context Compressor, schema validations, and math parsers. Run with `npm run test`.
 > 
-> **E2E Tests (`/tests/e2e`)**: Using [Playwright](https://playwright.dev/), we test the core UI workflows such as building a resume, PDF export scaling, and social messaging pipelines. Run with `npm run test:e2e`.
+> **E2E Tests (`/tests/e2e`)**: Using [Playwright](https://playwright.dev/), we test core UI workflows: builder loops, PDF export, responsive layouts, API smoke tests, and **multipage pagination regressions** (`pagination.spec.ts`). Run with `npm run test:e2e`.
+>
+> **Unit coverage highlights:** `resume-pagination`, `pdf-resume-import`, `ai-guard`, resume schema, template render, and AI context compression.
 
 *Note on E2E Auth:* Playwright is fully integrated with `@clerk/testing` to bypass bot protection. Credentials and instructions are located in the [CONTRIBUTING.md](./CONTRIBUTING.md) file.
 
@@ -96,6 +103,10 @@ We follow a **"Diamond" testing strategy** to ensure full stability during rapid
 > The core layout engines, social infrastructure, and AI modules are fully operational. We actively maintain a checklist of recently implemented user flow improvements alongside upcoming milestones.
 
 ### ✅ Recent Accomplishments (Completed Tasks)
+* [x] **Multipage Pagination Fix:** Restored `scrollWidth`-based page counting across builder, exports, and public profiles; added shared `resume-pagination` helper and Playwright regression tests.
+* [x] **PDF Import Reliability:** Added embedded-JSON fast path, Gemini vision fallback for scanned PDFs, and server-side Pro/rate-limit/size guards.
+* [x] **Guest Follow UX:** Unsigned visitors see Follow on profiles; tapping opens the Account Required modal with tailored benefits (not an immediate sign-in redirect).
+* [x] **Multiple Resumes (Pro):** Premium users can maintain multiple named resume drafts from the builder.
 * [x] **Universal Spinner Standard:** Unified the spinner placement and visual styling in the resume builder to match the exact top-left positioning used on other sub-pages.
 * [x] **Sleek Builder Footer Mechanics:** Configured the resume builder's footer visibility to remain hidden unless the user scrolls all the way to the bottom of the builder.
 * [x] **Redundant Footer Cleans:** Fixed double footer rendering on the HomePage and removed the redundant footer on the Profile Page for perfect visual consistency.
@@ -110,7 +121,7 @@ We follow a **"Diamond" testing strategy** to ensure full stability during rapid
 * [ ] **Multi-DPI Display Layout Synchronization:** Variations in device hardware DPI can occasionally trigger minor layout offsets or slight pixel-spacing differences in resume templates when switching between high-DPI (Retina/4K) monitors and standard-definition screens. We are refining absolute sizing calculations to guarantee pixel-for-pixel rendering symmetry across all resolutions.
 
 ### 🔮 Feature Roadmap & Action Items (Remaining Tasks)
-* [ ] **Expand Testing Suite:** Expand the testing suite to cover more edge cases and UI interactions as the sites features continue to grow.
+* [ ] **Expand Testing Suite:** Add E2E coverage for PDF import flows and additional social edge cases beyond current pagination and API smoke tests.
 * [ ] **Enterprise Job Matching Dashboards:** Add automated skill-gap analysis comparing resume bullet points against newly posted jobs to highlight missing competencies for applicants.
 * [ ] **Automated ATS Success Testing Suite:** Deploy a programmatic testing harness that runs mock resumes through industry-standard ATS parsers (like Lever or Greenhouse) to measure parsing accuracy and refine the `AtsMetadata` invisible layers.
 * [ ] **Instant Post Thread Previews:** Render the top three most recent conversation bubbles directly on the homepage social card feeds so users can preview discussions without clicking into full post dialogs.
@@ -140,10 +151,11 @@ We follow a **"Diamond" testing strategy** to ensure full stability during rapid
    ```
 
 3. **Set up environment variables:**
-   Copy `.env.example` to `.env.local` and add your Clerk, Supabase, and Gemini API keys.
+   Copy `.env.example` to `.env.local` and add your Clerk, Supabase, Gemini, and Stripe keys.
    ```bash
    cp .env.example .env.local
    ```
+   Optional but recommended for production: `SUPABASE_SERVICE_ROLE_KEY` (enables reliable server-side Pro checks on AI routes).
 
 4. **Run the development server:**
    ```bash

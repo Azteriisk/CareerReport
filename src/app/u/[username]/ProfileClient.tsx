@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { pageCountFromScrollWidth } from '@/lib/resume-pagination';
 import { TemplateModern } from '@/components/TemplateModern';
 import { TemplateModernSplit } from '@/components/TemplateModernSplit';
 import { TemplateClassic } from '@/components/TemplateClassic';
@@ -35,8 +36,7 @@ export function ProfileClient({ username }: { username: string }) {
   useEffect(() => {
     const measure = () => {
       if (measureRef.current) {
-        const width = measureRef.current.scrollWidth;
-        setPageCount(Math.max(1, Math.round((width + 40) / 890)));
+        setPageCount(pageCountFromScrollWidth(measureRef.current.scrollWidth));
       }
     };
 

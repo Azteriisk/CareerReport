@@ -82,3 +82,6 @@ export function createRateLimiter(options: RateLimiterOptions) {
 
 /** Shared limiter: 10 AI requests per user per 60 seconds */
 export const aiRateLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 10 });
+
+/** Stricter limiter for PDF import (vision calls are expensive) */
+export const pdfImportRateLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 3 });

@@ -1,6 +1,7 @@
 import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
 import { getErrorMessage } from '@/lib/api-error';
+import { sanitizeCareerContext } from '@/lib/ai-guard';
 import { aiRateLimiter } from '@/lib/rate-limit';
 import { auth } from '@clerk/nextjs/server';
 
@@ -86,8 +87,9 @@ export async function POST(req: Request) {
       Output ONLY the summary text. Do NOT include any introductions or filler.`;
     }
 
-    if (careerContext && careerContext.trim().length > 0) {
-      systemPrompt += `\n\nCRITICAL CAREER CONTEXT: The user has provided the following specific career goals, target industry, or tone requirements. YOU MUST strictly adhere to this context: "${careerContext}"`;
+    const safeCareerContext = sanitizeCareerContext(careerContext);
+    if (safeCareerContext) {
+      systemPrompt += `\n\nCRITICAL CAREER CONTEXT: The user has provided the following specific career goals, target industry, or tone requirements. YOU MUST strictly adhere to this context: "${safeCareerContext}"`;
     }
 
     const compressedContext = compressContext(context);
