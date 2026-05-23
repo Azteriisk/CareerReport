@@ -704,9 +704,21 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
       {/* Main Panel */}
       <div style={{ maxWidth: '1000px', margin: '3rem auto', padding: '0 1.5rem' }}>
         
-        {/* Tab Selection */}
         {(isOwner || hasJobsPermission) && (
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', borderBottom: '1px solid var(--glass-border)', marginBottom: '2.5rem', paddingBottom: '0.25rem' }}>
+          <div 
+            className="hide-scrollbar"
+            style={{ 
+              display: 'flex', 
+              gap: '0.5rem', 
+              borderBottom: '1px solid var(--glass-border)', 
+              marginBottom: '2.5rem', 
+              paddingBottom: '0.25rem',
+              overflowX: 'auto',
+              whiteSpace: 'nowrap',
+              width: '100%',
+              WebkitOverflowScrolling: 'touch'
+            }}
+          >
             <button 
               onClick={() => setActiveTab('jobs')}
               className={`btn-tab ${activeTab === 'jobs' ? 'active' : ''}`}
@@ -719,7 +731,8 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                 padding: '0.75rem 1.5rem',
                 cursor: 'pointer',
                 borderBottom: activeTab === 'jobs' ? '2px solid var(--primary)' : 'none',
-                transition: 'all 0.2s ease'
+                transition: 'all 0.2s ease',
+                whiteSpace: 'nowrap'
               }}
             >
               Open Positions ({jobs.length})
@@ -736,7 +749,8 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                 padding: '0.75rem 1.5rem',
                 cursor: 'pointer',
                 borderBottom: activeTab === 'applications' ? '2px solid var(--primary)' : 'none',
-                transition: 'all 0.2s ease'
+                transition: 'all 0.2s ease',
+                whiteSpace: 'nowrap'
               }}
             >
               Candidate Applications ({applications.length})
@@ -754,7 +768,8 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                   padding: '0.75rem 1.5rem',
                   cursor: 'pointer',
                   borderBottom: activeTab === 'team' ? '2px solid var(--primary)' : 'none',
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap'
                 }}
               >
                 Team Management

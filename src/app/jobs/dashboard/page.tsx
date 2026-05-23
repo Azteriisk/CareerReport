@@ -732,7 +732,20 @@ export default function RecruiterDashboardPage() {
         </section>
 
         {/* TAB CONTROLS */}
-        <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+        <div 
+          className="hide-scrollbar"
+          style={{ 
+            display: 'flex', 
+            gap: '0.5rem', 
+            borderBottom: '1px solid var(--glass-border)', 
+            paddingBottom: '0.75rem', 
+            marginBottom: '2rem', 
+            overflowX: 'auto',
+            whiteSpace: 'nowrap',
+            width: '100%',
+            WebkitOverflowScrolling: 'touch'
+          }}
+        >
           {[
             { id: 'overview', name: 'Dashboard Overview' },
             { id: 'jobs', name: 'Manage Job Listings' },
@@ -751,7 +764,8 @@ export default function RecruiterDashboardPage() {
                 fontSize: '0.95rem',
                 fontWeight: 700,
                 cursor: 'pointer',
-                transition: 'all 0.2s ease'
+                transition: 'all 0.2s ease',
+                whiteSpace: 'nowrap'
               }}
             >
               {tab.name}
