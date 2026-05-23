@@ -682,12 +682,12 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                 </div>
               )}
             </div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', margin: '0 0 1.5rem 0', maxWidth: '600px', lineHeight: 1.6 }}>{company.bio}</p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', margin: '0 0 1.5rem 0', maxWidth: '600px', lineHeight: 1.6, wordBreak: 'break-word' }}>{company.bio}</p>
             
             <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
               {company.website && (
-                <a href={company.website} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontSize: '0.9rem', fontWeight: 500, textDecoration: 'none' }}>
-                  <Globe size={16} /> {company.website.replace(/^https?:\/\//, '')}
+                <a href={company.website} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontSize: '0.9rem', fontWeight: 500, textDecoration: 'none', wordBreak: 'break-all' }}>
+                  <Globe size={16} style={{ flexShrink: 0 }} /> {company.website.replace(/^https?:\/\//, '')}
                 </a>
               )}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
@@ -804,7 +804,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                   {jobs.map(job => (
                     <Link key={job.id} href={`/jobs/${job.id}`} style={{ textDecoration: 'none' }}>
                       <div className="job-card-hover" style={{ background: 'var(--surface-color)', border: '1px solid var(--glass-border)', padding: '1.5rem', borderRadius: '12px', transition: 'all 0.2s ease', cursor: 'pointer' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                           <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 600 }}>{job.title}</h3>
                           {job.salary_min && job.salary_max && (
                             <span style={{ color: 'var(--success)', fontWeight: 600, fontSize: '0.9rem', background: 'rgba(16, 185, 129, 0.1)', padding: '0.25rem 0.75rem', borderRadius: '100px' }}>

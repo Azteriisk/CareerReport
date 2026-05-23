@@ -176,11 +176,12 @@ export function ProfileClient({ username }: { username: string }) {
 
         {/* Social Header */}
         <div style={{
-          width: isMobile ? '90%' : '850px',
+          width: isMobile ? '100%' : '850px',
+          maxWidth: '100%',
+          margin: isMobile ? '0 1rem 2rem 1rem' : '0 0 2rem 0',
           background: 'var(--surface-color)',
           borderRadius: '16px',
           padding: '1.5rem',
-          marginBottom: '2rem',
           border: '1px solid var(--glass-border)',
           display: 'flex',
           flexDirection: isMobile ? 'column' : 'row',
@@ -236,7 +237,7 @@ export function ProfileClient({ username }: { username: string }) {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', width: isMobile ? '90%' : '850px', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', width: isMobile ? '100%' : '850px', padding: isMobile ? '0 1rem' : '0', justifyContent: 'center' }}>
           <button
             onClick={() => setActiveTab('resume')}
             className="btn"
@@ -244,7 +245,7 @@ export function ProfileClient({ username }: { username: string }) {
               background: activeTab === 'resume' ? 'var(--primary)' : 'transparent',
               color: activeTab === 'resume' ? 'var(--bg-color)' : 'var(--text-primary)',
               flex: isMobile ? 1 : 'none',
-              padding: '0.75rem 2rem'
+              padding: isMobile ? '0.75rem 1rem' : '0.75rem 2rem'
             }}>
             Resume
           </button>
@@ -255,7 +256,7 @@ export function ProfileClient({ username }: { username: string }) {
               background: activeTab === 'posts' ? 'var(--primary)' : 'transparent',
               color: activeTab === 'posts' ? 'var(--bg-color)' : 'var(--text-primary)',
               flex: isMobile ? 1 : 'none',
-              padding: '0.75rem 2rem'
+              padding: isMobile ? '0.75rem 1rem' : '0.75rem 2rem'
             }}>
             Posts
           </button>
@@ -334,7 +335,7 @@ export function ProfileClient({ username }: { username: string }) {
             </div>
           )
         ) : (
-          <div style={{ width: '100%', maxWidth: '850px', display: 'flex', justifyContent: 'center' }}>
+          <div style={{ width: '100%', maxWidth: '850px', display: 'flex', justifyContent: 'center', padding: isMobile ? '0 1rem' : '0' }}>
             <div style={{ width: '100%', maxWidth: '600px' }}>
               <Feed targetUserId={profileData?.id} />
             </div>

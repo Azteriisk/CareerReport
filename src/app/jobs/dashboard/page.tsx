@@ -1113,9 +1113,18 @@ export default function RecruiterDashboardPage() {
                       Manage subscription tiers for <strong>{selectedBusiness?.name}</strong>. Plans define the maximum active jobs allowed simultaneously and unlock advanced Google Gemini AI Stack Ranking features.
                     </p>
                   </div>
-                  <div className={styles.activePlanBadge}>
-                    <div className={styles.activePlanLabel}>Active Plan</div>
-                    <div className={styles.activePlanName}>{selectedBusinessTier?.name || 'Free Starter'}</div>
+                  <div className={styles.activePlanBadgeContainer}>
+                    <div className={styles.activePlanBadge}>
+                      <div className={styles.activePlanLabel}>Active Plan</div>
+                      <div className={styles.activePlanName}>{selectedBusinessTier?.name || 'Free Starter'}</div>
+                    </div>
+                    <button
+                      onClick={() => { if (selectedBusinessId) window.location.href = `/api/billing/portal?businessId=${selectedBusinessId}`; }}
+                      className={`btn btn-secondary ${styles.billingPortalBtn}`}
+                      style={{ height: 'fit-content' }}
+                    >
+                      Manage Billing &amp; Invoices ➔
+                    </button>
                   </div>
                 </div>
 
@@ -1161,15 +1170,6 @@ export default function RecruiterDashboardPage() {
                   })}
                 </div>
 
-                {/* Manage Billing (Stripe Portal) */}
-                <div className={styles.billingPortalRow}>
-                  <button
-                    onClick={() => { if (selectedBusinessId) window.location.href = `/api/billing/portal?businessId=${selectedBusinessId}`; }}
-                    className={`btn btn-secondary ${styles.billingPortalBtn}`}
-                  >
-                    Manage Billing &amp; Invoices ➔
-                  </button>
-                </div>
 
                 {/* Sponsorship Bundles */}
                 <div className={styles.bundleSection}>

@@ -64,6 +64,10 @@ a {
   border-radius: 16px;
 }
 
+.post-card-container {
+  padding: 1.25rem;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -373,6 +377,11 @@ input[type="month"].empty-date:focus::-webkit-datetime-edit {
   /* Suppress visual-only page chrome */
   .resume-ui-page,
   .no-print,
+  .builder-sidebar,
+  .builder-header,
+  .mobile-header,
+  .desktop-nav,
+  .mobileDrawer,
   [style*="visibility: hidden"] {
     display: none !important;
   }
@@ -488,6 +497,14 @@ input[type="month"].empty-date:focus::-webkit-datetime-edit {
   .mobile-header {
     padding: 0 1rem !important;
     height: 60px !important;
+  }
+
+  .page-main {
+    padding: 1.5rem 0.75rem 2.5rem 0.75rem !important;
+  }
+
+  .post-card-container {
+    padding: 0.85rem !important;
   }
 
   .mobile-header h1 {
@@ -646,7 +663,7 @@ input[type="month"].empty-date:focus::-webkit-datetime-edit {
   .grid-cols-3 { grid-template-columns: 1fr; }
   /* .grid-cols-2 stays 2-col on mobile — cards are designed to be side-by-side */
 }
-@media (max-width: 500px) {
+@media (max-width: 768px) {
   .grid-cols-2 { grid-template-columns: 1fr; }
   .grid-cols-4 { grid-template-columns: 1fr; }
 }

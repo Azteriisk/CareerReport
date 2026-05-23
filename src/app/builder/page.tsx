@@ -6,7 +6,7 @@ import { defaultResume } from '@/lib/default-resume';
 import { pageCountFromScrollWidth } from '@/lib/resume-pagination';
 import { ResumeData } from '@/lib/resume-schema';
 import { useReactToPrint } from 'react-to-print';
-import { Download, Sparkles, LayoutTemplate, Lock, RefreshCw, Plus, Minus, Trash2, Upload, Save, CheckCircle, AlertCircle, Info, Share2, X, Loader2, Wand2, FileText, Edit, Copy, Check } from 'lucide-react';
+import { Download, Sparkles, LayoutTemplate, Lock, RefreshCw, Plus, Minus, Trash2, Upload, Save, CheckCircle, AlertCircle, Info, Share2, X, Loader2, Wand2, FileText, Edit, Copy, Check, Globe } from 'lucide-react';
 import { useUser, useAuth, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
 import { supabase } from "@/lib/supabase";
 import { useAutoAnimate } from '@formkit/auto-animate/react';
@@ -2596,10 +2596,17 @@ ${data.basics.name || 'Applicant'}`;
                   }
                 }}
                 className="btn btn-secondary"
-                style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', gap: '0.5rem', color: isPublic ? 'var(--accent)' : 'var(--text-secondary)', flexShrink: 0 }}
+                style={{ 
+                  padding: '0.5rem 1rem', 
+                  fontSize: '0.9rem', 
+                  gap: '0.5rem', 
+                  color: isPublic ? 'var(--accent)' : 'var(--error)', 
+                  borderColor: isPublic ? 'var(--accent)' : 'var(--error)',
+                  flexShrink: 0 
+                }}
                 title={isPublic ? 'Resume is public — click to make private' : 'Resume is private — click to make public'}
               >
-                {isPublic ? <><span>🌐</span> Public</> : <><Lock size={16} /> Private</>}
+                {isPublic ? <><Globe size={16} /> Public</> : <><Lock size={16} /> Private</>}
               </button>
             )}
             <button
@@ -2641,7 +2648,7 @@ ${data.basics.name || 'Applicant'}`;
                   style={{ accentColor: 'var(--primary)', cursor: 'pointer' }}
                 />
                 <label htmlFor="includeCoverLetter" style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  💼 Export Cover Letter
+                  💼 CV
                 </label>
               </div>
             )}

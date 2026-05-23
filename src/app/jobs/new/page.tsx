@@ -20,7 +20,8 @@ export default function CreateJobPage() {
   const [description, setDescription] = useState('');
   const [salaryMin, setSalaryMin] = useState('');
   const [salaryMax, setSalaryMax] = useState('');
-  const [isRemote, setIsRemote] = useState(false);
+  const [jobType, setJobType] = useState('Full-time');
+  const [workArrangement, setWorkArrangement] = useState('On-site');
   const [location, setLocation] = useState('');
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -199,8 +200,8 @@ export default function CreateJobPage() {
           description,
           salary_min: salaryMin ? parseInt(salaryMin) : null,
           salary_max: salaryMax ? parseInt(salaryMax) : null,
-          is_remote: isRemote,
-          location,
+          is_remote: workArrangement === 'Remote',
+          location: location ? `${location} • ${workArrangement} • ${jobType}` : `${workArrangement} • ${jobType}`,
           status: 'open:featured' // zero-migration status-tier encoding
         })
         .select()
@@ -241,8 +242,8 @@ export default function CreateJobPage() {
           description,
           salary_min: salaryMin ? parseInt(salaryMin) : null,
           salary_max: salaryMax ? parseInt(salaryMax) : null,
-          is_remote: isRemote,
-          location,
+          is_remote: workArrangement === 'Remote',
+          location: location ? `${location} • ${workArrangement} • ${jobType}` : `${workArrangement} • ${jobType}`,
           status: 'open:standard' // zero-migration standard status
         })
         .select()
@@ -365,7 +366,7 @@ export default function CreateJobPage() {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="label">Location</label>
                   <div style={{ position: 'relative' }}>
@@ -382,16 +383,29 @@ export default function CreateJobPage() {
                 </div>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="label">Work Arrangement</label>
-                  <div style={{ display: 'flex', alignItems: 'center', height: '46px', gap: '0.75rem', padding: '0 1rem', background: 'var(--surface-highlight)', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
-                    <input 
-                      type="checkbox" 
-                      id="is-remote" 
-                      checked={isRemote} 
-                      onChange={(e) => setIsRemote(e.target.checked)} 
-                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                    />
-                    <label htmlFor="is-remote" style={{ color: 'var(--text-primary)', cursor: 'pointer', margin: 0, fontWeight: 500 }}>Fully Remote</label>
-                  </div>
+                  <select 
+                    className="input-field" 
+                    value={workArrangement} 
+                    onChange={(e) => setWorkArrangement(e.target.value)}
+                  >
+                    <option value="On-site">On-site</option>
+                    <option value="Remote">Remote</option>
+                    <option value="Hybrid">Hybrid</option>
+                  </select>
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="label">Job Type</label>
+                  <select 
+                    className="input-field" 
+                    value={jobType} 
+                    onChange={(e) => setJobType(e.target.value)}
+                  >
+                    <option value="Full-time">Full-time</option>
+                    <option value="Part-time">Part-time</option>
+                    <option value="Hourly">Hourly</option>
+                    <option value="Seasonal">Seasonal</option>
+                    <option value="Temporary">Temporary</option>
+                  </select>
                 </div>
               </div>
 
@@ -491,9 +505,9 @@ export default function CreateJobPage() {
                       <input type="radio" checked={tier === 'featured'} readOnly style={{ accentColor: 'var(--primary)', width: '16px', height: '16px' }} />
                     </div>
                     <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                      Golden highlighted styling, pinned to top of search, priority tags, and dynamic AI screening.
+                      Golden highlighted styling, pinned to top of search, priority tags, and dynamic AI screening. Includes 24 hours of active boosted time (can be paused, but is non-transferable to other posts).
                     </p>
-                    <div style={{ marginTop: '1rem', fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary)' }}>$99.00 <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-secondary)' }}>/ post</span></div>
+                    <div style={{ marginTop: '1rem', fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary)' }}>$19.00 <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-secondary)' }}>/ post</span></div>
                   </div>
 
                 </div>
@@ -559,7 +573,7 @@ export default function CreateJobPage() {
               <div style={{ background: 'rgba(250, 189, 47, 0.05)', border: '1px dashed rgba(250, 189, 47, 0.25)', borderRadius: '12px', padding: '1rem 1.25rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
                   <span>Featured Posting Plan</span>
-                  <span>$99.00</span>
+                  <span>$19.00</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
                   <span>Secured AI Integration</span>
@@ -568,7 +582,7 @@ export default function CreateJobPage() {
                 <hr style={{ border: 'none', borderTop: '1px solid var(--glass-border)', margin: '0.75rem 0' }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)' }}>
                   <span>Total Bill Due</span>
-                  <span style={{ color: 'var(--primary)' }}>$99.00 USD</span>
+                  <span style={{ color: 'var(--primary)' }}>$19.00 USD</span>
                 </div>
               </div>
 
@@ -658,7 +672,7 @@ export default function CreateJobPage() {
                     <span>Processing Payment Securely...</span>
                   </>
                 ) : (
-                  <span>Pay $99.00 & List Position</span>
+                  <span>Pay $19.00 & List Position</span>
                 )}
               </button>
               

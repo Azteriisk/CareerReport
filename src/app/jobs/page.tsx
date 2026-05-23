@@ -98,17 +98,29 @@ export default function JobsBoardPage() {
         if (dbJobs) {
           const formatted = dbJobs.map((j: any) => {
             const parsed = parseJobStatus(j.status);
+            const locParts = (j.location || '').split(' • ');
+            let jobType = 'Full-time';
+            if (locParts.length >= 3) {
+              jobType = locParts[2];
+            } else if (j.is_remote) {
+              jobType = 'Remote';
+            }
+            let displayLocation = locParts[0] || (j.is_remote ? 'Remote' : 'On-site');
+            if (locParts.length >= 2 && locParts[1] !== 'On-site') {
+              displayLocation += ` (${locParts[1]})`;
+            }
+
             return {
               id: j.id,
               title: j.title,
               description: j.description || '',
               company: j.business_profiles?.name || 'Unknown Company',
               verified: true,
-              location: j.location || (j.is_remote ? 'Remote' : 'On-site'),
+              location: displayLocation,
               salary: j.salary_min || j.salary_max
                 ? `${j.salary_min ? `$${(j.salary_min / 1000).toFixed(0)}k` : ''} - ${j.salary_max ? `$${(j.salary_max / 1000).toFixed(0)}k` : ''}`
                 : 'Competitive',
-              type: j.is_remote ? 'Remote' : 'Full-time',
+              type: jobType,
               posted: formatTimeAgo(new Date(j.created_at)),
               logo: j.business_profiles?.name?.charAt(0) || 'J',
               logoUrl: j.business_profiles?.logo_url,

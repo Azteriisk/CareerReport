@@ -136,30 +136,50 @@ export default function JobViewPage({ params }: { params: Promise<{ id: string }
               </Link>
             )}
             
-            {job.location && (
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-                <MapPin size={16} /> {job.location}
-              </span>
-            )}
-            
-            {job.is_remote && (
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontSize: '0.95rem' }}>
-                <Globe size={16} /> Remote
-              </span>
-            )}
-            
-            {(job.salary_min || job.salary_max) && (
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success)', fontSize: '0.95rem', fontWeight: 600 }}>
-                <DollarSign size={16} /> 
-                {job.salary_min ? `$${(job.salary_min/1000).toFixed(0)}k` : ''} 
-                {job.salary_min && job.salary_max ? ' - ' : ''} 
-                {job.salary_max ? `$${(job.salary_max/1000).toFixed(0)}k` : ''}
-              </span>
-            )}
-            
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-              <Calendar size={16} /> Posted {new Date(job.created_at).toLocaleDateString()}
-            </span>
+            {(() => {
+              const locParts = (job.location || '').split(' • ');
+              let displayLocation = locParts[0] || (job.is_remote ? 'Remote' : 'On-site');
+              if (locParts.length >= 2 && locParts[1] !== 'On-site') {
+                displayLocation += ` (${locParts[1]})`;
+              }
+              let jobType = 'Full-time';
+              if (locParts.length >= 3) {
+                jobType = locParts[2];
+              } else if (job.is_remote) {
+                jobType = 'Remote';
+              }
+              
+              return (
+                <>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+                    <Briefcase size={16} /> {jobType}
+                  </span>
+                  
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+                    <MapPin size={16} /> {displayLocation}
+                  </span>
+                  
+                  {job.is_remote && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontSize: '0.95rem' }}>
+                      <Globe size={16} /> Remote
+                    </span>
+                  )}
+                  
+                  {(job.salary_min || job.salary_max) && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success)', fontSize: '0.95rem', fontWeight: 600 }}>
+                      <DollarSign size={16} /> 
+                      {job.salary_min ? `$${(job.salary_min/1000).toFixed(0)}k` : ''} 
+                      {job.salary_min && job.salary_max ? ' - ' : ''} 
+                      {job.salary_max ? `$${(job.salary_max/1000).toFixed(0)}k` : ''}
+                    </span>
+                  )}
+                  
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+                    <Calendar size={16} /> Posted {new Date(job.created_at).toLocaleDateString()}
+                  </span>
+                </>
+              );
+            })()}
           </div>
  
           <div className="job-apply-box" style={{ display: 'flex', gap: '1rem', marginTop: '2rem', flexWrap: 'wrap' }}>

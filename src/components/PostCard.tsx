@@ -246,7 +246,7 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
       )}
 
       {/* Post Card */}
-      <div style={{ background: 'var(--surface-color)', borderRadius: '16px', padding: '1.25rem', marginBottom: '1rem', border: '1px solid var(--glass-border)', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
+      <div className="post-card-container" style={{ background: 'var(--surface-color)', borderRadius: '16px', marginBottom: '1rem', border: '1px solid var(--glass-border)', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
 
         {/* Repost attribution */}
         {isRepost && (

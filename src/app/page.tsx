@@ -8,7 +8,7 @@ export default async function Home() {
   const { userId } = await auth();
   return (
     <div className="landing-container" style={{ display: 'flex', flexDirection: 'column', minHeight: 'auto' }}>
-      <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '3.5rem 2rem 2.5rem 2rem' }}>
+      <main className="page-main" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '3.5rem 2rem 2.5rem 2rem' }}>
         {userId ? (
           <div style={{ width: '100%', maxWidth: '600px' }}>
             <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Your Network Feed</h2>

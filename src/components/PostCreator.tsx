@@ -102,10 +102,9 @@ export function PostCreator({ onPostCreated }: { onPostCreated?: () => void }) {
   };
 
   return (
-    <div style={{ 
+    <div className="post-card-container" style={{ 
       background: 'var(--surface-color)', 
       borderRadius: '16px', 
-      padding: '1.25rem', 
       marginBottom: '1.5rem',
       border: '1px solid var(--glass-border)',
       boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
