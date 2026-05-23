@@ -833,7 +833,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                     {hasRequested ? 'Request Pending' : 'I work here'}
                   </button>
                 )}
-                {hasRequested && !currentUserEmployee?.status?.startsWith('approved') && (
+                {hasRequested && !parseEmployeeStatus(currentUserEmployee?.status).approved && (
                   <span style={{ fontSize: '0.8rem', background: 'rgba(250, 189, 47, 0.12)', color: 'var(--primary)', padding: '4px 10px', borderRadius: '100px', fontWeight: 600 }}>Request Pending</span>
                 )}
               </div>

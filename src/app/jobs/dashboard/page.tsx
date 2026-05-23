@@ -44,6 +44,12 @@ export default function RecruiterDashboardPage() {
   const [sortBy, setSortBy] = useState<'ai' | 'newest' | 'oldest' | 'first_name' | 'last_name'>('ai');
   const [expandedApplicantId, setExpandedApplicantId] = useState<string | null>(null);
 
+  // Real applicants and live AI-powered stack ranker state
+  const [realApplicants, setRealApplicants] = useState<any[]>([]);
+  const [isLoadingRealApplicants, setIsLoadingRealApplicants] = useState(false);
+  const [aiResults, setAiResults] = useState<Record<string, { aiScore: number; aiLabel: string; aiExplanation: string }>>({});
+  const [isStackRanking, setIsStackRanking] = useState(false);
+
   // 1. Verify permissions and load businesses
   useEffect(() => {
     async function verifyPermissions() {
@@ -156,6 +162,67 @@ export default function RecruiterDashboardPage() {
     }
   }, [selectedBusinessId]);
 
+  // Load real applicant data from Supabase for active listings when selection or tab changes
+  useEffect(() => {
+    async function loadRealApplicants() {
+      if (!selectedJobIdForApplicants) {
+        setRealApplicants([]);
+        return;
+      }
+      setIsLoadingRealApplicants(true);
+      try {
+        const { data: apps, error } = await supabase
+          .from('job_applications')
+          .select(`
+            id,
+            created_at,
+            job_id,
+            applicant_id,
+            profiles:applicant_id (
+              username,
+              full_name,
+              avatar_url,
+              label,
+              career_context
+            )
+          `)
+          .eq('job_id', selectedJobIdForApplicants)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        if (apps) {
+          const applicantIds = apps.map((a: any) => a.applicant_id);
+          if (applicantIds.length > 0) {
+            const { data: resumeRows } = await supabase
+              .from('resumes')
+              .select('user_id, data')
+              .in('user_id', applicantIds);
+
+            // Enrich applications list with candidate resumes
+            const enriched = apps.map((a: any) => {
+              const resRow = resumeRows?.find((r: any) => r.user_id === a.applicant_id);
+              return {
+                ...a,
+                resumeData: resRow?.data || null
+              };
+            });
+            setRealApplicants(enriched);
+          } else {
+            setRealApplicants([]);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load real applicants:", err);
+      } finally {
+        setIsLoadingRealApplicants(false);
+      }
+    }
+
+    if (activeTab === 'applicants') {
+      loadRealApplicants();
+    }
+  }, [selectedJobIdForApplicants, activeTab]);
+
   // Toggle open/closed status for a job
   const handleToggleJobStatus = async (jobId: string, currentStatus: string) => {
     setUpdatingJobId(jobId);
@@ -221,11 +288,121 @@ export default function RecruiterDashboardPage() {
     ];
   };
 
+  // Post candidates to Gemini API to rank them in real-time
+  const handleRunAIStackRank = async () => {
+    if (realApplicants.length === 0) return;
+    const selectedJob = jobs.find(j => j.id === selectedJobIdForApplicants);
+    if (!selectedJob) return;
+
+    setIsStackRanking(true);
+    try {
+      await getToken({ template: 'supabase' });
+
+      const candidatesPayload = realApplicants.map((app: any) => {
+        const profile = app.profiles || {};
+        return {
+          id: app.applicant_id,
+          name: profile.full_name || profile.username || 'Candidate',
+          resumeText: app.resumeData || {
+            basics: { summary: profile.career_context || '' },
+            skills: profile.label ? [{ name: profile.label }] : []
+          }
+        };
+      });
+
+      const response = await fetch('/api/ai/stack-rank', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jobTitle: selectedJob.title,
+          jobDescription: selectedJob.description,
+          candidates: candidatesPayload
+        })
+      });
+
+      if (!response.ok) throw new Error('AI ranking failed');
+
+      const resultData = await response.json();
+      if (resultData.results && Array.isArray(resultData.results)) {
+        const resultMap: Record<string, { aiScore: number; aiLabel: string; aiExplanation: string }> = {};
+        resultData.results.forEach((r: any) => {
+          resultMap[r.id] = {
+            aiScore: parseFloat(r.aiScore) || 7.0,
+            aiLabel: r.aiLabel || 'AI: Evaluated',
+            aiExplanation: r.aiExplanation || 'Parsed successfully.'
+          };
+        });
+        setAiResults(resultMap);
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to run AI Stack Rank: " + (err.message || 'Unknown error'));
+    } finally {
+      setIsStackRanking(false);
+    }
+  };
+
   const getSortedApplicants = () => {
     const selectedJob = jobs.find(j => j.id === selectedJobIdForApplicants);
-    const applicants = getMockApplicantsForJob(selectedJob?.title || 'Professional');
+    
+    let listToUse = [];
+    
+    if (realApplicants.length > 0) {
+      listToUse = realApplicants.map((app: any) => {
+        const profile = app.profiles || {};
+        const fullName = profile.full_name || profile.username || 'Candidate';
+        const nameParts = fullName.split(' ');
+        const firstName = nameParts[0] || 'Candidate';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        
+        // Estimate Years of Experience (YOE) from work history
+        let yoe = 0;
+        const workHistory = app.resumeData?.work || [];
+        if (workHistory.length > 0) {
+          yoe = workHistory.reduce((acc: number, w: any) => {
+            const startYear = parseInt(w.startDate?.split('-')[0] || '0');
+            const endYear = w.endDate ? parseInt(w.endDate.split('-')[0]) : new Date().getFullYear();
+            if (startYear > 0 && endYear >= startYear) {
+              return acc + (endYear - startYear);
+            }
+            return acc + 1;
+          }, 0);
+          if (yoe === 0) yoe = 2;
+        } else {
+          yoe = 1;
+        }
 
-    return [...applicants].sort((a, b) => {
+        // Extract skills
+        let skillsList = profile.label || 'Developer';
+        const resumeSkills = app.resumeData?.skills || [];
+        if (resumeSkills.length > 0) {
+          skillsList = resumeSkills.map((s: any) => s.name).slice(0, 3).join(' • ');
+        }
+
+        const aiScoreData = aiResults[app.applicant_id] || {
+          aiScore: 0,
+          aiLabel: 'AI: Unevaluated',
+          aiExplanation: 'This applicant has not been analyzed yet. Click "Run AI Stack Rank" above to evaluate.'
+        };
+
+        return {
+          id: app.applicant_id,
+          firstName,
+          lastName,
+          yoe,
+          skills: skillsList,
+          appliedDate: new Date(app.created_at),
+          aiScore: aiScoreData.aiScore,
+          aiLabel: aiScoreData.aiLabel,
+          aiExplanation: aiScoreData.aiExplanation,
+          isReal: true
+        };
+      });
+    } else {
+      listToUse = getMockApplicantsForJob(selectedJob?.title || 'Professional');
+    }
+
+    return [...listToUse].sort((a, b) => {
       if (sortBy === 'ai') return b.aiScore - a.aiScore;
       if (sortBy === 'newest') return b.appliedDate.getTime() - a.appliedDate.getTime();
       if (sortBy === 'oldest') return a.appliedDate.getTime() - b.appliedDate.getTime();
@@ -238,6 +415,7 @@ export default function RecruiterDashboardPage() {
   const formatTimeAgo = (date: Date) => {
     const diffMs = new Date('2026-05-22T21:42:00Z').getTime() - date.getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    if (diffHours <= 0) return 'Just now';
     return `${diffHours}h ago`;
   };
 
@@ -606,10 +784,75 @@ export default function RecruiterDashboardPage() {
                     <p style={{ color: 'var(--text-secondary)' }}>Please select a job listing from the switcher dropdown above.</p>
                   </div>
                 ) : (
-                  /* Sorted Applicants List */
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {getSortedApplicants().map((applicant, index) => {
-                      const isExpanded = expandedApplicantId === applicant.id;
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                    
+                    {/* Real Applicants banner + Active AI stack ranker button */}
+                    {realApplicants.length > 0 && (
+                      <div style={{ 
+                        background: 'linear-gradient(135deg, rgba(250, 189, 47, 0.08) 0%, rgba(253, 186, 116, 0.05) 100%)', 
+                        border: '1px solid rgba(250, 189, 47, 0.25)', 
+                        padding: '1.5rem', 
+                        borderRadius: '16px', 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '1rem',
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
+                      }}>
+                        <div style={{ flex: 1, minWidth: '280px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontWeight: 800, marginBottom: '0.35rem' }}>
+                            <Sparkles size={18} />
+                            <h4 style={{ margin: 0, fontSize: '1.05rem' }}>Active Listing: {realApplicants.length} Real Applicants</h4>
+                          </div>
+                          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.5 }}>
+                            Leverage advanced context-aware Google Gemini engines to evaluate these candidate portfolios dynamically against the opening's requirements.
+                          </p>
+                        </div>
+                        
+                        <div>
+                          <button
+                            onClick={handleRunAIStackRank}
+                            disabled={isStackRanking}
+                            className="btn btn-primary"
+                            style={{ 
+                              padding: '0.75rem 1.5rem', 
+                              fontSize: '0.9rem', 
+                              fontWeight: 700, 
+                              display: 'inline-flex', 
+                              alignItems: 'center', 
+                              gap: '0.5rem',
+                              cursor: 'pointer',
+                              boxShadow: '0 4px 15px rgba(250, 189, 47, 0.2)'
+                            }}
+                          >
+                            {isStackRanking ? (
+                              <>
+                                <Loader2 className="animate-spin" size={16} />
+                                <span>Ranking Candidates...</span>
+                              </>
+                            ) : (
+                              <>
+                                <span>Run AI Stack Rank</span>
+                                <span>🧠</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Loading State for Real Applicants */}
+                    {isLoadingRealApplicants ? (
+                      <div className="flex-center" style={{ padding: '4rem 0' }}>
+                        <Loader2 className="animate-spin text-primary" size={32} />
+                        <p style={{ color: 'var(--text-secondary)', marginLeft: '1rem', margin: 0 }}>Syncing candidates from database...</p>
+                      </div>
+                    ) : (
+                      /* Sorted Applicants List */
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        {getSortedApplicants().map((applicant, index) => {
+                          const isExpanded = expandedApplicantId === applicant.id;
                       
                       return (
                         <div 
@@ -708,6 +951,8 @@ export default function RecruiterDashboardPage() {
                       );
                     })}
                   </div>
+                )}
+                </div>
                 )}
               </div>
             )}
