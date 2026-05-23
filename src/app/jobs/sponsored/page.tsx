@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   Zap, Star, TrendingUp, Target, CheckCircle, PauseCircle,
   ArrowRight, Sparkles, Building2, ChevronDown, Clock, BadgeCheck,
-  Rocket, Eye, Filter, Lock, PlayCircle
+  Rocket, Eye, Filter, Lock, PlayCircle, DollarSign
 } from 'lucide-react';
 
 // Simple animated counter hook
