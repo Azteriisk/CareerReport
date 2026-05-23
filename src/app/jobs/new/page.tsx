@@ -16,16 +16,16 @@ export default function CreateJobPage() {
 
   const [businesses, setBusinesses] = useState<any[]>([]);
   const [selectedBusinessId, setSelectedBusinessId] = useState('');
-  
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [salaryMin, setSalaryMin] = useState('');
   const [salaryMax, setSalaryMax] = useState('');
-  const [payType, setPayType] = useState<'salary'|'hourly'|'contract'>('salary');
+  const [payType, setPayType] = useState<'salary' | 'hourly' | 'contract'>('salary');
   const [jobType, setJobType] = useState('Full-time');
   const [workArrangement, setWorkArrangement] = useState('On-site');
   const [location, setLocation] = useState('');
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingBusinesses, setIsLoadingBusinesses] = useState(true);
   const [error, setError] = useState('');
@@ -48,10 +48,10 @@ export default function CreateJobPage() {
   useEffect(() => {
     async function loadBusinesses() {
       if (!isSignedIn || !user) return;
-      
+
       try {
         const token = await getToken({ template: 'supabase' });
-        
+
         // 1. Fetch businesses owned by user (with bio column for plan tiers)
         const { data: owned, error: ownedErr } = await supabase
           .from('business_profiles')
@@ -82,11 +82,11 @@ export default function CreateJobPage() {
 
         // Combine unique business listings
         const combinedMap = new Map<string, { id: string; name: string; slug: string; bio: string | null }>();
-        
+
         if (owned) {
           owned.forEach(b => combinedMap.set(b.id, b));
         }
-        
+
         if (employeeData) {
           employeeData.forEach((record: any) => {
             const bp = record.business_profiles as any;
@@ -187,7 +187,7 @@ export default function CreateJobPage() {
   const handleCompleteFeaturedPost = async () => {
     setIsProcessingPayment(true);
     setError('');
-    
+
     try {
       // Simulate Stripe/gateway handshake
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -284,9 +284,9 @@ export default function CreateJobPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="label">Posting on behalf of</label>
-            <select 
-              className="input-field" 
-              value={selectedBusinessId} 
+            <select
+              className="input-field"
+              value={selectedBusinessId}
               onChange={(e) => setSelectedBusinessId(e.target.value)}
             >
               {businesses.map(b => (
@@ -325,7 +325,7 @@ export default function CreateJobPage() {
               }}>
                 ⚡
               </div>
-              
+
               <div>
                 <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontSize: '1.35rem', fontWeight: 800, letterSpacing: '-0.3px' }}>
                   Plan Active Posting Limit Reached
@@ -358,13 +358,13 @@ export default function CreateJobPage() {
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="label">Job Title</label>
-                <input 
-                  type="text" 
-                  required 
-                  className="input-field" 
-                  placeholder="e.g. Senior Frontend Engineer" 
-                  value={title} 
-                  onChange={(e) => setTitle(e.target.value)} 
+                <input
+                  type="text"
+                  required
+                  className="input-field"
+                  placeholder="e.g. Senior Frontend Engineer"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
                 />
               </div>
 
@@ -373,21 +373,21 @@ export default function CreateJobPage() {
                   <label className="label">Location</label>
                   <div style={{ position: 'relative' }}>
                     <MapPin size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                    <input 
-                      type="text" 
-                      className="input-field" 
-                      style={{ paddingLeft: '2.75rem' }} 
-                      placeholder="e.g. San Francisco, CA" 
-                      value={location} 
-                      onChange={(e) => setLocation(e.target.value)} 
+                    <input
+                      type="text"
+                      className="input-field"
+                      style={{ paddingLeft: '2.75rem' }}
+                      placeholder="e.g. San Francisco, CA"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
                     />
                   </div>
                 </div>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="label">Work Arrangement</label>
-                  <select 
-                    className="input-field" 
-                    value={workArrangement} 
+                  <select
+                    className="input-field"
+                    value={workArrangement}
                     onChange={(e) => setWorkArrangement(e.target.value)}
                   >
                     <option value="On-site">On-site</option>
@@ -397,9 +397,9 @@ export default function CreateJobPage() {
                 </div>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="label">Job Type</label>
-                  <select 
-                    className="input-field" 
-                    value={jobType} 
+                  <select
+                    className="input-field"
+                    value={jobType}
                     onChange={(e) => setJobType(e.target.value)}
                   >
                     <option value="Full-time">Full-time</option>
@@ -414,9 +414,9 @@ export default function CreateJobPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="label">Pay Type</label>
-                  <select 
-                    className="input-field" 
-                    value={payType} 
+                  <select
+                    className="input-field"
+                    value={payType}
                     onChange={(e) => setPayType(e.target.value as any)}
                   >
                     <option value="salary">Salary</option>
@@ -428,13 +428,13 @@ export default function CreateJobPage() {
                   <label className="label">{payType === 'hourly' ? 'Min Hourly (USD)' : payType === 'contract' ? 'Min Contract (USD)' : 'Minimum Salary (USD)'}</label>
                   <div style={{ position: 'relative' }}>
                     <DollarSign size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                    <input 
-                      type="number" 
-                      className="input-field" 
-                      style={{ paddingLeft: '2.75rem' }} 
+                    <input
+                      type="number"
+                      className="input-field"
+                      style={{ paddingLeft: '2.75rem' }}
                       placeholder={payType === 'hourly' ? "30" : payType === 'contract' ? "5000" : "120000"}
-                      value={salaryMin} 
-                      onChange={(e) => setSalaryMin(e.target.value)} 
+                      value={salaryMin}
+                      onChange={(e) => setSalaryMin(e.target.value)}
                     />
                   </div>
                 </div>
@@ -442,13 +442,13 @@ export default function CreateJobPage() {
                   <label className="label">{payType === 'hourly' ? 'Max Hourly (USD)' : payType === 'contract' ? 'Max Contract (USD)' : 'Maximum Salary (USD)'}</label>
                   <div style={{ position: 'relative' }}>
                     <DollarSign size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                    <input 
-                      type="number" 
-                      className="input-field" 
-                      style={{ paddingLeft: '2.75rem' }} 
+                    <input
+                      type="number"
+                      className="input-field"
+                      style={{ paddingLeft: '2.75rem' }}
                       placeholder={payType === 'hourly' ? "50" : payType === 'contract' ? "10000" : "180000"}
-                      value={salaryMax} 
-                      onChange={(e) => setSalaryMax(e.target.value)} 
+                      value={salaryMax}
+                      onChange={(e) => setSalaryMax(e.target.value)}
                     />
                   </div>
                 </div>
@@ -456,13 +456,13 @@ export default function CreateJobPage() {
 
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="label">Job Description & Requirements</label>
-                <textarea 
-                  required 
-                  className="input-field" 
-                  style={{ minHeight: '200px', resize: 'vertical' }} 
-                  placeholder="Describe the role, responsibilities, and ideal candidate..." 
-                  value={description} 
-                  onChange={(e) => setDescription(e.target.value)} 
+                <textarea
+                  required
+                  className="input-field"
+                  style={{ minHeight: '200px', resize: 'vertical' }}
+                  placeholder="Describe the role, responsibilities, and ideal candidate..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
                 />
               </div>
 
@@ -470,15 +470,15 @@ export default function CreateJobPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
                 <label className="label">Select Listing Plan</label>
                 <div className="grid-cols-2">
-                  
+
                   {/* Standard Tier Card */}
-                  <div 
+                  <div
                     onClick={() => setTier('standard')}
-                    style={{ 
-                      background: 'var(--surface-highlight)', 
-                      padding: '1.25rem', 
-                      borderRadius: '12px', 
-                      border: `2px solid ${tier === 'standard' ? 'var(--primary)' : 'var(--glass-border)'}`, 
+                    style={{
+                      background: 'var(--surface-highlight)',
+                      padding: '1.25rem',
+                      borderRadius: '12px',
+                      border: `2px solid ${tier === 'standard' ? 'var(--primary)' : 'var(--glass-border)'}`,
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
                       position: 'relative'
@@ -495,13 +495,13 @@ export default function CreateJobPage() {
                   </div>
 
                   {/* Featured Tier Card */}
-                  <div 
+                  <div
                     onClick={() => setTier('featured')}
-                    style={{ 
-                      background: 'linear-gradient(135deg, rgba(250, 189, 47, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%)', 
-                      padding: '1.25rem', 
-                      borderRadius: '12px', 
-                      border: `2px solid ${tier === 'featured' ? 'var(--primary)' : 'var(--glass-border)'}`, 
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(250, 189, 47, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%)',
+                      padding: '1.25rem',
+                      borderRadius: '12px',
+                      border: `2px solid ${tier === 'featured' ? 'var(--primary)' : 'var(--glass-border)'}`,
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
                       boxShadow: tier === 'featured' ? '0 8px 25px rgba(250,189,47,0.15)' : 'none',
@@ -515,7 +515,7 @@ export default function CreateJobPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
                       <input type="radio" checked={tier === 'featured'} readOnly style={{ accentColor: 'var(--primary)', width: '16px', height: '16px', zIndex: 1 }} />
                       <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                        Featured Listing 🔥
+                        Featured Listing
                       </span>
                     </div>
                     <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
@@ -527,10 +527,10 @@ export default function CreateJobPage() {
                 </div>
               </div>
 
-              <button 
-                type="submit" 
-                disabled={isSubmitting} 
-                className="btn btn-primary" 
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="btn btn-primary"
                 style={{ padding: '1rem', fontSize: '1.1rem', justifyContent: 'center', marginTop: '1.5rem', cursor: 'pointer' }}
               >
                 {isSubmitting ? <Loader2 className="animate-spin" size={24} /> : tier === 'featured' ? 'Proceed to Secure Checkout ➔' : 'Post Standard Job Now'}
@@ -565,7 +565,7 @@ export default function CreateJobPage() {
             overflow: 'hidden',
             boxShadow: '0 30px 70px rgba(0,0,0,0.5)'
           }} onClick={e => e.stopPropagation()}>
-            
+
             {/* Modal Header */}
             <div style={{ background: 'var(--surface-highlight)', padding: '1.5rem 2rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
@@ -582,7 +582,7 @@ export default function CreateJobPage() {
 
             {/* Modal Body */}
             <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              
+
               {/* Order summary */}
               <div style={{ background: 'rgba(250, 189, 47, 0.05)', border: '1px dashed rgba(250, 189, 47, 0.25)', borderRadius: '12px', padding: '1rem 1.25rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
@@ -604,11 +604,11 @@ export default function CreateJobPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="label" style={{ fontSize: '0.75rem' }}>Cardholder Name</label>
-                  <input 
-                    type="text" 
-                    required 
+                  <input
+                    type="text"
+                    required
                     placeholder="e.g. Alec Brandt"
-                    className="input-field" 
+                    className="input-field"
                     style={{ marginBottom: 0 }}
                     value={cardName}
                     onChange={e => setCardName(e.target.value)}
@@ -617,12 +617,12 @@ export default function CreateJobPage() {
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="label" style={{ fontSize: '0.75rem' }}>Card Number</label>
-                  <input 
-                    type="text" 
-                    required 
+                  <input
+                    type="text"
+                    required
                     maxLength={19}
                     placeholder="4000 1234 5678 9010"
-                    className="input-field" 
+                    className="input-field"
                     style={{ marginBottom: 0 }}
                     value={cardNumber}
                     onChange={e => {
@@ -635,12 +635,12 @@ export default function CreateJobPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="label" style={{ fontSize: '0.75rem' }}>Expiration (MM/YY)</label>
-                    <input 
-                      type="text" 
-                      required 
+                    <input
+                      type="text"
+                      required
                       maxLength={5}
                       placeholder="12/29"
-                      className="input-field" 
+                      className="input-field"
                       style={{ marginBottom: 0 }}
                       value={cardExpiry}
                       onChange={e => {
@@ -651,12 +651,12 @@ export default function CreateJobPage() {
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="label" style={{ fontSize: '0.75rem' }}>CVC / CVV</label>
-                    <input 
-                      type="password" 
-                      required 
+                    <input
+                      type="password"
+                      required
                       maxLength={4}
                       placeholder="•••"
-                      className="input-field" 
+                      className="input-field"
                       style={{ marginBottom: 0 }}
                       value={cardCvc}
                       onChange={e => setCardCvc(e.target.value.replace(/\D/g, ''))}
@@ -670,11 +670,11 @@ export default function CreateJobPage() {
                 onClick={handleCompleteFeaturedPost}
                 disabled={isProcessingPayment || !cardName || cardNumber.length < 15}
                 className="btn btn-primary"
-                style={{ 
-                  padding: '0.9rem', 
-                  fontSize: '1rem', 
-                  fontWeight: 700, 
-                  justifyContent: 'center', 
+                style={{
+                  padding: '0.9rem',
+                  fontSize: '1rem',
+                  fontWeight: 700,
+                  justifyContent: 'center',
                   marginTop: '0.5rem',
                   cursor: 'pointer',
                   boxShadow: '0 4px 20px rgba(250, 189, 47, 0.25)'
@@ -689,7 +689,7 @@ export default function CreateJobPage() {
                   <span>Pay $19.00 & List Position</span>
                 )}
               </button>
-              
+
               <div style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.7rem', opacity: 0.6 }}>
                 By finalizing payment, you authorize Stripe to debit this card. Listed standard jobs can be upgraded at any time.
               </div>
