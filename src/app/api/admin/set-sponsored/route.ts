@@ -6,13 +6,12 @@ import { encodeJobStatus, parseJobStatus } from '@/lib/job-tier';
 
 const ADMIN_USER_ID = process.env.ADMIN_CLERK_USER_ID;
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function POST(request: Request) {
   try {
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
     const { userId } = await auth();
     if (!userId || userId !== ADMIN_USER_ID) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

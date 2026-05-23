@@ -8,18 +8,16 @@ import { BUSINESS_TIERS } from '@/lib/business-tier';
 import { injectStripeCustomerId } from '@/lib/business-tier';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock_for_build', {
-  apiVersion: '2025-01-27.acacia' as any,
-});
-
 // Service-role client — bypasses RLS for reliable server writes
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function POST(request: Request) {
   try {
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: '2026-04-22.dahlia',
+    });
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
     if (!process.env.STRIPE_SECRET_KEY) {
       throw new Error('Stripe is not configured on this environment.');
     }

@@ -6,13 +6,12 @@ import { getSponsorCredits, injectSponsorCredits } from '@/lib/business-tier';
 import { parseJobStatus, encodeJobStatus } from '@/lib/job-tier';
 import { checkRateLimit } from '@/lib/rate-limit';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function POST(request: Request) {
   try {
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
     const { userId } = await auth();
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

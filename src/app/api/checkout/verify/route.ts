@@ -4,12 +4,11 @@ import { supabase } from '@/lib/supabase';
 import { getErrorMessage } from '@/lib/api-error';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock_for_build', {
-  apiVersion: '2025-01-27.acacia' as any,
-});
-
 export async function GET(request: Request) {
   try {
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: '2026-04-22.dahlia',
+    });
     if (!process.env.STRIPE_SECRET_KEY) {
       throw new Error('Stripe is not configured on this environment.');
     }
