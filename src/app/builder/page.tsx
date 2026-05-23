@@ -2565,7 +2565,16 @@ ${data.basics.name || 'Applicant'}`;
             )}
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <div 
+            className={isMobile ? "hide-scrollbar" : ""}
+            style={{ 
+              display: 'flex', 
+              gap: '0.75rem',
+              width: isMobile ? '100%' : 'auto',
+              overflowX: isMobile ? 'auto' : 'visible',
+              paddingBottom: isMobile ? '0.25rem' : 0
+            }}
+          >
             {isSignedIn && (
               <button
                 onClick={async () => {
@@ -2587,7 +2596,7 @@ ${data.basics.name || 'Applicant'}`;
                   }
                 }}
                 className="btn btn-secondary"
-                style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', gap: '0.5rem', color: isPublic ? 'var(--accent)' : 'var(--text-secondary)' }}
+                style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', gap: '0.5rem', color: isPublic ? 'var(--accent)' : 'var(--text-secondary)', flexShrink: 0 }}
                 title={isPublic ? 'Resume is public — click to make private' : 'Resume is private — click to make public'}
               >
                 {isPublic ? <><span>🌐</span> Public</> : <><Lock size={16} /> Private</>}
@@ -2610,20 +2619,20 @@ ${data.basics.name || 'Applicant'}`;
                 }
               }}
               className="btn btn-secondary"
-              style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', gap: '0.5rem', color: sharingCopied ? 'var(--accent)' : undefined }}
+              style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', gap: '0.5rem', color: sharingCopied ? 'var(--accent)' : undefined, flexShrink: 0 }}
             >
               {sharingCopied ? <><CheckCircle size={18} /> Copied!</> : <><Share2 size={18} /> Share</>}
             </button>
             <button
               onClick={handleManualSave}
               className="btn btn-secondary"
-              style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', gap: '0.5rem' }}
+              style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', gap: '0.5rem', flexShrink: 0 }}
               title="Manual Save"
             >
               <Save size={18} /> Save
             </button>
             {generatedCoverLetter && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--glass-border)', padding: '0.4rem 0.75rem', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--glass-border)', padding: '0.4rem 0.75rem', borderRadius: '8px', flexShrink: 0 }}>
                 <input 
                   type="checkbox" 
                   id="includeCoverLetter"
@@ -2645,7 +2654,7 @@ ${data.basics.name || 'Applicant'}`;
                 }
               }}
               className="btn btn-primary"
-              style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', gap: '0.5rem' }}
+              style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', gap: '0.5rem', flexShrink: 0 }}
             >
               <Download size={18} /> Export PDF
             </button>
