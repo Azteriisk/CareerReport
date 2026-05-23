@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+.vitest/
 
 # next.js
 /.next/
@@ -36,6 +37,9 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Google Cloud Service Account credentials
+careerreport-*.json
 
 # vercel
 .vercel

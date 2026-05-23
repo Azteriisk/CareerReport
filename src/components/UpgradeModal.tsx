@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Sparkles, CheckCircle, Lock, Loader2 } from 'lucide-react';
 import { useUser, SignInButton, SignUpButton } from '@clerk/nextjs';
+import { isGooglePlayBillingAvailable, purchaseGooglePlaySubscription } from '@/lib/google-play-billing';
 
 const DEFAULT_GUEST_BENEFITS = [
   'Save your resume to the cloud',
@@ -26,9 +27,72 @@ export function UpgradeModal({
 }: UpgradeModalProps) {
   const { user, isSignedIn } = useUser();
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState({ title: 'Connecting to Stripe...', description: 'Securing a payment session. You will be redirected to Stripe to finalize your upgrade.' });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isTwa, setIsTwa] = useState(false);
+
+  useEffect(() => {
+    setIsTwa(isGooglePlayBillingAvailable());
+  }, []);
 
   if (!isOpen) return null;
+
+  const handleGooglePlayCheckout = async () => {
+    if (!isSignedIn || !user) return;
+    
+    setLoadingMessage({
+      title: 'Connecting to Google Play...',
+      description: 'Opening the Google Play Billing dialog. Please complete the purchase in the native prompt.'
+    });
+    setLoading(true);
+    setErrorMessage(null);
+
+    let paymentResponse: any = null;
+    try {
+      // Trigger Play billing transaction
+      const result = await purchaseGooglePlaySubscription('pro_monthly_subscription', '9.00');
+      paymentResponse = result.paymentResponse;
+
+      setLoadingMessage({
+        title: 'Verifying Purchase...',
+        description: 'Verifying your receipt securely with Google Play Services and unlocking your premium access.'
+      });
+
+      // Submit token to Next.js API for backend verification
+      const verifyResponse = await fetch('/api/checkout/google-play', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          purchaseToken: result.purchaseToken,
+          sku: result.sku,
+        }),
+      });
+
+      if (!verifyResponse.ok) {
+        const errData = await verifyResponse.json();
+        throw new Error(errData.error || 'Receipt verification failed.');
+      }
+
+      // Signal success to the billing sheet
+      await paymentResponse.complete('success');
+      
+      // Reload page or trigger success state to refresh is_pro fields
+      window.location.reload();
+    } catch (err: any) {
+      console.error('Google Play billing error:', err);
+      if (paymentResponse) {
+        try {
+          await paymentResponse.complete('fail');
+        } catch (e) {
+          console.error('Failed to complete payment response:', e);
+        }
+      }
+      setErrorMessage(err.message || 'Google Play purchase was canceled or verification failed.');
+      setLoading(false);
+    }
+  };
 
   const handleStartCheckout = async () => {
     if (!isSignedIn || !user) {
@@ -36,6 +100,15 @@ export function UpgradeModal({
       return;
     }
 
+    if (isTwa) {
+      await handleGooglePlayCheckout();
+      return;
+    }
+
+    setLoadingMessage({
+      title: 'Connecting to Stripe...',
+      description: 'Securing a payment session. You will be redirected to Stripe to finalize your upgrade.'
+    });
     setLoading(true);
     setErrorMessage(null);
 
@@ -124,9 +197,9 @@ export function UpgradeModal({
           <div style={{ padding: '5rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
             <Loader2 className="animate-spin" size={48} color="var(--primary)" />
             <div>
-              <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', color: 'var(--text-primary)', fontWeight: 700 }}>Connecting to Stripe...</h3>
+              <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', color: 'var(--text-primary)', fontWeight: 700 }}>{loadingMessage.title}</h3>
               <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5, maxWidth: '280px' }}>
-                Securing a payment session. You will be redirected to Stripe to finalize your upgrade.
+                {loadingMessage.description}
               </p>
             </div>
           </div>
@@ -250,10 +323,12 @@ export function UpgradeModal({
                 }}
                 onClick={handleStartCheckout}
               >
-                <Lock size={18} /> Upgrade to Pro - $9/mo
+                <Lock size={18} /> {isTwa ? 'Subscribe with Google Play - $9/mo' : 'Upgrade to Pro - $9/mo'}
               </button>
               <p style={{ textAlign: 'center', margin: '1rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                Cancel anytime. Secure checkout powered by Stripe.
+                {isTwa 
+                  ? 'Cancel anytime via Google Play Subscriptions. Secured by Google Play.' 
+                  : 'Cancel anytime. Secure checkout powered by Stripe.'}
               </p>
             </div>
           </div>

@@ -46,6 +46,13 @@ Transitioned from a single resume builder into a collaborative network with Cler
 * **Follower Mechanics:** Follow peers and grow your circle, managed with robust Supabase relational integrity. Guests see Follow on public profiles and get the same **Account Required** benefits modal used in the builder (not a hard redirect to sign-in).
 * **Private Direct Messages:** Seamless direct message portal with real-time syncing so recruiters and professionals can connect immediately.
 
+### 📱 4. Google Play Store TWA Integration (Android Billing)
+To ship CareerReport as a fully native-feeling app on the Google Play Store, we implemented a custom Android **Trusted Web Activity (TWA)** wrapper integration:
+* **Dynamic Payment Bridge:** In standard web viewports, users check out securely via Stripe. When launched inside the Google Play TWA, Chrome's container injects the **Digital Goods API** (`window.getDigitalGoodsService`), which we automatically intercept to trigger the native Google Play Billing dialog using the standard **Payment Request API**.
+* **Secure Server Verification:** Added `/api/checkout/google-play` to securely authenticate with Google Cloud using JWT service accounts and verify subscription purchase tokens against Google Play Publisher APIs.
+* **Database Token Mapping:** Linked purchase tokens directly into the user's `career_context` record as `[GooglePlayToken: <token>]` to enable active session mapping and lookup without requiring complex database migrations.
+* **Real-time Developer Notifications (RTDN):** Created `/api/webhooks/google-play` to receive Google Cloud Pub/Sub webhook events, automatically syncing `is_pro` status and cleaning tokens when subscriptions renew, hold, or cancel/expire.
+
 ---
 
 ## ✨ Features Breakdown
@@ -115,6 +122,9 @@ We follow a **"Diamond" testing strategy** to ensure full stability during rapid
 * [x] **Dynamic Title Customization & Encoding:** Implemented inline custom employee title updates (e.g., "CEO" or "Lead Developer") in the Team Management dashboard without database schema bloat, utilizing a robust pipe-delimited suffix encoder directly on the `status` column.
 * [x] **Secure Ownership Transfer:** Introduced dual-tier safety confirmation popups allowing owners to safely delegate page ownership to senior team members, with automatic demotion of the former owner to a `"Former Owner"` high-authority status.
 * [x] **Decentralized Team Administration:** Expanded dashboard access to employees with `profile` permissions, allowing them to manage standard member details and customize titles.
+* [x] **Google Play Billing Bridge (TWA):** Integrated native Android Play Store payment prompts into the web app using Digital Goods and Payment Request APIs, falling back to Stripe on the web.
+* [x] **Google Developer API Verification:** Created backend secure verification routes (`/api/checkout/google-play`) to cryptographically validate subscription order tokens using Google Cloud JWT credentials.
+* [x] **Real-time Developer Notifications (RTDN):** Created Pub/Sub webhook endpoints (`/api/webhooks/google-play`) to auto-sync subscription cancels, expirations, and active states.
 
 ### 🐛 Known Issues & DPI Syncing (Active Tasks)
 * [ ] **Mobile PDF Export Margins:** PDF printing layout margins and zoom scaling factors can behave inconsistently during direct mobile browser exports. Work is underway to standardize `@media print` queries for mobile viewport boundaries.

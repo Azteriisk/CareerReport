@@ -26,6 +26,7 @@ export function Navbar() {
   const [globalUsername, setGlobalUsername] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [businessSlug, setBusinessSlug] = useState<string | null>(null);
+  const [hasRecruiterAccess, setHasRecruiterAccess] = useState<boolean>(false);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -56,14 +57,33 @@ export function Navbar() {
         setGlobalUsername(profile.username);
       }
 
+      // Check if user owns a business
       const { data: business } = await supabase
         .from('business_profiles')
         .select('slug')
         .eq('owner_id', user.id)
         .maybeSingle();
 
+      let ownsBusiness = false;
       if (business?.slug) {
         setBusinessSlug(business.slug);
+        ownsBusiness = true;
+        setHasRecruiterAccess(true);
+      }
+
+      // If not owner, check employee table for jobs posting permissions
+      if (!ownsBusiness) {
+        const { data: employeeRecord } = await supabase
+          .from('company_employees')
+          .select('status')
+          .eq('user_id', user.id)
+          .like('status', 'approved%')
+          .maybeSingle();
+
+        const status = employeeRecord?.status || '';
+        if (status.includes('jobs')) {
+          setHasRecruiterAccess(true);
+        }
       }
     }
 
@@ -115,7 +135,10 @@ export function Navbar() {
         <nav className="desktop-nav" style={{ display: 'flex', gap: '0.25rem', alignItems: 'center', background: 'var(--surface-color)', padding: '0.35rem', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
           <NavLink href="/" active={pathname === '/'}>Home</NavLink>
           <NavLink href="/builder" active={pathname === '/builder'}>{isSignedIn ? 'My Resume' : 'Create Resume'}</NavLink>
-          <NavLink href="/jobs" active={pathname?.startsWith('/jobs')}>Jobs</NavLink>
+          <NavLink href="/jobs" active={pathname?.startsWith('/jobs') && pathname !== '/jobs/dashboard'}>Jobs</NavLink>
+          {isSignedIn && hasRecruiterAccess && (
+            <NavLink href="/jobs/dashboard" active={pathname === '/jobs/dashboard'}>Job Center</NavLink>
+          )}
           {isSignedIn && businessSlug && (
             <NavLink href={`/co/${businessSlug}`} active={pathname?.startsWith('/co/')}>My Company</NavLink>
           )}
@@ -206,7 +229,10 @@ export function Navbar() {
           >
             <MobileNavLink href="/" active={pathname === '/'}>Home</MobileNavLink>
             <MobileNavLink href="/builder" active={pathname === '/builder'}>{isSignedIn ? 'My Resume' : 'Create Resume'}</MobileNavLink>
-            <MobileNavLink href="/jobs" active={pathname?.startsWith('/jobs')}>Jobs</MobileNavLink>
+            <MobileNavLink href="/jobs" active={pathname?.startsWith('/jobs') && pathname !== '/jobs/dashboard'}>Jobs</MobileNavLink>
+            {isSignedIn && hasRecruiterAccess && (
+              <MobileNavLink href="/jobs/dashboard" active={pathname === '/jobs/dashboard'}>Job Center</MobileNavLink>
+            )}
             {isSignedIn && businessSlug && (
               <MobileNavLink href={`/co/${businessSlug}`} active={pathname?.startsWith('/co/')}>My Company</MobileNavLink>
             )}

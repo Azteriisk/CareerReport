@@ -1,15 +1,8 @@
 "use client";
 import Link from 'next/link';
-import { FileText, Search, MapPin, Building, BadgeCheck, Filter, Loader2 } from 'lucide-react';
+import { Search, MapPin, Building, BadgeCheck, Filter, Loader2, Sparkles, Briefcase, ArrowRight } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-
-const MOCK_JOBS = [
-  { id: '1', title: 'Senior Frontend Engineer', company: 'Vercel', verified: true, location: 'Remote', salary: '$160k - $200k', type: 'Full-time', posted: '2h ago', logo: 'V', logoUrl: null },
-  { id: '2', title: 'Product Designer', company: 'Stripe', verified: true, location: 'San Francisco, CA', salary: '$140k - $180k', type: 'Full-time', posted: '5h ago', logo: 'S', logoUrl: null },
-  { id: '3', title: 'Backend Developer', company: 'TechStartup Inc', verified: false, location: 'New York, NY', salary: '$120k - $150k', type: 'Full-time', posted: '1d ago', logo: 'T', logoUrl: null },
-  { id: '4', title: 'Developer Advocate', company: 'Supabase', verified: true, location: 'Remote', salary: '$130k - $170k', type: 'Full-time', posted: '2d ago', logo: 'S', logoUrl: null },
-];
 
 function formatTimeAgo(date: Date) {
   const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
@@ -24,7 +17,7 @@ function formatTimeAgo(date: Date) {
 
 export default function JobsBoardPage() {
   const [search, setSearch] = useState('');
-  const [jobs, setJobs] = useState<any[]>(MOCK_JOBS);
+  const [jobs, setJobs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -54,7 +47,7 @@ export default function JobsBoardPage() {
 
         if (error) throw error;
 
-        if (dbJobs && dbJobs.length > 0) {
+        if (dbJobs) {
           const formatted = dbJobs.map((j: any) => ({
             id: j.id,
             title: j.title,
@@ -70,7 +63,7 @@ export default function JobsBoardPage() {
             logoUrl: j.business_profiles?.logo_url,
             isReal: true
           }));
-          setJobs([...formatted, ...MOCK_JOBS]);
+          setJobs(formatted);
         }
       } catch (err) {
         console.error("Error loading real jobs:", err);
@@ -109,6 +102,95 @@ export default function JobsBoardPage() {
         {isLoading ? (
           <div className="flex-center" style={{ padding: '3rem 0' }}>
             <Loader2 className="animate-spin text-primary" size={32} />
+          </div>
+        ) : jobs.length === 0 ? (
+          /* Premium Empty State Card */
+          <div style={{ 
+            background: 'linear-gradient(135deg, var(--surface-highlight) 0%, var(--surface-color) 100%)', 
+            borderRadius: '20px', 
+            border: '1px solid var(--glass-border)', 
+            padding: '3.5rem 2rem', 
+            textAlign: 'center',
+            boxShadow: '0 15px 35px rgba(0,0,0,0.3)',
+            maxWidth: '650px',
+            margin: '2rem auto 0',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '1.5rem'
+          }}>
+            <div style={{ 
+              width: '72px', 
+              height: '72px', 
+              borderRadius: '50%', 
+              background: 'rgba(250, 189, 47, 0.1)', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              border: '1px solid rgba(250, 189, 47, 0.25)',
+              boxShadow: '0 0 30px rgba(250, 189, 47, 0.15)',
+              color: 'var(--primary)'
+            }}>
+              <Sparkles size={36} />
+            </div>
+
+            <div>
+              <span style={{ 
+                background: 'rgba(250, 189, 47, 0.1)', 
+                color: 'var(--primary)', 
+                padding: '4px 12px', 
+                borderRadius: '20px', 
+                fontSize: '0.8rem', 
+                fontWeight: 600, 
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                marginBottom: '1rem',
+                display: 'inline-block'
+              }}>
+                Early Adopter Phase
+              </span>
+              <h3 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 0.75rem 0', letterSpacing: '-0.5px' }}>
+                Welcome, Early Adopter!
+              </h3>
+              <p style={{ fontSize: '1.05rem', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0, maxWidth: '500px' }}>
+                Thank you for being part of CareerReport at this early stage. We are currently building partnerships with top employers to populate this board with exclusive opportunities.
+              </p>
+            </div>
+
+            <div style={{ 
+              background: 'var(--surface-color)', 
+              borderRadius: '12px', 
+              border: '1px solid var(--glass-border)', 
+              padding: '1.5rem', 
+              width: '100%', 
+              textAlign: 'left',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '1rem'
+            }}>
+              <div style={{ background: 'var(--surface-highlight)', padding: '0.75rem', borderRadius: '8px', color: 'var(--primary)', display: 'flex' }}>
+                <Briefcase size={20} />
+              </div>
+              <div>
+                <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-primary)' }}>Are you hiring?</h4>
+                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                  Help us shape the future of recruiting. Set up a company profile today to list your open roles completely free! Candidates apply instantly using their verified, ATS-optimized profiles.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', width: '100%', gap: '1rem', marginTop: '0.5rem' }}>
+              <Link href="/business/create" style={{ textDecoration: 'none', flex: 1, minWidth: '200px' }}>
+                <button className="btn btn-primary" style={{ width: '100%', padding: '1rem', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
+                  Post a Job (Free) <ArrowRight size={18} />
+                </button>
+              </Link>
+              <Link href="/business/advertise" style={{ textDecoration: 'none', flex: 1, minWidth: '200px' }}>
+                <button className="btn btn-secondary" style={{ width: '100%', padding: '1rem', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
+                  Explore Recruiter Benefits
+                </button>
+              </Link>
+            </div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

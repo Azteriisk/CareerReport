@@ -7,8 +7,8 @@ import { auth } from '@clerk/nextjs/server';
 export default async function Home() {
   const { userId } = await auth();
   return (
-    <div className="landing-container" style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: userId ? 'flex-start' : 'center', padding: '4rem 2rem' }}>
+    <div className="landing-container" style={{ display: 'flex', flexDirection: 'column', minHeight: 'auto' }}>
+      <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '3.5rem 2rem 2.5rem 2rem' }}>
         {userId ? (
           <div style={{ width: '100%', maxWidth: '600px' }}>
             <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Your Network Feed</h2>
@@ -40,7 +40,7 @@ export default async function Home() {
 
             <UserSearch />
 
-            <div className="mobile-features" style={{ display: 'flex', gap: '3rem', marginTop: '5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <div className="mobile-features" style={{ display: 'flex', gap: '3rem', marginTop: '3.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               {[
                 "Custom Shareable Profile Links",
                 "Direct Job Applications",
