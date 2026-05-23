@@ -656,17 +656,17 @@ export default function RecruiterDashboardPage() {
           {/* Card 1: Subscription Tier Slot Meter */}
           <div className={`stats-card stats-card-meter ${styles.statsCard} ${styles.statsCardMeter}`}>
             <div>
-              <div className="stats-card-header">
-                <span className="stats-card-label">Active Listings Slot</span>
-                <span className="stats-card-badge">
+              <div className={styles.statsCardHeader}>
+                <span className={styles.statsCardLabel}>Active Listings Slot</span>
+                <span className={styles.statsCardBadge}>
                   {selectedBusinessTier?.name || 'Free Starter'}
                 </span>
               </div>
-              <div className="stats-card-value">
+              <div className={styles.statsCardValue}>
                 {activeCount} / {selectedBusinessTier?.maxJobs === 9999 ? '∞' : selectedBusinessTier?.maxJobs} <span>Slots</span>
               </div>
             </div>
-            <div className="stats-card-progress">
+            <div className={styles.statsCardProgress}>
               <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
                 {/* width is a runtime computed value — must stay inline */}
                 <div style={{ 
@@ -682,20 +682,20 @@ export default function RecruiterDashboardPage() {
 
           {/* Card 2 */}
           <div className={`stats-card ${styles.statsCard}`}>
-            <span className="stats-card-label">Total Job Views</span>
-            <div className="stats-card-value" style={{ color: 'var(--text-secondary)' }}>{totalViews}</div>
+            <span className={styles.statsCardLabel}>Total Job Views</span>
+            <div className={styles.statsCardValue} style={{ color: 'var(--text-secondary)' }}>{totalViews}</div>
           </div>
 
           {/* Card 3 */}
           <div className={`stats-card ${styles.statsCard}`}>
-            <span className="stats-card-label">Total Applicants</span>
-            <div className="stats-card-value" style={{ color: 'var(--accent)' }}>{totalApplicantsCount}</div>
+            <span className={styles.statsCardLabel}>Total Applicants</span>
+            <div className={styles.statsCardValue} style={{ color: 'var(--accent)' }}>{totalApplicantsCount}</div>
           </div>
 
           {/* Card 4 */}
           <div className={`stats-card ${styles.statsCard}`}>
-            <span className="stats-card-label">Total Apply Clicks</span>
-            <div className="stats-card-value" style={{ color: '#10b981' }}>{totalClicks}</div>
+            <span className={styles.statsCardLabel}>Total Apply Clicks</span>
+            <div className={styles.statsCardValue} style={{ color: '#10b981' }}>{totalClicks}</div>
           </div>
 
         </section>
