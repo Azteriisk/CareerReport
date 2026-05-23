@@ -413,6 +413,19 @@ input[type="month"].empty-date:focus::-webkit-datetime-edit {
   align-items: flex-start;
 }
 
+/* Responsive Navbar - Collapses earlier to prevent crowding */
+@media (max-width: 1150px) {
+  .desktop-nav {
+    display: none !important;
+  }
+  .nav-auth-section {
+    display: none !important;
+  }
+  .mobile-nav-right {
+    display: flex !important;
+  }
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
 
@@ -424,20 +437,6 @@ input[type="month"].empty-date:focus::-webkit-datetime-edit {
 
   .mobile-header h1 {
     font-size: 1rem !important;
-  }
-
-  /* Hide desktop nav pills and auth section */
-  .desktop-nav {
-    display: none !important;
-  }
-
-  .nav-auth-section {
-    display: none !important;
-  }
-
-  /* Show mobile hamburger + avatar */
-  .mobile-nav-right {
-    display: flex !important;
   }
 
 
