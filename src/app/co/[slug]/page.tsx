@@ -716,6 +716,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
               overflowX: 'auto',
               whiteSpace: 'nowrap',
               width: '100%',
+              maxWidth: '100%',
               WebkitOverflowScrolling: 'touch'
             }}
           >

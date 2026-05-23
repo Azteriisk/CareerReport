@@ -743,6 +743,7 @@ export default function RecruiterDashboardPage() {
             overflowX: 'auto',
             whiteSpace: 'nowrap',
             width: '100%',
+            maxWidth: '100%',
             WebkitOverflowScrolling: 'touch'
           }}
         >
