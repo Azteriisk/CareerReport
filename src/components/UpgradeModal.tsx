@@ -50,7 +50,7 @@ export function UpgradeModal({
     let paymentResponse: any = null;
     try {
       // Trigger Play billing transaction
-      const result = await purchaseGooglePlaySubscription('pro_monthly_subscription', '9.00');
+      const result = await purchaseGooglePlaySubscription('pro_monthly_subscription', '4.00');
       paymentResponse = result.paymentResponse;
 
       setLoadingMessage({
@@ -323,7 +323,7 @@ export function UpgradeModal({
                 }}
                 onClick={handleStartCheckout}
               >
-                <Lock size={18} /> {isTwa ? 'Subscribe with Google Play - $9/mo' : 'Upgrade to Pro - $9/mo'}
+                <Lock size={18} /> {isTwa ? 'Subscribe with Google Play - $4/mo' : 'Upgrade to Pro - $4/mo'}
               </button>
               <p style={{ textAlign: 'center', margin: '1rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                 {isTwa 

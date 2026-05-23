@@ -44,12 +44,12 @@ export async function getGooglePlayProductDetails(skus: string[]): Promise<any[]
  * Initiates the Google Play checkout flow for a given SKU (Product ID).
  * 
  * @param sku The subscription product ID configured in the Google Play Console (e.g., 'pro_monthly_subscription')
- * @param priceValue The estimated total price value (e.g., '9.00') for the PaymentRequest declaration
+ * @param priceValue The estimated total price value (e.g., '4.00') for the PaymentRequest declaration
  * @returns The purchase result containing the cryptographic purchaseToken
  */
 export async function purchaseGooglePlaySubscription(
   sku: string,
-  priceValue: string = '9.00'
+  priceValue: string = '4.00'
 ): Promise<GooglePlayPurchaseResult> {
   if (!isGooglePlayBillingAvailable()) {
     throw new Error('Google Play Billing is not supported in this browser environment.');

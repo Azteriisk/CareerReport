@@ -34,7 +34,7 @@ export async function POST(request: Request) {
               name: 'CareerReport Pro',
               description: 'Unlimited access to ATS-optimized AI writer, PDF parsing, and advanced templates.',
             },
-            unit_amount: 900, // $9.00
+            unit_amount: 400, // $4.00
             recurring: {
               interval: 'month',
             },

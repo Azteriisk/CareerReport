@@ -2178,7 +2178,7 @@ ${data.basics.name || 'Applicant'}`;
                 <Sparkles size={16} color="var(--accent)" /> Pro Unlocked
               </h3>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
-                You have unlimited, lifetime access to all state-of-the-art AI parsing and generation features.
+                You have unlimited, premium access to all state-of-the-art AI parsing and generation features.
               </p>
             </div>
           ) : (
@@ -2189,7 +2189,7 @@ ${data.basics.name || 'Applicant'}`;
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                 Upgrade your account to access our ATS-optimized AI writer for experience bullets, skills extraction, and custom cover letters.
               </p>
-              <button onClick={() => { setUpgradeFeature('CareerReport Pro'); setUpgradeModalOpen(true); }} className="btn btn-secondary" style={{ width: '100%', fontSize: '0.875rem' }}>Upgrade to Premium ($9)</button>
+              <button onClick={() => { setUpgradeFeature('CareerReport Pro'); setUpgradeModalOpen(true); }} className="btn btn-secondary" style={{ width: '100%', fontSize: '0.875rem' }}>Upgrade to Premium ($4/mo)</button>
             </div>
           )}
         </div>
@@ -2850,34 +2850,6 @@ ${data.basics.name || 'Applicant'}`;
         />
       )}
 
-      {/* Global Mobile Footer */}
-      {isMobile && (
-        <div style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          padding: '1rem',
-          borderTop: '1px solid var(--glass-border)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          background: 'var(--surface-color)',
-          zIndex: 1000
-        }}>
-          <Link href="/support" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 500 }}>Support</Link>
-          {isSignedIn ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{user?.firstName || 'User'}</span>
-              <UserButton />
-            </div>
-          ) : (
-            <SignInButton mode="modal">
-              <button className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>Sign In</button>
-            </SignInButton>
-          )}
-        </div>
-      )}
 
       {showUndo && (
         <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 9999, background: 'var(--surface-color)', padding: '1rem', borderRadius: '8px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', border: '1px solid var(--primary)', display: 'flex', alignItems: 'center', gap: '1rem', animation: 'fadeIn 0.3s ease-out' }}>
