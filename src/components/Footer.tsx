@@ -7,7 +7,7 @@ export function Footer() {
   const { isSignedIn } = useUser();
 
   return (
-    <footer style={{ 
+    <footer className="site-footer" style={{ 
       padding: '2.5rem 2rem', 
       textAlign: 'center', 
       color: 'var(--text-secondary)', 

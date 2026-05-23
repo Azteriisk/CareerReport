@@ -602,7 +602,7 @@ export default function RecruiterDashboardPage() {
     <div style={{ background: 'var(--bg-color)', minHeight: 'calc(100dvh - 82px)', color: 'var(--text-primary)' }}>
       
       {/* HEADER SECTION */}
-      <header style={{ borderBottom: '1px solid var(--glass-border)', background: 'var(--surface-color)', padding: '2rem 1rem' }}>
+      <header className="dashboard-header" style={{ borderBottom: '1px solid var(--glass-border)', background: 'var(--surface-color)', padding: '2rem 1rem' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.5rem' }}>
           
           <div>
@@ -680,25 +680,25 @@ export default function RecruiterDashboardPage() {
       )}
 
       {/* SUB NAV PILLS / METRICS */}
-      <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem 1rem 4rem 1rem' }}>
+      <main className="dashboard-main" style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem 1rem 4rem 1rem' }}>
         
         {/* STATS HIGHLIGHT GRID */}
         <section className="stats-grid">
           
           {/* Card 1: Subscription Tier Slot Meter */}
-          <div style={{ background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--glass-border)', padding: '1.5rem', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div className="stats-card stats-card-meter" style={{ background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--glass-border)', padding: '1.5rem', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>Active Listings Slot</span>
-                <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', background: 'rgba(250, 189, 47, 0.1)', padding: '2px 8px', borderRadius: '10px', border: '1px solid rgba(250, 189, 47, 0.2)', letterSpacing: '0.05em' }}>
+              <div className="stats-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
+                <span className="stats-card-label" style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>Active Listings Slot</span>
+                <span className="stats-card-badge" style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', background: 'rgba(250, 189, 47, 0.1)', padding: '2px 8px', borderRadius: '10px', border: '1px solid rgba(250, 189, 47, 0.2)', letterSpacing: '0.05em' }}>
                   {selectedBusinessTier?.name || 'Free Starter'}
                 </span>
               </div>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '0.5rem', letterSpacing: '-0.5px' }}>
+              <div className="stats-card-value" style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '0.5rem', letterSpacing: '-0.5px' }}>
                 {activeCount} / {selectedBusinessTier?.maxJobs === 9999 ? '∞' : selectedBusinessTier?.maxJobs} <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Slots</span>
               </div>
             </div>
-            <div style={{ width: '100%', marginTop: '0.75rem' }}>
+            <div className="stats-card-progress" style={{ width: '100%', marginTop: '0.75rem' }}>
               <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
                 <div style={{ 
                   width: `${Math.min(100, (activeCount / (selectedBusinessTier?.maxJobs || 1)) * 100)}%`, 
@@ -712,21 +712,21 @@ export default function RecruiterDashboardPage() {
           </div>
 
           {/* Card 2 */}
-          <div style={{ background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--glass-border)', padding: '1.5rem', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>Total Job Views</span>
-            <div style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--text-secondary)', marginTop: '0.5rem' }}>{totalViews}</div>
+          <div className="stats-card" style={{ background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--glass-border)', padding: '1.5rem', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
+            <span className="stats-card-label" style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>Total Job Views</span>
+            <div className="stats-card-value" style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--text-secondary)', marginTop: '0.5rem' }}>{totalViews}</div>
           </div>
 
           {/* Card 3 */}
-          <div style={{ background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--glass-border)', padding: '1.5rem', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>Total Applicants</span>
-            <div style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--accent)', marginTop: '0.5rem' }}>{totalApplicantsCount}</div>
+          <div className="stats-card" style={{ background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--glass-border)', padding: '1.5rem', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
+            <span className="stats-card-label" style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>Total Applicants</span>
+            <div className="stats-card-value" style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--accent)', marginTop: '0.5rem' }}>{totalApplicantsCount}</div>
           </div>
 
           {/* Card 4 */}
-          <div style={{ background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--glass-border)', padding: '1.5rem', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>Total Apply Clicks</span>
-            <div style={{ fontSize: '2.25rem', fontWeight: 800, color: '#10b981', marginTop: '0.5rem' }}>{totalClicks}</div>
+          <div className="stats-card" style={{ background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--glass-border)', padding: '1.5rem', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
+            <span className="stats-card-label" style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>Total Apply Clicks</span>
+            <div className="stats-card-value" style={{ fontSize: '2.25rem', fontWeight: 800, color: '#10b981', marginTop: '0.5rem' }}>{totalClicks}</div>
           </div>
 
         </section>
@@ -783,8 +783,8 @@ export default function RecruiterDashboardPage() {
           <>
             {/* OVERVIEW TAB */}
             {activeTab === 'overview' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                <div style={{ background: 'var(--surface-color)', borderRadius: '16px', border: '1px solid var(--glass-border)', padding: '2rem', boxShadow: '0 8px 30px rgba(0,0,0,0.15)' }}>
+              <div className="dashboard-overview-container" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                <div className="dashboard-card welcome-card" style={{ background: 'var(--surface-color)', borderRadius: '16px', border: '1px solid var(--glass-border)', padding: '2rem', boxShadow: '0 8px 30px rgba(0,0,0,0.15)' }}>
                   <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>Welcome to your Job Center Dashboard</h3>
                   <p style={{ color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>
                     This dashboard coordinates active opportunities and leverages context-aware AI parsing to verify incoming portfolios. Access details regarding candidate match indices on the <strong>Manage Job Listings</strong> or <strong>Applicant Stack Ranker</strong> tabs above.
@@ -792,7 +792,7 @@ export default function RecruiterDashboardPage() {
                 </div>
 
                 <div className="grid-cols-2">
-                  <div style={{ background: 'var(--surface-color)', borderRadius: '16px', border: '1px solid var(--glass-border)', padding: '1.75rem' }}>
+                  <div className="dashboard-card" style={{ background: 'var(--surface-color)', borderRadius: '16px', border: '1px solid var(--glass-border)', padding: '1.75rem' }}>
                     <h4 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <Briefcase size={18} color="var(--primary)" /> Active Overview
                     </h4>
@@ -802,7 +802,7 @@ export default function RecruiterDashboardPage() {
                     <button onClick={() => setActiveTab('jobs')} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>Manage Listings</button>
                   </div>
 
-                  <div style={{ background: 'var(--surface-color)', borderRadius: '16px', border: '1px solid var(--glass-border)', padding: '1.75rem' }}>
+                  <div className="dashboard-card" style={{ background: 'var(--surface-color)', borderRadius: '16px', border: '1px solid var(--glass-border)', padding: '1.75rem' }}>
                     <h4 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <Users size={18} color="var(--accent)" /> Applicant Pool Status
                     </h4>
