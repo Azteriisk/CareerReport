@@ -2572,7 +2572,7 @@ ${data.basics.name || 'Applicant'}`;
               gap: '0.75rem',
               width: isMobile ? '100%' : 'auto',
               overflowX: isMobile ? 'auto' : 'visible',
-              paddingBottom: isMobile ? '0.25rem' : 0
+              padding: isMobile ? '0.6rem 0.25rem' : 0
             }}
           >
             {isSignedIn && (
