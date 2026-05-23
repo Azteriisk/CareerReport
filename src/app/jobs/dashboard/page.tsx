@@ -343,64 +343,58 @@ export default function RecruiterDashboardPage() {
   };
 
   const getSortedApplicants = () => {
-    const selectedJob = jobs.find(j => j.id === selectedJobIdForApplicants);
+    if (realApplicants.length === 0) return [];
     
-    let listToUse = [];
-    
-    if (realApplicants.length > 0) {
-      listToUse = realApplicants.map((app: any) => {
-        const profile = app.profiles || {};
-        const fullName = profile.full_name || profile.username || 'Candidate';
-        const nameParts = fullName.split(' ');
-        const firstName = nameParts[0] || 'Candidate';
-        const lastName = nameParts.slice(1).join(' ') || '';
-        
-        // Estimate Years of Experience (YOE) from work history
-        let yoe = 0;
-        const workHistory = app.resumeData?.work || [];
-        if (workHistory.length > 0) {
-          yoe = workHistory.reduce((acc: number, w: any) => {
-            const startYear = parseInt(w.startDate?.split('-')[0] || '0');
-            const endYear = w.endDate ? parseInt(w.endDate.split('-')[0]) : new Date().getFullYear();
-            if (startYear > 0 && endYear >= startYear) {
-              return acc + (endYear - startYear);
-            }
-            return acc + 1;
-          }, 0);
-          if (yoe === 0) yoe = 2;
-        } else {
-          yoe = 1;
-        }
+    const listToUse = realApplicants.map((app: any) => {
+      const profile = app.profiles || {};
+      const fullName = profile.full_name || profile.username || 'Candidate';
+      const nameParts = fullName.split(' ');
+      const firstName = nameParts[0] || 'Candidate';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      // Estimate Years of Experience (YOE) from work history
+      let yoe = 0;
+      const workHistory = app.resumeData?.work || [];
+      if (workHistory.length > 0) {
+        yoe = workHistory.reduce((acc: number, w: any) => {
+          const startYear = parseInt(w.startDate?.split('-')[0] || '0');
+          const endYear = w.endDate ? parseInt(w.endDate.split('-')[0]) : new Date().getFullYear();
+          if (startYear > 0 && endYear >= startYear) {
+            return acc + (endYear - startYear);
+          }
+          return acc + 1;
+        }, 0);
+        if (yoe === 0) yoe = 2;
+      } else {
+        yoe = 1;
+      }
 
-        // Extract skills
-        let skillsList = profile.label || 'Developer';
-        const resumeSkills = app.resumeData?.skills || [];
-        if (resumeSkills.length > 0) {
-          skillsList = resumeSkills.map((s: any) => s.name).slice(0, 3).join(' • ');
-        }
+      // Extract skills
+      let skillsList = profile.label || 'Developer';
+      const resumeSkills = app.resumeData?.skills || [];
+      if (resumeSkills.length > 0) {
+        skillsList = resumeSkills.map((s: any) => s.name).slice(0, 3).join(' • ');
+      }
 
-        const aiScoreData = aiResults[app.applicant_id] || {
-          aiScore: 0,
-          aiLabel: 'AI: Unevaluated',
-          aiExplanation: 'This applicant has not been analyzed yet. Click "Run AI Stack Rank" above to evaluate.'
-        };
+      const aiScoreData = aiResults[app.applicant_id] || {
+        aiScore: 0,
+        aiLabel: 'AI: Unevaluated',
+        aiExplanation: 'This applicant has not been analyzed yet. Click "Run AI Stack Rank" above to evaluate.'
+      };
 
-        return {
-          id: app.applicant_id,
-          firstName,
-          lastName,
-          yoe,
-          skills: skillsList,
-          appliedDate: new Date(app.created_at),
-          aiScore: aiScoreData.aiScore,
-          aiLabel: aiScoreData.aiLabel,
-          aiExplanation: aiScoreData.aiExplanation,
-          isReal: true
-        };
-      });
-    } else {
-      listToUse = getMockApplicantsForJob(selectedJob?.title || 'Professional');
-    }
+      return {
+        id: app.applicant_id,
+        firstName,
+        lastName,
+        yoe,
+        skills: skillsList,
+        appliedDate: new Date(app.created_at),
+        aiScore: aiScoreData.aiScore,
+        aiLabel: aiScoreData.aiLabel,
+        aiExplanation: aiScoreData.aiExplanation,
+        isReal: true
+      };
+    });
 
     return [...listToUse].sort((a, b) => {
       if (sortBy === 'ai') return b.aiScore - a.aiScore;
@@ -847,6 +841,15 @@ export default function RecruiterDashboardPage() {
                       <div className="flex-center" style={{ padding: '4rem 0' }}>
                         <Loader2 className="animate-spin text-primary" size={32} />
                         <p style={{ color: 'var(--text-secondary)', marginLeft: '1rem', margin: 0 }}>Syncing candidates from database...</p>
+                      </div>
+                    ) : realApplicants.length === 0 ? (
+                      /* Empty Applicants State (Strictly No Mock Data Fallback in real dashboard) */
+                      <div style={{ textAlign: 'center', padding: '5rem 2rem', background: 'var(--surface-color)', borderRadius: '16px', border: '1px dashed var(--glass-border)' }}>
+                        <Users size={36} color="var(--text-secondary)" opacity={0.3} style={{ marginBottom: '1rem', marginInline: 'auto' }} />
+                        <h4 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>No Applicants Yet</h4>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', maxWidth: '420px', margin: '0 auto', lineHeight: 1.6 }}>
+                          No candidates have applied for this position yet. When candidates apply with their CareerReport profiles, they will instantly appear here for AI screening.
+                        </p>
                       </div>
                     ) : (
                       /* Sorted Applicants List */
