@@ -550,10 +550,10 @@ export default function RecruiterDashboardPage() {
   // Render Sign In Required fallback
   if (!isSignedIn) {
     return (
-      <div className="flex-center" style={{ height: 'calc(100dvh - 82px)', background: 'var(--bg-color)', flexDirection: 'column', gap: '1rem' }}>
+      <div className="flex-center flex-col gap-1" style={{ height: 'calc(100dvh - 82px)', background: 'var(--bg-color)' }}>
         <Briefcase size={48} color="var(--primary)" />
-        <h1 style={{ color: 'var(--text-primary)' }}>Recruiter Sign In Required</h1>
-        <p style={{ color: 'var(--text-secondary)' }}>You must be authenticated to access the Recruiter Dashboard.</p>
+        <h1 className="text-primary">Recruiter Sign In Required</h1>
+        <p className="text-secondary">You must be authenticated to access the Recruiter Dashboard.</p>
         <Link href="/sign-in" className="btn btn-primary">Sign In</Link>
       </div>
     );
@@ -562,15 +562,15 @@ export default function RecruiterDashboardPage() {
   // Render Access Denied fallback if no posting privileges
   if (hasAccess === false) {
     return (
-      <div className="flex-center" style={{ height: 'calc(100dvh - 82px)', background: 'var(--bg-color)', flexDirection: 'column', gap: '1.5rem', padding: '2rem', textAlign: 'center' }}>
-        <div style={{ width: '80px', height: '80px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', border: '1px solid rgba(239, 68, 68, 0.2)', color: 'var(--danger)' }}>
+      <div className="flex-center flex-col gap-15 p-2" style={{ height: 'calc(100dvh - 82px)', background: 'var(--bg-color)', textAlign: 'center' }}>
+        <div className="flex-center" style={{ width: '80px', height: '80px', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '50%', border: '1px solid rgba(239, 68, 68, 0.2)', color: 'var(--danger)' }}>
           <XCircle size={44} style={{ display: 'flex' }} />
         </div>
-        <h1 style={{ color: 'var(--text-primary)', fontSize: '1.75rem', fontWeight: 800, margin: 0 }}>Access Denied</h1>
-        <p style={{ color: 'var(--text-secondary)', maxWidth: '460px', margin: 0, lineHeight: 1.6 }}>
+        <h1 className="text-primary text-2xl font-bold m-0">Access Denied</h1>
+        <p className="text-secondary m-0" style={{ maxWidth: '460px', lineHeight: 1.6 }}>
           You do not have active job-posting permissions for any verified business profiles. Please create a new company account, or ask your manager to grant your account <strong>jobs</strong> permissions.
         </p>
-        <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+        <div className="flex-row mt-1">
           <Link href="/business/create" className="btn btn-primary">Create Company Profile</Link>
           <Link href="/business/advertise" className="btn btn-secondary">Learn About Recruiter Benefits</Link>
         </div>
