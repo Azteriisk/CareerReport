@@ -1,0 +1,232 @@
+/* ============================================================
+   Navbar Component Styles
+   Mobile-first. Responsive via globals.css media queries
+   for .desktop-nav / .mobile-header / .mobile-nav-right.
+   ============================================================ */
+
+/* ── Outer header shell ── */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--glass-border);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+/* ── Logo ── */
+.logoLink {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.logoIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--primary);
+  border-radius: 8px;
+  color: var(--bg-color);
+}
+
+.logoText {
+  font-size: 1.25rem;
+  margin: 0;
+  font-family: var(--font-plus-jakarta), sans-serif;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ── Desktop nav pill strip ── */
+.desktopNav {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  background: var(--surface-color);
+  padding: 0.35rem;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+}
+
+/* ── Desktop auth section ── */
+.authSection {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.supportLink {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.settingsBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+}
+
+.signInBtn {
+  position: relative;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  z-index: 1;
+}
+
+.signUpBtn {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+/* ── Mobile right side (avatar + hamburger) ── */
+.mobileNavRight {
+  display: none;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.hamburgerBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0.25rem;
+}
+
+/* ── Mobile slide-down drawer ── */
+.mobileDrawer {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--glass-border);
+  padding: 1.25rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mobileDrawerDivider {
+  height: 1px;
+  background: var(--glass-border);
+  margin: 0.5rem 0;
+}
+
+.mobileSettingsBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
+
+.mobileAuthButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 0.25rem;
+}
+
+.mobileSignInBtn {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mobileSignUpBtn {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+}
+
+/* ── NavLink (desktop pill) ── */
+.navLink {
+  position: relative;
+  padding: 0.5rem 1rem;
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: color 0.2s ease;
+  z-index: 1;
+}
+
+.navLinkActive {
+  color: var(--bg-color);
+}
+
+.navLinkInactive {
+  color: var(--text-secondary);
+}
+
+.navLinkPill {
+  position: absolute;
+  inset: 0;
+  background: var(--primary);
+  border-radius: 8px;
+  z-index: -1;
+}
+
+/* ── MobileNavLink ── */
+.mobileNavLink {
+  display: block;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  text-decoration: none;
+  font-size: 1.05rem;
+  font-weight: 600;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.mobileNavLinkActive {
+  color: var(--bg-color);
+  background: var(--primary);
+}
+
+.mobileNavLinkInactive {
+  color: var(--text-primary);
+  background: transparent;
+}

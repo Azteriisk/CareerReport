@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useUser } from '@clerk/nextjs';
 
 import { parseJobStatus } from '@/lib/job-tier';
+import styles from './page.module.css';
 
 function formatTimeAgo(date: Date) {
   const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
@@ -251,76 +252,44 @@ export default function JobsBoardPage() {
 
 
   return (
-    <div className="landing-container" style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
-      <main style={{ flex: 1, maxWidth: '1000px', margin: '0 auto', padding: '3rem 2rem', width: '100%' }}>
-        <div style={{ marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '0.5rem', letterSpacing: '-0.5px' }}>Discover Opportunities</h2>
-          <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)' }}>Apply with your CareerReport profile in one click.</p>
+    <div className={`landing-container ${styles.page}`}>
+      <main className={styles.main}>
+        <div className={styles.pageHeading}>
+          <h2 className={styles.pageTitle}>Discover Opportunities</h2>
+          <p className={styles.pageSubtitle}>Apply with your CareerReport profile in one click.</p>
         </div>
 
-        <div className="jobs-search-row" style={{ display: 'flex', gap: '1rem', marginBottom: '3rem' }}>
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', background: 'var(--surface-color)', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
-            <Search size={20} color="var(--text-secondary)" style={{ marginRight: '10px' }} />
-            <input 
-              type="text" 
-              placeholder="Search by job title, company, or keywords..." 
-              style={{ background: 'transparent', border: 'none', outline: 'none', width: '100%', fontSize: '1rem', color: 'var(--text-primary)' }}
+        <div className={`jobs-search-row ${styles.searchRow}`}>
+          <div className={styles.searchBox}>
+            <Search size={20} color="var(--text-secondary)" className={styles.searchIcon} />
+            <input
+              type="text"
+              placeholder="Search by job title, company, or keywords..."
+              className={styles.searchInput}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <button className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem' }}>
+          <button className={`btn btn-secondary ${styles.filterBtn}`}>
             <Filter size={18} /> Filters
           </button>
         </div>
 
         {/* Personalized Feed Banner */}
         {(candidateResume || candidateProfile) && (
-          <div style={{
-            background: 'linear-gradient(135deg, rgba(250, 189, 47, 0.08) 0%, rgba(251, 191, 36, 0.02) 100%)',
-            border: '1px solid rgba(250, 189, 47, 0.35)',
-            borderRadius: '12px',
-            padding: '1rem 1.5rem',
-            marginBottom: '2rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '1rem',
-            boxShadow: '0 4px 20px rgba(250, 189, 47, 0.05)',
-            backdropFilter: 'blur(10px)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{
-                background: 'rgba(250, 189, 47, 0.15)',
-                color: 'var(--primary)',
-                padding: '0.5rem',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 0 10px rgba(250, 189, 47, 0.1)'
-              }}>
+          <div className={styles.feedBanner}>
+            <div className={styles.feedBannerLeft}>
+              <div className={styles.feedBannerIcon}>
                 <Sparkles size={20} className="pulse" />
               </div>
               <div>
-                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  Intelligent Feed Active 🧠
-                </h4>
-                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                <h4 className={styles.feedBannerTitle}>Intelligent Feed Active 🧠</h4>
+                <p className={styles.feedBannerText}>
                   Prioritizing opportunities aligned with your public resume {candidateResume?.basics?.label ? `(${candidateResume.basics.label})` : candidateProfile?.label ? `(${candidateProfile.label})` : ''} and active search terms.
                 </p>
               </div>
             </div>
-            <span style={{
-              fontSize: '0.75rem',
-              fontWeight: 650,
-              color: 'var(--primary)',
-              background: 'rgba(250, 189, 47, 0.1)',
-              padding: '4px 10px',
-              borderRadius: '20px',
-              border: '1px solid rgba(250, 189, 47, 0.2)',
-              whiteSpace: 'nowrap'
-            }}>
+            <span className={styles.feedBannerBadge}>
               Matched {sortedJobs.filter(j => j.matchScore > 20).length} Roles
             </span>
           </div>
@@ -331,210 +300,103 @@ export default function JobsBoardPage() {
             <Loader2 className="animate-spin text-primary" size={32} />
           </div>
         ) : jobs.length === 0 ? (
-          /* Premium Empty State Card */
-          <div style={{ 
-            background: 'linear-gradient(135deg, var(--surface-highlight) 0%, var(--surface-color) 100%)', 
-            borderRadius: '20px', 
-            border: '1px solid var(--glass-border)', 
-            padding: '3.5rem 2rem', 
-            textAlign: 'center',
-            boxShadow: '0 15px 35px rgba(0,0,0,0.3)',
-            maxWidth: '650px',
-            margin: '2rem auto 0',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '1.5rem'
-          }}>
-            <div style={{ 
-              width: '72px', 
-              height: '72px', 
-              borderRadius: '50%', 
-              background: 'rgba(250, 189, 47, 0.1)', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              border: '1px solid rgba(250, 189, 47, 0.25)',
-              boxShadow: '0 0 30px rgba(250, 189, 47, 0.15)',
-              color: 'var(--primary)'
-            }}>
+          <div className={styles.emptyState}>
+            <div className={styles.emptyStateIcon}>
               <Sparkles size={36} />
             </div>
-
             <div>
-              <span style={{ 
-                background: 'rgba(250, 189, 47, 0.1)', 
-                color: 'var(--primary)', 
-                padding: '4px 12px', 
-                borderRadius: '20px', 
-                fontSize: '0.8rem', 
-                fontWeight: 600, 
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                marginBottom: '1rem',
-                display: 'inline-block'
-              }}>
-                Early Adopter Phase
-              </span>
-              <h3 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 0.75rem 0', letterSpacing: '-0.5px' }}>
-                Welcome, Early Adopter!
-              </h3>
-              <p style={{ fontSize: '1.05rem', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0, maxWidth: '500px' }}>
+              <span className={styles.emptyStateBadge}>Early Adopter Phase</span>
+              <h3 className={styles.emptyStateTitle}>Welcome, Early Adopter!</h3>
+              <p className={styles.emptyStateText}>
                 Thank you for being part of CareerReport at this early stage. We are currently building partnerships with top employers to populate this board with exclusive opportunities.
               </p>
             </div>
-
-            <div style={{ 
-              background: 'var(--surface-color)', 
-              borderRadius: '12px', 
-              border: '1px solid var(--glass-border)', 
-              padding: '1.5rem', 
-              width: '100%', 
-              textAlign: 'left',
-              display: 'flex',
-              alignItems: 'flex-start',
-              gap: '1rem'
-            }}>
-              <div style={{ background: 'var(--surface-highlight)', padding: '0.75rem', borderRadius: '8px', color: 'var(--primary)', display: 'flex' }}>
-                <Briefcase size={20} />
-              </div>
+            <div className={styles.hiringCard}>
+              <div className={styles.hiringCardIcon}><Briefcase size={20} /></div>
               <div>
-                <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-primary)' }}>Are you hiring?</h4>
-                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                <h4 className={styles.hiringCardTitle}>Are you hiring?</h4>
+                <p className={styles.hiringCardText}>
                   Help us shape the future of recruiting. Set up a company profile today to list your open roles completely free! Candidates apply instantly using their verified, ATS-optimized profiles.
                 </p>
               </div>
             </div>
-
-            <div style={{ display: 'flex', flexWrap: 'wrap', width: '100%', gap: '1rem', marginTop: '0.5rem' }}>
-              <Link href="/business/create" style={{ textDecoration: 'none', flex: 1, minWidth: '200px' }}>
-                <button className="btn btn-primary" style={{ width: '100%', padding: '1rem', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
+            <div className={styles.emptyStateCtas}>
+              <Link href="/business/create" className={styles.ctaLink}>
+                <button className={`btn btn-primary ${styles.ctaBtn}`}>
                   Post a Job (Free) <ArrowRight size={18} />
                 </button>
               </Link>
-              <Link href="/business/advertise" style={{ textDecoration: 'none', flex: 1, minWidth: '200px' }}>
-                <button className="btn btn-secondary" style={{ width: '100%', padding: '1rem', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
+              <Link href="/business/advertise" className={styles.ctaLink}>
+                <button className={`btn btn-secondary ${styles.ctaBtn}`}>
                   Explore Recruiter Benefits
                 </button>
               </Link>
             </div>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div className={styles.jobList}>
             {sortedJobs.map(job => (
-              <Link href={`/jobs/${job.id}`} key={job.id} style={{ textDecoration: 'none', color: 'inherit' }}>
-                <div 
-                  className="job-card job-card-hover" 
-                  style={{ 
+              <Link href={`/jobs/${job.id}`} key={job.id} className={styles.jobLink}>
+                <div
+                  className={styles.jobCard}
+                  style={{
                     background: job.isRelevantMatch
                       ? 'linear-gradient(135deg, rgba(250, 189, 47, 0.07) 0%, rgba(251, 191, 36, 0.01) 100%)'
-                      : job.isFeatured 
+                      : job.isFeatured
                       ? 'linear-gradient(135deg, rgba(250, 189, 47, 0.04) 0%, var(--surface-color) 100%)'
-                      : 'var(--surface-color)', 
-                    padding: '1.5rem', 
-                    borderRadius: '12px', 
+                      : 'var(--surface-color)',
                     border: job.isRelevantMatch
                       ? '2px solid rgba(250, 189, 47, 0.65)'
-                      : job.isFeatured 
-                      ? '1px solid rgba(250, 189, 47, 0.35)' 
-                      : '1px solid var(--glass-border)', 
-                    display: 'flex', 
-                    gap: '1.5rem', 
-                    alignItems: 'center', 
-                    transition: 'all 0.2s ease', 
-                    cursor: 'pointer',
+                      : job.isFeatured
+                      ? '1px solid rgba(250, 189, 47, 0.35)'
+                      : '1px solid var(--glass-border)',
                     boxShadow: job.isRelevantMatch
                       ? '0 8px 30px rgba(250, 189, 47, 0.08)'
-                      : job.isFeatured 
-                      ? '0 6px 20px rgba(250, 189, 47, 0.03)' 
+                      : job.isFeatured
+                      ? '0 6px 20px rgba(250, 189, 47, 0.03)'
                       : 'none'
                   }}
                 >
-                  <div style={{ width: '60px', height: '60px', borderRadius: '12px', background: 'var(--surface-highlight)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px solid var(--glass-border)' }}>
+                  <div className={styles.jobLogoWrap}>
                     {job.logoUrl ? (
-                      <img src={job.logoUrl} alt={job.company} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={job.logoUrl} alt={job.company} className={styles.jobLogoImg} />
                     ) : (
-                      <span style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--primary)' }}>{job.logo}</span>
+                      <span className={styles.jobLogoFallback}>{job.logo}</span>
                     )}
                   </div>
-                  
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                      <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{job.title}</h3>
+
+                  <div className={styles.jobInfo}>
+                    <div className={styles.jobTitleRow}>
+                      <h3 className={styles.jobTitle}>{job.title}</h3>
                       {job.isRelevantMatch && (
-                        <span style={{ 
-                          background: 'rgba(250, 189, 47, 0.18)', 
-                          color: 'var(--primary)', 
-                          padding: '3px 10px', 
-                          borderRadius: '20px', 
-                          fontSize: '0.7rem', 
-                          fontWeight: 850,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          border: '1px solid rgba(250, 189, 47, 0.3)',
-                          boxShadow: '0 0 10px rgba(250, 189, 47, 0.1)'
-                        }}>
-                          ✨ Sponsored Match for You
-                        </span>
+                        <span className={styles.badgeSponsoredMatch}>✨ Sponsored Match for You</span>
                       )}
                       {!job.isRelevantMatch && job.isFeatured && (
-                        <span style={{ 
-                          background: 'rgba(250, 189, 47, 0.12)', 
-                          color: 'var(--primary)', 
-                          padding: '2px 8px', 
-                          borderRadius: '4px', 
-                          fontSize: '0.65rem', 
-                          fontWeight: 800,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '2px'
-                        }}>
-                          🔥 Featured
-                        </span>
+                        <span className={styles.badgeFeatured}>🔥 Featured</span>
                       )}
                       {job.hasResumeMatch && !job.isRelevantMatch && (
-                        <span style={{
-                          background: 'rgba(16, 185, 129, 0.12)',
-                          color: 'var(--accent)',
-                          padding: '3px 10px',
-                          borderRadius: '20px',
-                          fontSize: '0.7rem',
-                          fontWeight: 750,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          border: '1px solid rgba(16, 185, 129, 0.25)',
-                          boxShadow: '0 0 10px rgba(16, 185, 129, 0.05)'
-                        }}>
+                        <span className={styles.badgeStrongMatch}>
                           🎯 Strong Match {job.matchScore > 0 ? `(${Math.min(99, Math.round(55 + (job.matchScore / 4.5)))}% Fit)` : ''}
                         </span>
                       )}
                     </div>
-                    <div className="job-card-meta" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: '0.75rem', marginTop: '0.25rem' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: 500 }}>
+                    <div className={`job-card-meta ${styles.jobMeta}`}>
+                      <span className={styles.jobMetaCompany}>
                         <Building size={16} /> {job.company}
-                        {job.verified && <span title="Verified Business Account" style={{ display: 'flex', marginLeft: '2px' }}><BadgeCheck size={16} color="var(--primary)" /></span>}
+                        {job.verified && <span title="Verified Business Account" className={styles.jobMetaVerified}><BadgeCheck size={16} color="var(--primary)" /></span>}
                       </span>
                       <span>•</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><MapPin size={16} /> {job.location}</span>
+                      <span className={styles.jobMetaLocation}><MapPin size={16} /> {job.location}</span>
                     </div>
-                    
-                    <div style={{ display: 'flex', gap: '0.75rem' }}>
-                      <span style={{ background: 'var(--surface-highlight)', color: 'var(--text-primary)', padding: '4px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 500 }}>{job.type}</span>
-                      <span style={{ background: 'rgba(16, 185, 129, 0.1)', color: 'var(--accent)', padding: '4px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 500 }}>{job.salary}</span>
+                    <div className={styles.jobTags}>
+                      <span className={styles.tagType}>{job.type}</span>
+                      <span className={styles.tagSalary}>{job.salary}</span>
                     </div>
                   </div>
 
-                  <div className="job-card-action" style={{ textAlign: 'right' }}>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1rem' }}>{job.posted}</div>
-                    <button className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>Easy Apply</button>
+                  <div className={`job-card-action ${styles.jobAction}`}>
+                    <div className={styles.jobPosted}>{job.posted}</div>
+                    <button className={`btn btn-primary ${styles.applyBtn}`}>Easy Apply</button>
                   </div>
                 </div>
               </Link>
@@ -542,14 +404,6 @@ export default function JobsBoardPage() {
           </div>
         )}
       </main>
-      
-      <style dangerouslySetInnerHTML={{__html: `
-        .job-card-hover:hover {
-          border-color: var(--primary) !important;
-          transform: translateY(-2px);
-          box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
-      `}} />
     </div>
   );
 }

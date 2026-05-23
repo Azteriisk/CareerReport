@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { useUser } from '@clerk/nextjs';
 import { Bell, Heart, MessageSquare, Repeat2, UserPlus, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import styles from './NotificationsDropdown.module.css';
 
 export function NotificationsDropdown() {
   const { user } = useUser();
@@ -105,107 +106,63 @@ export function NotificationsDropdown() {
   };
 
   return (
-    <div style={{ position: 'relative' }} ref={dropdownRef}>
-      <button 
+    <div className={styles.wrapper} ref={dropdownRef}>
+      <button
         onClick={handleOpen}
-        style={{ 
-          background: 'transparent', 
-          border: 'none', 
-          color: 'var(--text-secondary)', 
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '0.5rem',
-          position: 'relative'
-        }}
+        className={styles.triggerBtn}
         title="Notifications"
       >
         <Bell size={22} color={isOpen ? 'var(--primary)' : 'var(--text-secondary)'} />
         {unreadCount > 0 && (
-          <span style={{ 
-            position: 'absolute', 
-            top: '4px', 
-            right: '4px', 
-            background: 'var(--danger)', 
-            color: 'white', 
-            fontSize: '0.65rem', 
-            fontWeight: 'bold', 
-            width: '16px', 
-            height: '16px', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center', 
-            borderRadius: '50%' 
-          }}>
+          <span className={styles.badge}>
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div style={{ 
-          position: 'absolute', 
-          top: '120%', 
-          right: 0, 
-          width: '350px', 
-          maxHeight: '400px', 
-          overflowY: 'auto', 
-          background: 'var(--surface-color)', 
-          border: '1px solid var(--glass-border)', 
-          borderRadius: '12px', 
-          boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-          zIndex: 1000
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderBottom: '1px solid var(--glass-border)', position: 'sticky', top: 0, background: 'var(--surface-color)', zIndex: 2 }}>
-            <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-primary)' }}>Notifications</h3>
+        <div className={styles.dropdown}>
+          <div className={styles.dropdownHeader}>
+            <h3 className={styles.dropdownTitle}>Notifications</h3>
             {notifications.length > 0 && (
-              <button onClick={clearAll} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              <button onClick={clearAll} className={styles.clearBtn}>
                 <Trash2 size={14} /> Clear
               </button>
             )}
           </div>
-          
+
           {notifications.length === 0 ? (
-            <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+            <div className={styles.emptyState}>
               <Bell size={32} style={{ opacity: 0.5, marginBottom: '0.5rem' }} />
-              <p style={{ margin: 0, fontSize: '0.9rem' }}>You're all caught up!</p>
+              <p className={styles.emptyStateText}>You&apos;re all caught up!</p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div className={styles.notifList}>
               {notifications.map(notif => {
                 const profile = notif.profiles || {};
                 const name = profile.full_name || profile.username || 'Someone';
                 return (
-                  <Link 
-                    key={notif.id} 
+                  <Link
+                    key={notif.id}
                     href={notif.type === 'follow' ? `/${profile.username}` : (notif.post_id ? `/#${notif.post_id}` : '/')}
-                    style={{ textDecoration: 'none' }}
+                    className={styles.notifLink}
                   >
-                    <div className="hover-bg" style={{ 
-                      padding: '1rem', 
-                      display: 'flex', 
-                      gap: '1rem', 
-                      alignItems: 'flex-start',
-                      borderBottom: '1px solid var(--glass-border)',
-                      background: notif.read ? 'transparent' : 'rgba(250, 189, 47, 0.05)',
-                      transition: 'background 0.2s ease'
-                    }}>
-                      <div style={{ position: 'relative' }}>
-                        <img 
-                          src={profile.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${name}`} 
-                          alt={name} 
-                          style={{ width: '40px', height: '40px', borderRadius: '50%' }}
+                    <div className={`${styles.notifItem} ${notif.read ? styles.notifItemRead : styles.notifItemUnread}`}>
+                      <div className={styles.avatarWrap}>
+                        <img
+                          src={profile.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${name}`}
+                          alt={name}
+                          className={styles.avatar}
                         />
-                        <div style={{ position: 'absolute', bottom: '-4px', right: '-4px', background: 'var(--surface-color)', borderRadius: '50%', padding: '2px' }}>
+                        <div className={styles.avatarIcon}>
                           {getIcon(notif.type)}
                         </div>
                       </div>
                       <div>
-                        <p style={{ margin: '0 0 0.25rem 0', color: 'var(--text-primary)', fontSize: '0.9rem', lineHeight: 1.4 }}>
+                        <p className={styles.notifText}>
                           {getMessage(notif.type, name)}
                         </p>
-                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
+                        <span className={styles.notifDate}>
                           {new Date(notif.created_at).toLocaleDateString()}
                         </span>
                       </div>

@@ -1,0 +1,1255 @@
+/* ============================================================
+   Dashboard Page Styles — Recruiter Job Center
+   Mobile-first. Inline style={} props removed from TSX.
+   ============================================================ */
+
+/* ── Page Shell ── */
+.pageWrapper {
+  background: var(--bg-color);
+  min-height: calc(100dvh - 82px);
+  color: var(--text-primary);
+}
+
+/* ── Header ── */
+.header {
+  border-bottom: 1px solid var(--glass-border);
+  background: var(--surface-color);
+  padding: 2rem 1rem;
+}
+
+.headerInner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.headerMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+}
+
+.headerLabel {
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.headerTitle {
+  margin: 0;
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+/* ── Business Switcher ── */
+.switcherRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.switcherLabel {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.switcherSelect {
+  padding: 0.5rem 2rem 0.5rem 1rem;
+  width: auto;
+  min-width: 200px;
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* ── Banner ── */
+.bannerWrap {
+  max-width: 1100px;
+  margin: 1.5rem auto 0;
+  padding: 0 1rem;
+}
+
+.bannerSuccess {
+  background: rgba(142, 192, 124, 0.1);
+  border: 1px solid rgba(142, 192, 124, 0.35);
+  border-radius: 10px;
+  padding: 0.9rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #8ec07c;
+}
+
+.bannerCancel {
+  background: rgba(235, 219, 178, 0.06);
+  border: 1px solid rgba(235, 219, 178, 0.15);
+  border-radius: 10px;
+  padding: 0.9rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.bannerClose {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+/* ── Main content area ── */
+.main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+}
+
+/* ── Stats Card — base desktop styles (no padding override; let media query own it) ── */
+.statsCard {
+  background: var(--surface-color);
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  padding: 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.statsCardMeter {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* ── Overview Tab ── */
+.overviewContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.welcomeCard {
+  background: var(--surface-color);
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
+  padding: 2rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.welcomeTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.welcomeText {
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.overviewCard {
+  background: var(--surface-color);
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
+  padding: 1.75rem;
+}
+
+.overviewCardTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.overviewCardText {
+  font-size: 0.925rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+/* ── Jobs Tab ── */
+.tabSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.tabSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.tabSectionTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.postJobLink {
+  text-decoration: none;
+}
+
+.postJobBtn {
+  padding: 0.6rem 1.25rem;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* ── Empty states ── */
+.emptyState {
+  text-align: center;
+  padding: 4rem 2rem;
+  background: var(--surface-color);
+  border-radius: 16px;
+  border: 1px dashed var(--glass-border);
+}
+
+.emptyStateTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem;
+}
+
+.emptyStateText {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  max-width: 380px;
+  margin: 0 auto 1.5rem;
+}
+
+/* ── Job Listing Cards ── */
+.jobList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.jobCard {
+  background: var(--surface-color);
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.jobCardFeatured {
+  background: linear-gradient(135deg, rgba(250, 189, 47, 0.04) 0%, var(--surface-color) 100%);
+  border-color: rgba(250, 189, 47, 0.35);
+  box-shadow: 0 6px 20px rgba(250, 189, 47, 0.03);
+}
+
+.jobCardTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.jobCardTitle {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.jobBadgeActive {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.jobBadgeClosed {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.jobBadgeFeatured {
+  background: rgba(250, 189, 47, 0.12);
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.jobMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.jobMetaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.jobMetaClicks {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--primary);
+}
+
+.jobActions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.sponsorGroup {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.sponsorBtn {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  background: linear-gradient(135deg, rgba(250, 189, 47, 0.15) 0%, rgba(251, 191, 36, 0.08) 100%);
+  color: var(--primary);
+  border: 1px solid rgba(250, 189, 47, 0.4);
+  cursor: pointer;
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(250, 189, 47, 0.08);
+}
+
+.howItWorksLink {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  text-decoration: underline;
+  white-space: nowrap;
+}
+
+.pauseGroup {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.toggleStatusBtn {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.viewLiveLink {
+  text-decoration: none;
+}
+
+.viewLiveBtn {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+}
+
+/* ── Applicants Tab ── */
+.aiLockScreen {
+  background: linear-gradient(135deg, rgba(20, 20, 20, 0.45) 0%, rgba(10, 10, 10, 0.55) 100%);
+  border: 1px solid rgba(250, 189, 47, 0.25);
+  border-radius: 16px;
+  padding: 5rem 2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  margin: 1.5rem 0;
+}
+
+.aiLockIcon {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(250, 189, 47, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  border: 1px solid rgba(250, 189, 47, 0.25);
+  box-shadow: 0 0 35px rgba(250, 189, 47, 0.15);
+  font-size: 2rem;
+}
+
+.aiLockTitle {
+  margin: 0 0 0.5rem;
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.4px;
+}
+
+.aiLockText {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  max-width: 520px;
+}
+
+.aiLockActions {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  max-width: 380px;
+  margin-top: 0.5rem;
+}
+
+.filterBar {
+  background: var(--surface-color);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.filterBarLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.filterLabel {
+  color: var(--text-secondary);
+  font-size: 0.925rem;
+  font-weight: 600;
+}
+
+.filterBarRight {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sortSelect {
+  background: var(--surface-highlight);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  padding: 0.45rem 1.5rem 0.45rem 0.75rem;
+  outline: none;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.aiRankBanner {
+  background: linear-gradient(135deg, rgba(250, 189, 47, 0.08) 0%, rgba(253, 186, 116, 0.05) 100%);
+  border: 1px solid rgba(250, 189, 47, 0.25);
+  padding: 1.5rem;
+  border-radius: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.aiRankBannerContent {
+  flex: 1;
+  min-width: 280px;
+}
+
+.aiRankBannerTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--primary);
+  font-weight: 800;
+  margin-bottom: 0.35rem;
+}
+
+.aiRankBannerTitleText {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.aiRankBannerText {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.runRankBtn {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(250, 189, 47, 0.2);
+}
+
+.applicantList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.applicantCard {
+  background: var(--surface-color);
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.applicantCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.applicantName {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+}
+
+.applicantMeta {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+}
+
+.applicantScoreRight {
+  text-align: right;
+}
+
+.applicantExpandArea {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.applicantExpandHint {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  text-decoration: underline;
+}
+
+.applicantExpandContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.applicantExpandLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+/* ── Billing Tab ── */
+.billingHeader {
+  background: linear-gradient(135deg, var(--surface-highlight) 0%, var(--surface-color) 100%);
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
+  padding: 2rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.billingHeaderTitle {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.3px;
+}
+
+.billingHeaderText {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 0.925rem;
+  line-height: 1.5;
+  max-width: 580px;
+}
+
+.activePlanBadge {
+  background: var(--surface-color);
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+  text-align: center;
+}
+
+.activePlanLabel {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.activePlanName {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin-top: 0.25rem;
+}
+
+/* ── Plan Tier Cards ── */
+.tierCard {
+  background: var(--surface-color);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.tierCardActive {
+  background: linear-gradient(135deg, rgba(250, 189, 47, 0.05) 0%, var(--surface-color) 100%);
+  border: 2px solid var(--primary);
+  box-shadow: 0 10px 25px rgba(250, 189, 47, 0.08);
+}
+
+.tierActiveBadge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: var(--primary);
+  color: var(--bg-color);
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-bottom-left-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tierName {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.tierPriceRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  margin-top: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.tierPrice {
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+
+.tierPricePeriod {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.tierDivider {
+  border: none;
+  border-top: 1px solid var(--glass-border);
+  margin: 1rem 0;
+}
+
+.tierFeatureList {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.tierFeatureItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tierFeatureCheck {
+  color: var(--success);
+  font-weight: bold;
+}
+
+.tierFeatureX {
+  color: var(--danger);
+  font-weight: bold;
+}
+
+.tierUpgradeBtn {
+  width: 100%;
+  margin-top: 2rem;
+  padding: 0.65rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  justify-content: center;
+}
+
+/* ── Billing portal link ── */
+.billingPortalRow {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.billingPortalBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+/* ── Sponsorship Bundles section ── */
+.bundleSection {
+  background: var(--surface-color);
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
+  padding: 2rem;
+  margin-top: 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.bundleSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.bundleSectionTitle {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 0 0 0.5rem;
+}
+
+.bundleSectionText {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0;
+  max-width: 500px;
+}
+
+.bundleCreditsBox {
+  background: rgba(250, 189, 47, 0.1);
+  padding: 0.75rem 1.25rem;
+  border-radius: 12px;
+  border: 1px solid rgba(250, 189, 47, 0.3);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.bundleCreditsLabel {
+  font-size: 0.7rem;
+  color: var(--primary);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.bundleCreditsValue {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-top: 0.2rem;
+}
+
+.bundleCard {
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  background: var(--bg-color);
+  display: flex;
+  flex-direction: column;
+}
+
+.bundleCardFeatured {
+  border: 2px solid var(--primary);
+  background: linear-gradient(135deg, rgba(250, 189, 47, 0.05) 0%, var(--bg-color) 100%);
+  position: relative;
+}
+
+.bundleBestValueBadge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--primary);
+  color: var(--bg-color);
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 2px 10px;
+  border-radius: 10px;
+  text-transform: uppercase;
+}
+
+.bundleCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.bundleCardTitle {
+  margin: 0 0 0.25rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.bundleCardSubtext {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.bundleCardPrice {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.bundleCardBtn {
+  margin-top: auto;
+  justify-content: center;
+  width: 100%;
+  padding: 0.6rem;
+}
+
+/* ── Sponsorship History ── */
+.historySection {
+  background: var(--surface-color);
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
+  padding: 2rem;
+  margin-top: 1.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.historySectionTitle {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin: 0 0 1rem;
+}
+
+.historyTableWrap {
+  overflow-x: auto;
+}
+
+.historyTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.historyTableHead {
+  border-bottom: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+}
+
+.historyTh {
+  padding: 0.75rem 0.5rem;
+  font-weight: 600;
+}
+
+.historyTr {
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.historyTdTitle {
+  padding: 1rem 0.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.historyTdStatus {
+  padding: 1rem 0.5rem;
+  font-weight: 700;
+}
+
+.historyTdDate {
+  padding: 1rem 0.5rem;
+  color: var(--text-secondary);
+}
+
+/* ── Modals ── */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1.5rem;
+}
+
+.modalOverlaySponsor {
+  background-color: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(10px);
+}
+
+.modalBox {
+  background: var(--surface-color);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.5);
+}
+
+.modalBoxSponsor {
+  border-color: rgba(250, 189, 47, 0.25);
+  max-width: 520px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(250, 189, 47, 0.08);
+}
+
+.modalHeader {
+  background: var(--surface-highlight);
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.modalHeaderSponsor {
+  background: linear-gradient(135deg, rgba(250, 189, 47, 0.08) 0%, var(--surface-highlight) 100%);
+  border-bottom-color: rgba(250, 189, 47, 0.15);
+  align-items: flex-start;
+}
+
+.modalTitle {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.modalSubtitle {
+  margin: 0.2rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.modalClose {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0.25rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.modalBody {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.modalBodySponsor {
+  padding: 1.75rem 2rem;
+  gap: 1.25rem;
+}
+
+.orderSummary {
+  background: rgba(250, 189, 47, 0.05);
+  border: 1px dashed rgba(250, 189, 47, 0.25);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+}
+
+.orderRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.orderDivider {
+  border: none;
+  border-top: 1px solid var(--glass-border);
+  margin: 0.75rem 0;
+}
+
+.orderTotal {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+}
+
+.orderTotalAmount {
+  color: var(--primary);
+}
+
+.sponsorBenefitsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.sponsorBenefitItem {
+  background: rgba(250, 189, 47, 0.04);
+  border: 1px solid rgba(250, 189, 47, 0.12);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  line-height: 1.4;
+}
+
+.sponsorBenefitIcon {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.warningBox {
+  background: rgba(251, 73, 52, 0.05);
+  border: 1px solid rgba(251, 73, 52, 0.2);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.warningText {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.warningLabel {
+  color: #fb4934;
+}
+
+.warningAckLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.warningCheckbox {
+  margin-top: 2px;
+  accent-color: var(--primary);
+  flex-shrink: 0;
+}
+
+.checkoutBtn {
+  padding: 0.9rem;
+  font-size: 1rem;
+  font-weight: 700;
+  justify-content: center;
+  margin-top: 0.5rem;
+  box-shadow: 0 4px 20px rgba(250, 189, 47, 0.25);
+}
+
+.modalFooterNote {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.modalFooterLink {
+  color: var(--primary);
+  text-decoration: underline;
+  margin-left: 0.5rem;
+}
+
+/* ============================================================
+   RESPONSIVE — Mobile-first overrides (≤ 900px)
+   Keep every layout rule here instead of scattered in globals.
+   ============================================================ */
+@media (max-width: 900px) {
+  .header {
+    padding: 1rem !important;
+  }
+
+  .headerInner {
+    gap: 0.75rem !important;
+  }
+
+  .headerTitle {
+    font-size: 1.4rem !important;
+  }
+
+  .main {
+    padding: 1rem 0.75rem 2rem !important;
+  }
+
+  .switcherSelect {
+    min-width: 160px;
+  }
+
+  .overviewContainer {
+    gap: 1rem !important;
+  }
+
+  .welcomeCard {
+    padding: 1.25rem 1rem !important;
+    border-radius: 12px !important;
+  }
+
+  .welcomeTitle {
+    font-size: 1.05rem !important;
+    margin-bottom: 0.35rem !important;
+  }
+
+  .welcomeText {
+    font-size: 0.85rem !important;
+    line-height: 1.45 !important;
+  }
+
+  .overviewCard {
+    padding: 1rem !important;
+    border-radius: 12px !important;
+  }
+
+  .overviewCardTitle {
+    font-size: 1.05rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .overviewCardText {
+    font-size: 0.85rem !important;
+    line-height: 1.45 !important;
+  }
+
+  /* Job listing cards compress on mobile */
+  .jobCard {
+    padding: 1rem !important;
+  }
+
+  .tabSectionHeader {
+    gap: 0.5rem;
+  }
+
+  .jobActions {
+    width: 100%;
+  }
+
+  /* Billing header stacks */
+  .billingHeader {
+    padding: 1.25rem !important;
+  }
+
+  .billingHeaderTitle {
+    font-size: 1.1rem !important;
+  }
+
+  /* Bundle section */
+  .bundleSection {
+    padding: 1.25rem !important;
+  }
+
+  /* History table */
+  .historySection {
+    padding: 1.25rem !important;
+  }
+
+  /* Modals go full-width on mobile */
+  .modalOverlay {
+    padding: 1rem;
+    align-items: flex-end;
+  }
+
+  .modalBox,
+  .modalBoxSponsor {
+    max-width: 100%;
+    border-radius: 20px 20px 0 0;
+  }
+
+  .sponsorBenefitsGrid {
+    grid-template-columns: 1fr;
+  }
+}

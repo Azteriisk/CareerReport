@@ -652,7 +652,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
       {/* Hero Header */}
       <div style={{ background: 'var(--surface-color)', borderBottom: '1px solid var(--glass-border)', padding: '4rem 0' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 1.5rem', display: 'flex', gap: '2rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          <div style={{ width: '120px', height: '120px', borderRadius: '16px', background: 'var(--surface-highlight)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0, border: '1px solid var(--glass-border)' }}>
+          <div className="card" style={{ width: "120px", height: "120px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0, padding: 0 }}>
             {company.logo_url ? (
               <img src={company.logo_url} alt={`${company.name} logo`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
@@ -668,9 +668,9 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
               {hasProfilePermission && (
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   {isOwner ? (
-                    <span style={{ background: 'rgba(250, 189, 47, 0.15)', color: 'var(--primary)', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>Owner View</span>
+                    <span className="badge-primary-pill">Owner View</span>
                   ) : (
-                    <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: 'var(--success)', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600 }}>Team Member (Authorized)</span>
+                    <span className="badge-accent">Team Member (Authorized)</span>
                   )}
                   <button 
                     onClick={openEditModal}

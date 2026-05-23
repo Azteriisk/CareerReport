@@ -450,12 +450,7 @@ export default function SponsoredJobsPage() {
 
           <div className="grid-cols-3">
             {HOW_IT_WORKS_STEPS.map((step, i) => (
-              <div key={i} style={{
-                background: 'var(--surface-color)', borderRadius: '16px',
-                border: '1px solid var(--glass-border)', padding: '1.75rem',
-                position: 'relative', overflow: 'hidden',
-                transition: 'border-color 0.2s, transform 0.2s',
-              }}
+              <div key={i} className="card-elevated"
                 onMouseEnter={e => {
                   (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(250,189,47,0.4)';
                   (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-3px)';
@@ -472,13 +467,7 @@ export default function SponsoredJobsPage() {
                 }}>
                   {step.number}
                 </div>
-                <div style={{
-                  width: '44px', height: '44px', borderRadius: '10px',
-                  background: 'rgba(250,189,47,0.1)', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                  color: 'var(--primary)', marginBottom: '1.25rem',
-                  border: '1px solid rgba(250,189,47,0.2)',
-                }}>
+                <div className="icon-orb">
                   {step.icon}
                 </div>
                 <h3 style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '0.6rem' }}>

@@ -1,0 +1,50 @@
+/* ============================================================
+   Footer Component Styles
+   ============================================================ */
+
+.footer {
+  padding: 2.5rem 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--glass-border);
+  font-size: 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--surface-color);
+  margin-top: auto;
+  z-index: 10;
+}
+
+.linkRow {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.link:hover {
+  color: var(--primary);
+}
+
+.linkHighlight {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.linkHighlight:hover {
+  color: var(--accent);
+}
+
+.copyright {
+  margin: 0;
+  opacity: 0.8;
+}

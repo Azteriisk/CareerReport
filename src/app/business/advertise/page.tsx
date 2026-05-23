@@ -302,7 +302,7 @@ export default function BusinessAdvertisePage() {
               </div>
               
               {/* Sort Control Selector */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div className="flex-row">
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Rank by:</span>
                 <select 
                   value={sortBy} 
@@ -355,7 +355,7 @@ export default function BusinessAdvertisePage() {
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div className="flex-row">
                           <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
                             {applicant.firstName} {applicant.lastName}
                           </span>
