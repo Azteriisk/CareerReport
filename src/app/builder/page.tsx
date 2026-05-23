@@ -2619,17 +2619,17 @@ ${data.basics.name || 'Applicant'}`;
                 }
               }}
               className="btn btn-secondary"
-              style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', gap: '0.5rem', color: sharingCopied ? 'var(--accent)' : undefined, flexShrink: 0 }}
+              style={{ padding: isMobile ? '0.5rem' : '0.5rem 1rem', fontSize: '0.9rem', gap: '0.5rem', color: sharingCopied ? 'var(--accent)' : undefined, flexShrink: 0 }}
             >
-              {sharingCopied ? <><CheckCircle size={18} /> Copied!</> : <><Share2 size={18} /> Share</>}
+              {sharingCopied ? <><CheckCircle size={18} /> {!isMobile && <span>Copied!</span>}</> : <><Share2 size={18} /> {!isMobile && <span>Share</span>}</>}
             </button>
             <button
               onClick={handleManualSave}
               className="btn btn-secondary"
-              style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', gap: '0.5rem', flexShrink: 0 }}
+              style={{ padding: isMobile ? '0.5rem' : '0.5rem 1rem', fontSize: '0.9rem', gap: '0.5rem', flexShrink: 0 }}
               title="Manual Save"
             >
-              <Save size={18} /> Save
+              <Save size={18} /> {!isMobile && <span>Save</span>}
             </button>
             {generatedCoverLetter && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--glass-border)', padding: '0.4rem 0.75rem', borderRadius: '8px', flexShrink: 0 }}>
@@ -2654,9 +2654,9 @@ ${data.basics.name || 'Applicant'}`;
                 }
               }}
               className="btn btn-primary"
-              style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', gap: '0.5rem', flexShrink: 0 }}
+              style={{ padding: isMobile ? '0.5rem' : '0.5rem 1.25rem', fontSize: '0.9rem', gap: '0.5rem', flexShrink: 0 }}
             >
-              <Download size={18} /> Export PDF
+              <Download size={18} /> {!isMobile && <span>Export PDF</span>}
             </button>
           </div>
         </header>
