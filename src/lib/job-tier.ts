@@ -29,6 +29,7 @@ export interface ParsedJobStatus {
   isActivelyFeatured: boolean;
   baseStatus: 'open' | 'closed';
   tier: 'standard' | 'featured';
+  payType: 'salary' | 'hourly' | 'contract';
 }
 
 /**
@@ -44,14 +45,19 @@ export function parseJobStatus(status: string | null | undefined): ParsedJobStat
       isActivelyFeatured: false,
       baseStatus: 'open',
       tier: 'standard',
+      payType: 'salary',
     };
   }
 
   const parts = status.split(':');
   const base = parts[0] === 'closed' ? 'closed' : 'open';
   const tier = parts[1] === 'featured' ? 'featured' : 'standard';
-  const isPaused = parts[2] === 'paused';
+  const isPaused = parts.includes('paused');
   const isFeatured = tier === 'featured';
+
+  let payType: 'salary' | 'hourly' | 'contract' = 'salary';
+  if (parts.includes('hourly')) payType = 'hourly';
+  else if (parts.includes('contract')) payType = 'contract';
 
   return {
     isOpen: base === 'open',
@@ -61,6 +67,7 @@ export function parseJobStatus(status: string | null | undefined): ParsedJobStat
     isActivelyFeatured: isFeatured && !isPaused,
     baseStatus: base,
     tier,
+    payType,
   };
 }
 
@@ -75,14 +82,16 @@ export function parseJobStatus(status: string | null | undefined): ParsedJobStat
 export function encodeJobStatus(
   isOpen: boolean,
   isFeatured: boolean,
-  isPaused: boolean = false
+  isPaused: boolean = false,
+  payType: 'salary' | 'hourly' | 'contract' = 'salary'
 ): string {
   const base = isOpen ? 'open' : 'closed';
   const tier = isFeatured ? 'featured' : 'standard';
-  if (isFeatured && isPaused) {
-    return `${base}:${tier}:paused`;
-  }
-  return `${base}:${tier}`;
+  const parts = [base, tier];
+  if (isFeatured && isPaused) parts.push('paused');
+  if (payType !== 'salary') parts.push(payType);
+  
+  return parts.join(':');
 }
 
 /**
@@ -102,5 +111,32 @@ export function toggleSponsorPause(currentStatus: string | null | undefined): st
   if (!parsed.isFeatured) {
     throw new Error('Cannot pause/resume sponsorship on a non-featured listing.');
   }
-  return encodeJobStatus(parsed.isOpen, true, !parsed.isPaused);
+  return encodeJobStatus(parsed.isOpen, true, !parsed.isPaused, parsed.payType);
+}
+
+/**
+ * Format salary string appropriately based on pay type.
+ */
+export function formatSalary(min: number | null | undefined, max: number | null | undefined, payType: 'salary' | 'hourly' | 'contract' = 'salary'): string {
+  if (!min && !max) return '';
+  
+  if (payType === 'hourly') {
+    const minStr = min ? `$${min}/hr` : '';
+    const maxStr = max ? `$${max}/hr` : '';
+    if (min && max) return `${minStr} - ${maxStr}`;
+    return minStr || maxStr;
+  }
+  
+  if (payType === 'contract') {
+    const minStr = min ? `$${min.toLocaleString()}` : '';
+    const maxStr = max ? `$${max.toLocaleString()}` : '';
+    if (min && max) return `${minStr} - ${maxStr} (Contract)`;
+    return (minStr || maxStr) + ' (Contract)';
+  }
+  
+  // default: salary
+  const minStr = min ? `$${(min / 1000).toFixed(0)}k` : '';
+  const maxStr = max ? `$${(max / 1000).toFixed(0)}k` : '';
+  if (min && max) return `${minStr} - ${maxStr}`;
+  return minStr || maxStr;
 }

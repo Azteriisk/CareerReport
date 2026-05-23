@@ -21,7 +21,7 @@ import {
   Building
 } from 'lucide-react';
 import Link from 'next/link';
-import { parseJobStatus, encodeJobStatus, toggleSponsorPause } from '@/lib/job-tier';
+import { parseJobStatus, encodeJobStatus, toggleSponsorPause, formatSalary } from '@/lib/job-tier';
 import { getBusinessTier, injectBusinessTier, cleanBusinessBio, BUSINESS_TIERS, getSponsorCredits } from '@/lib/business-tier';
 import styles from './page.module.css';
 
@@ -288,7 +288,7 @@ export default function RecruiterDashboardPage() {
     setUpdatingJobId(jobId);
     
     const parsed = parseJobStatus(currentStatus);
-    const newStatus = encodeJobStatus(!parsed.isOpen, parsed.isFeatured, parsed.isPaused);
+    const newStatus = encodeJobStatus(!parsed.isOpen, parsed.isFeatured, parsed.isPaused, parsed.payType);
 
     try {
       await getToken({ template: 'supabase' });
@@ -818,7 +818,7 @@ export default function RecruiterDashboardPage() {
                               <span className={styles.jobMetaItem}>
                                 <DollarSign size={14} />
                                 {job.salary_min || job.salary_max
-                                  ? `${job.salary_min ? `$${(job.salary_min / 1000).toFixed(0)}k` : ''} - ${job.salary_max ? `$${(job.salary_max / 1000).toFixed(0)}k` : ''}`
+                                  ? formatSalary(job.salary_min, job.salary_max, parsed.payType)
                                   : 'Competitive'}
                               </span>
                               <span>•</span>

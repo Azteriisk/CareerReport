@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@clerk/nextjs';
 
-import { parseJobStatus } from '@/lib/job-tier';
+import { parseJobStatus, formatSalary } from '@/lib/job-tier';
 import styles from './page.module.css';
 
 function formatTimeAgo(date: Date) {
@@ -118,7 +118,7 @@ export default function JobsBoardPage() {
               verified: true,
               location: displayLocation,
               salary: j.salary_min || j.salary_max
-                ? `${j.salary_min ? `$${(j.salary_min / 1000).toFixed(0)}k` : ''} - ${j.salary_max ? `$${(j.salary_max / 1000).toFixed(0)}k` : ''}`
+                ? formatSalary(j.salary_min, j.salary_max, parsed.payType)
                 : 'Competitive',
               type: jobType,
               posted: formatTimeAgo(new Date(j.created_at)),

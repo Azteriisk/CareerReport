@@ -107,7 +107,7 @@ export async function POST(request: Request) {
         }
 
         const parsed = parseJobStatus(job.status);
-        const newStatus = encodeJobStatus(parsed.isOpen, true, false); // active, not paused
+        const newStatus = encodeJobStatus(parsed.isOpen, true, false, parsed.payType); // active, not paused
 
         // sponsored_until = now + 30 days
         const sponsoredUntil = new Date();

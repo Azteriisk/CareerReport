@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { Briefcase, MapPin, Globe, DollarSign, Calendar, Building2, ArrowLeft, CheckCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useUser } from '@clerk/nextjs';
+import { parseJobStatus, formatSalary } from '@/lib/job-tier';
 
 export default function JobViewPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -166,12 +167,12 @@ export default function JobViewPage({ params }: { params: Promise<{ id: string }
                   )}
                   
                   {(job.salary_min || job.salary_max) && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success)', fontSize: '0.95rem', fontWeight: 600 }}>
-                      <DollarSign size={16} /> 
-                      {job.salary_min ? `$${(job.salary_min/1000).toFixed(0)}k` : ''} 
-                      {job.salary_min && job.salary_max ? ' - ' : ''} 
-                      {job.salary_max ? `$${(job.salary_max/1000).toFixed(0)}k` : ''}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success)', fontSize: '0.95rem', fontWeight: 600 }}>
+                      <DollarSign size={16} />
+                      <span>
+                        {formatSalary(job.salary_min, job.salary_max, parseJobStatus(job.status).payType)}
+                      </span>
+                    </div>
                   )}
                   
                   <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>

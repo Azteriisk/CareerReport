@@ -37,7 +37,7 @@ export async function POST(request: Request) {
 
     if (sponsored) {
       // Manually activate sponsorship
-      const newStatus = encodeJobStatus(parsed.isOpen, true, false);
+      const newStatus = encodeJobStatus(parsed.isOpen, true, false, parsed.payType);
       const sponsoredUntil = new Date();
       sponsoredUntil.setDate(sponsoredUntil.getDate() + daysFromNow);
 
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, status: newStatus, sponsored_until: sponsoredUntil });
     } else {
       // Manually deactivate sponsorship
-      const newStatus = encodeJobStatus(parsed.isOpen, false, false);
+      const newStatus = encodeJobStatus(parsed.isOpen, false, false, parsed.payType);
       const { error } = await supabaseAdmin
         .from('jobs')
         .update({ status: newStatus, sponsored_until: null })

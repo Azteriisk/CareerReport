@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Briefcase, Building2, MapPin, DollarSign, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { getBusinessTier } from '@/lib/business-tier';
+import { encodeJobStatus } from '@/lib/job-tier';
 
 export default function CreateJobPage() {
   const { isSignedIn, user, isLoaded } = useUser();
@@ -20,6 +21,7 @@ export default function CreateJobPage() {
   const [description, setDescription] = useState('');
   const [salaryMin, setSalaryMin] = useState('');
   const [salaryMax, setSalaryMax] = useState('');
+  const [payType, setPayType] = useState<'salary'|'hourly'|'contract'>('salary');
   const [jobType, setJobType] = useState('Full-time');
   const [workArrangement, setWorkArrangement] = useState('On-site');
   const [location, setLocation] = useState('');
@@ -202,7 +204,7 @@ export default function CreateJobPage() {
           salary_max: salaryMax ? parseInt(salaryMax) : null,
           is_remote: workArrangement === 'Remote',
           location: location ? `${location} • ${workArrangement} • ${jobType}` : `${workArrangement} • ${jobType}`,
-          status: 'open:featured' // zero-migration status-tier encoding
+          status: encodeJobStatus(true, true, false, payType) // active, featured, not paused, dynamic payType
         })
         .select()
         .single();
@@ -244,7 +246,7 @@ export default function CreateJobPage() {
           salary_max: salaryMax ? parseInt(salaryMax) : null,
           is_remote: workArrangement === 'Remote',
           location: location ? `${location} • ${workArrangement} • ${jobType}` : `${workArrangement} • ${jobType}`,
-          status: 'open:standard' // zero-migration standard status
+          status: encodeJobStatus(true, false, false, payType) // active, standard, not paused, dynamic payType
         })
         .select()
         .single();
@@ -409,30 +411,42 @@ export default function CreateJobPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="label">Minimum Salary (USD)</label>
+                  <label className="label">Pay Type</label>
+                  <select 
+                    className="input-field" 
+                    value={payType} 
+                    onChange={(e) => setPayType(e.target.value as any)}
+                  >
+                    <option value="salary">Salary</option>
+                    <option value="hourly">Hourly Pay</option>
+                    <option value="contract">Contract Amount</option>
+                  </select>
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="label">{payType === 'hourly' ? 'Min Hourly (USD)' : payType === 'contract' ? 'Min Contract (USD)' : 'Minimum Salary (USD)'}</label>
                   <div style={{ position: 'relative' }}>
                     <DollarSign size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
                     <input 
                       type="number" 
                       className="input-field" 
                       style={{ paddingLeft: '2.75rem' }} 
-                      placeholder="120000" 
+                      placeholder={payType === 'hourly' ? "30" : payType === 'contract' ? "5000" : "120000"}
                       value={salaryMin} 
                       onChange={(e) => setSalaryMin(e.target.value)} 
                     />
                   </div>
                 </div>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="label">Maximum Salary (USD)</label>
+                  <label className="label">{payType === 'hourly' ? 'Max Hourly (USD)' : payType === 'contract' ? 'Max Contract (USD)' : 'Maximum Salary (USD)'}</label>
                   <div style={{ position: 'relative' }}>
                     <DollarSign size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
                     <input 
                       type="number" 
                       className="input-field" 
                       style={{ paddingLeft: '2.75rem' }} 
-                      placeholder="180000" 
+                      placeholder={payType === 'hourly' ? "50" : payType === 'contract' ? "10000" : "180000"}
                       value={salaryMax} 
                       onChange={(e) => setSalaryMax(e.target.value)} 
                     />
@@ -470,9 +484,9 @@ export default function CreateJobPage() {
                       position: 'relative'
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                      <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>Standard Listing</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
                       <input type="radio" checked={tier === 'standard'} readOnly style={{ accentColor: 'var(--primary)', width: '16px', height: '16px' }} />
+                      <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem' }}>Standard Listing</span>
                     </div>
                     <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
                       Standard exposure. Active for 30 days. Perfect for basic or entry-level positions.
@@ -495,14 +509,14 @@ export default function CreateJobPage() {
                       overflow: 'hidden'
                     }}
                   >
-                    <div style={{ position: 'absolute', right: '-15px', top: '-15px', background: 'var(--primary)', color: 'var(--bg-color)', fontSize: '0.65rem', fontWeight: 800, padding: '20px 25px 5px', transform: 'rotate(45deg)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <div style={{ position: 'absolute', right: '-30px', top: '20px', background: 'var(--primary)', color: 'var(--bg-color)', fontSize: '0.65rem', fontWeight: 800, padding: '5px 40px', transform: 'rotate(45deg)', textTransform: 'uppercase', letterSpacing: '0.05em', zIndex: 0, textAlign: 'center' }}>
                       Urgent
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+                      <input type="radio" checked={tier === 'featured'} readOnly style={{ accentColor: 'var(--primary)', width: '16px', height: '16px', zIndex: 1 }} />
                       <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                         Featured Listing 🔥
                       </span>
-                      <input type="radio" checked={tier === 'featured'} readOnly style={{ accentColor: 'var(--primary)', width: '16px', height: '16px' }} />
                     </div>
                     <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
                       Golden highlighted styling, pinned to top of search, priority tags, and dynamic AI screening. Includes 24 hours of active boosted time (can be paused, but is non-transferable to other posts).

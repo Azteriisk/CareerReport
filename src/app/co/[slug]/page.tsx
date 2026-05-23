@@ -6,6 +6,7 @@ import { Building2, Globe, MapPin, Users, Calendar, Briefcase, Mail, FileText, X
 import Link from 'next/link';
 import { useUser } from '@clerk/nextjs';
 import { getBusinessTier } from '@/lib/business-tier';
+import { parseJobStatus, formatSalary } from '@/lib/job-tier';
 
 function parseEmployeeStatus(status: string | null) {
   if (!status) return { approved: false, permissions: [] as string[], title: '' };
@@ -806,9 +807,9 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                       <div className="job-card-hover" style={{ background: 'var(--surface-color)', border: '1px solid var(--glass-border)', padding: '1.5rem', borderRadius: '12px', transition: 'all 0.2s ease', cursor: 'pointer' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                           <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 600 }}>{job.title}</h3>
-                          {job.salary_min && job.salary_max && (
+                          {(job.salary_min || job.salary_max) && (
                             <span style={{ color: 'var(--success)', fontWeight: 600, fontSize: '0.9rem', background: 'rgba(16, 185, 129, 0.1)', padding: '0.25rem 0.75rem', borderRadius: '100px' }}>
-                              ${(job.salary_min/1000).toFixed(0)}k - ${(job.salary_max/1000).toFixed(0)}k
+                              {formatSalary(job.salary_min, job.salary_max, parseJobStatus(job.status).payType)}
                             </span>
                           )}
                         </div>

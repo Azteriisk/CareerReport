@@ -71,7 +71,7 @@ export async function POST(request: Request) {
 
     // Activate sponsorship
     const parsed = parseJobStatus(job.status);
-    const newStatus = encodeJobStatus(parsed.isOpen, true, false); // active, not paused
+    const newStatus = encodeJobStatus(parsed.isOpen, true, false, parsed.payType); // active, not paused
 
     const sponsoredUntil = new Date();
     sponsoredUntil.setDate(sponsoredUntil.getDate() + 30);

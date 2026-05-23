@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Search as SearchIcon, Users, Building2, Briefcase, FileText, MapPin } from 'lucide-react';
 import Link from 'next/link';
+import { parseJobStatus, formatSalary } from '@/lib/job-tier';
 
 export default function SearchPage() {
   const [query, setQuery] = useState('');
@@ -43,7 +44,7 @@ export default function SearchPage() {
       } else if (activeTab === 'jobs') {
         const { data } = await supabase
           .from('jobs')
-          .select('id, title, location, is_remote, salary_min, salary_max, business_profiles(name, logo_url, slug)')
+          .select('id, title, location, is_remote, salary_min, salary_max, status, business_profiles(name, logo_url, slug)')
           .ilike('title', `%${query}%`)
           .eq('status', 'open')
           .limit(20);
@@ -131,7 +132,7 @@ export default function SearchPage() {
                       <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.2rem' }}>{job.title}</h3>
                       {(job.salary_min || job.salary_max) && (
                         <span style={{ color: 'var(--success)', fontSize: '0.85rem', fontWeight: 600 }}>
-                          ${(job.salary_min/1000).toFixed(0)}k - ${(job.salary_max/1000).toFixed(0)}k
+                          {formatSalary(job.salary_min, job.salary_max, parseJobStatus(job.status).payType)}
                         </span>
                       )}
                     </div>
