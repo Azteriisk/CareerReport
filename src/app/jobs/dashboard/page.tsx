@@ -21,6 +21,8 @@ import {
   Building
 } from 'lucide-react';
 import Link from 'next/link';
+import { parseJobStatus, encodeJobStatus } from '@/lib/job-tier';
+import { getBusinessTier, injectBusinessTier, cleanBusinessBio, BUSINESS_TIERS } from '@/lib/business-tier';
 
 export default function RecruiterDashboardPage() {
   const { isSignedIn, user, isLoaded } = useUser();
@@ -34,10 +36,21 @@ export default function RecruiterDashboardPage() {
   const [isLoadingAccess, setIsLoadingAccess] = useState(true);
 
   // Dashboard content state
-  const [activeTab, setActiveTab] = useState<'overview' | 'jobs' | 'applicants'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'jobs' | 'applicants' | 'billing'>('overview');
   const [jobs, setJobs] = useState<any[]>([]);
   const [isLoadingJobs, setIsLoadingJobs] = useState(false);
   const [updatingJobId, setUpdatingJobId] = useState<string | null>(null);
+
+  // Sync tab parameter from query string securely on load
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get('tab');
+      if (tab === 'billing' || tab === 'jobs' || tab === 'applicants' || tab === 'overview') {
+        setActiveTab(tab as any);
+      }
+    }
+  }, []);
 
   // Applicants filter state
   const [selectedJobIdForApplicants, setSelectedJobIdForApplicants] = useState('');
@@ -49,6 +62,23 @@ export default function RecruiterDashboardPage() {
   const [isLoadingRealApplicants, setIsLoadingRealApplicants] = useState(false);
   const [aiResults, setAiResults] = useState<Record<string, { aiScore: number; aiLabel: string; aiExplanation: string }>>({});
   const [isStackRanking, setIsStackRanking] = useState(false);
+
+  // Job Listing Premium Upgrade states
+  const [upgradeJobId, setUpgradeJobId] = useState<string | null>(null);
+  const [upgradeCardName, setUpgradeCardName] = useState('');
+  const [upgradeCardNumber, setUpgradeCardNumber] = useState('');
+  const [upgradeCardExpiry, setUpgradeCardExpiry] = useState('');
+  const [upgradeCardCvc, setUpgradeCardCvc] = useState('');
+  const [isProcessingUpgrade, setIsProcessingUpgrade] = useState(false);
+
+  // Plan Subscription Premium Upgrade states
+  const [showPlanCheckout, setShowPlanCheckout] = useState(false);
+  const [selectedUpgradePlanId, setSelectedUpgradePlanId] = useState<string | null>(null);
+  const [planCardName, setPlanCardName] = useState('');
+  const [planCardNumber, setPlanCardNumber] = useState('');
+  const [planCardExpiry, setPlanCardExpiry] = useState('');
+  const [planCardCvc, setPlanCardCvc] = useState('');
+  const [isProcessingPlanUpgrade, setIsProcessingPlanUpgrade] = useState(false);
 
   // 1. Verify permissions and load businesses
   useEffect(() => {
@@ -64,7 +94,7 @@ export default function RecruiterDashboardPage() {
         // A. Fetch owned businesses
         const { data: owned, error: ownedErr } = await supabase
           .from('business_profiles')
-          .select('id, name, slug')
+          .select('id, name, slug, bio')
           .eq('owner_id', user.id);
 
         if (ownedErr) throw ownedErr;
@@ -78,7 +108,8 @@ export default function RecruiterDashboardPage() {
             business_profiles:business_id (
               id,
               name,
-              slug
+              slug,
+              bio
             )
           `)
           .eq('user_id', user.id)
@@ -87,7 +118,7 @@ export default function RecruiterDashboardPage() {
         if (empErr) throw empErr;
 
         // Combine unique business listings
-        const combinedMap = new Map<string, { id: string; name: string; slug: string }>();
+        const combinedMap = new Map<string, { id: string; name: string; slug: string; bio: string | null }>();
         
         if (owned) {
           owned.forEach(b => combinedMap.set(b.id, b));
@@ -223,10 +254,12 @@ export default function RecruiterDashboardPage() {
     }
   }, [selectedJobIdForApplicants, activeTab]);
 
-  // Toggle open/closed status for a job
+  // Toggle open/closed status for a job backwards-compatibly
   const handleToggleJobStatus = async (jobId: string, currentStatus: string) => {
     setUpdatingJobId(jobId);
-    const newStatus = currentStatus === 'open' ? 'closed' : 'open';
+    
+    const parsed = parseJobStatus(currentStatus);
+    const newStatus = encodeJobStatus(!parsed.isOpen, parsed.isFeatured);
 
     try {
       await getToken({ template: 'supabase' });
@@ -247,6 +280,91 @@ export default function RecruiterDashboardPage() {
       setUpdatingJobId(null);
     }
   };
+
+  // Process the Stripe payment simulation to upgrade an existing Standard post to Featured
+  const handleUpgradeJob = async () => {
+    if (!upgradeJobId) return;
+    setIsProcessingUpgrade(true);
+
+    try {
+      const jobToUpgrade = jobs.find(j => j.id === upgradeJobId);
+      if (!jobToUpgrade) throw new Error("Job not found.");
+
+      const parsed = parseJobStatus(jobToUpgrade.status);
+      const newStatus = encodeJobStatus(parsed.isOpen, true);
+
+      // Simulate network checkout lag for 2 seconds
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      await getToken({ template: 'supabase' });
+
+      const { error } = await supabase
+        .from('jobs')
+        .update({ status: newStatus })
+        .eq('id', upgradeJobId);
+
+      if (error) throw error;
+
+      // Update local state dynamically
+      setJobs(jobs.map(j => j.id === upgradeJobId ? { ...j, status: newStatus } : j));
+      
+      // Reset checkout states
+      setUpgradeJobId(null);
+      setUpgradeCardName('');
+      setUpgradeCardNumber('');
+      setUpgradeCardExpiry('');
+      setUpgradeCardCvc('');
+      alert("⚡ Job listing upgraded successfully! Your job is now Featured 🔥");
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to upgrade job listing: " + (err.message || 'Error occurred.'));
+    } finally {
+      setIsProcessingUpgrade(false);
+    }
+  };
+
+  // Process the Stripe payment simulation to upgrade the subscription plan for a company profile
+  const handleUpgradePlan = async () => {
+    if (!selectedBusinessId || !selectedUpgradePlanId) return;
+    setIsProcessingPlanUpgrade(true);
+
+    try {
+      const activeBusiness = businesses.find(b => b.id === selectedBusinessId);
+      if (!activeBusiness) throw new Error("Business profile not found.");
+
+      const newBio = injectBusinessTier(activeBusiness.bio, selectedUpgradePlanId);
+
+      // Simulate network checkout lag for 2 seconds
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      await getToken({ template: 'supabase' });
+
+      const { error } = await supabase
+        .from('business_profiles')
+        .update({ bio: newBio })
+        .eq('id', selectedBusinessId);
+
+      if (error) throw error;
+
+      // Update local state dynamically
+      setBusinesses(businesses.map(b => b.id === selectedBusinessId ? { ...b, bio: newBio } : b));
+      
+      // Reset checkout states
+      setShowPlanCheckout(false);
+      setSelectedUpgradePlanId(null);
+      setPlanCardName('');
+      setPlanCardNumber('');
+      setPlanCardExpiry('');
+      setPlanCardCvc('');
+      alert(`⚡ Subscription plan successfully updated to ${BUSINESS_TIERS[selectedUpgradePlanId]?.name || 'new plan'}!`);
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to upgrade subscription plan: " + (err.message || 'Error occurred.'));
+    } finally {
+      setIsProcessingPlanUpgrade(false);
+    }
+  };
+
 
   // Generate dynamic, realistic applicant data mapped to the selected job title
   const getMockApplicantsForJob = (jobTitle: string) => {
@@ -453,10 +571,19 @@ export default function RecruiterDashboardPage() {
     );
   }
 
-  // Calculate statistics metrics
-  const activeCount = jobs.filter(j => j.status === 'open').length;
-  const inactiveCount = jobs.filter(j => j.status === 'closed').length;
-  const totalApplicantsCount = activeCount * 3; // Mock: 3 active applicants per open listing
+  // Calculate subscription plan and statistics metrics
+  const selectedBusiness = businesses.find(b => b.id === selectedBusinessId);
+  const selectedBusinessTier = getBusinessTier(selectedBusiness?.bio);
+  
+  const activeCount = jobs.filter(j => {
+    const parsed = parseJobStatus(j.status);
+    return parsed.isOpen;
+  }).length;
+  const inactiveCount = jobs.filter(j => {
+    const parsed = parseJobStatus(j.status);
+    return !parsed.isOpen;
+  }).length;
+  const totalApplicantsCount = realApplicants.length > 0 ? realApplicants.length : activeCount * 3;
 
   return (
     <div style={{ background: 'var(--bg-color)', minHeight: 'calc(100dvh - 82px)', color: 'var(--text-primary)' }}>
@@ -499,10 +626,30 @@ export default function RecruiterDashboardPage() {
         {/* STATS HIGHLIGHT GRID */}
         <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
           
-          {/* Card 1 */}
-          <div style={{ background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--glass-border)', padding: '1.5rem', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>Active Listings</span>
-            <div style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--primary)', marginTop: '0.5rem' }}>{activeCount}</div>
+          {/* Card 1: Subscription Tier Slot Meter */}
+          <div style={{ background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--glass-border)', padding: '1.5rem', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>Active Listings Slot</span>
+                <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase', background: 'rgba(250, 189, 47, 0.1)', padding: '2px 8px', borderRadius: '10px', border: '1px solid rgba(250, 189, 47, 0.2)', letterSpacing: '0.05em' }}>
+                  {selectedBusinessTier?.name || 'Free Starter'}
+                </span>
+              </div>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '0.5rem', letterSpacing: '-0.5px' }}>
+                {activeCount} / {selectedBusinessTier?.maxJobs === 9999 ? '∞' : selectedBusinessTier?.maxJobs} <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Slots</span>
+              </div>
+            </div>
+            <div style={{ width: '100%', marginTop: '0.75rem' }}>
+              <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{ 
+                  width: `${Math.min(100, (activeCount / (selectedBusinessTier?.maxJobs || 1)) * 100)}%`, 
+                  height: '100%', 
+                  background: 'linear-gradient(90deg, var(--primary) 0%, #fbbf24 100%)', 
+                  borderRadius: '3px',
+                  transition: 'width 0.4s ease'
+                }} />
+              </div>
+            </div>
           </div>
 
           {/* Card 2 */}
@@ -526,11 +673,12 @@ export default function RecruiterDashboardPage() {
         </section>
 
         {/* TAB CONTROLS */}
-        <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem', marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
           {[
             { id: 'overview', name: 'Dashboard Overview' },
             { id: 'jobs', name: 'Manage Job Listings' },
-            { id: 'applicants', name: 'Applicant Stack Ranker' }
+            { id: 'applicants', name: 'Applicant Stack Ranker' },
+            { id: 'billing', name: 'Billing & Plans ⚡' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -616,87 +764,127 @@ export default function RecruiterDashboardPage() {
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {jobs.map(job => (
-                      <div 
-                        key={job.id} 
-                        style={{ 
-                          background: 'var(--surface-color)', 
-                          padding: '1.5rem', 
-                          borderRadius: '12px', 
-                          border: '1px solid var(--glass-border)',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          flexWrap: 'wrap',
-                          gap: '1rem'
-                        }}
-                      >
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                            <h4 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>{job.title}</h4>
-                            <span style={{ 
-                              background: job.status === 'open' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                              color: job.status === 'open' ? '#10b981' : '#ef4444',
-                              fontSize: '0.75rem',
-                              fontWeight: 700,
-                              padding: '2px 8px',
-                              borderRadius: '12px'
-                            }}>
-                              {job.status === 'open' ? 'Active' : 'Closed'}
-                            </span>
+                    {jobs.map(job => {
+                      const parsed = parseJobStatus(job.status);
+                      return (
+                        <div 
+                          key={job.id} 
+                          style={{ 
+                            background: parsed.isFeatured
+                              ? 'linear-gradient(135deg, rgba(250, 189, 47, 0.04) 0%, var(--surface-color) 100%)'
+                              : 'var(--surface-color)', 
+                            padding: '1.5rem', 
+                            borderRadius: '12px', 
+                            border: parsed.isFeatured
+                              ? '1px solid rgba(250, 189, 47, 0.35)'
+                              : '1px solid var(--glass-border)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: '1rem',
+                            boxShadow: parsed.isFeatured ? '0 6px 20px rgba(250, 189, 47, 0.03)' : 'none'
+                          }}
+                        >
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                              <h4 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>{job.title}</h4>
+                              <span style={{ 
+                                background: parsed.isOpen ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                                color: parsed.isOpen ? '#10b981' : '#ef4444',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                padding: '2px 8px',
+                                borderRadius: '12px'
+                              }}>
+                                {parsed.isOpen ? 'Active' : 'Closed'}
+                              </span>
+                              {parsed.isFeatured && (
+                                <span style={{ 
+                                  background: 'rgba(250, 189, 47, 0.12)', 
+                                  color: 'var(--primary)', 
+                                  fontSize: '0.75rem',
+                                  fontWeight: 800,
+                                  padding: '2px 8px',
+                                  borderRadius: '4px',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.05em'
+                                }}>
+                                  🔥 Featured
+                                </span>
+                              )}
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                <MapPin size={14} /> {job.location || (job.is_remote ? 'Remote' : 'On-site')}
+                              </span>
+                              <span>•</span>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                <DollarSign size={14} />
+                                {job.salary_min || job.salary_max
+                                  ? `${job.salary_min ? `$${(job.salary_min / 1000).toFixed(0)}k` : ''} - ${job.salary_max ? `$${(job.salary_max / 1000).toFixed(0)}k` : ''}`
+                                  : 'Competitive'}
+                              </span>
+                            </div>
                           </div>
 
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                              <MapPin size={14} /> {job.location || (job.is_remote ? 'Remote' : 'On-site')}
-                            </span>
-                            <span>•</span>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                              <DollarSign size={14} />
-                              {job.salary_min || job.salary_max
-                                ? `${job.salary_min ? `$${(job.salary_min / 1000).toFixed(0)}k` : ''} - ${job.salary_max ? `$${(job.salary_max / 1000).toFixed(0)}k` : ''}`
-                                : 'Competitive'}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Status Toggle & Details Actions */}
-                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                          <button
-                            disabled={updatingJobId === job.id}
-                            onClick={() => handleToggleJobStatus(job.id, job.status)}
-                            className="btn btn-secondary"
-                            style={{ 
-                              padding: '0.5rem 1rem', 
-                              fontSize: '0.85rem', 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: '0.35rem', 
-                              borderColor: job.status === 'open' ? '#ef4444' : 'var(--primary)',
-                              color: job.status === 'open' ? '#ef4444' : 'var(--primary)',
-                            }}
-                          >
-                            {updatingJobId === job.id ? (
-                              <Loader2 className="animate-spin" size={14} />
-                            ) : job.status === 'open' ? (
-                              <>
-                                <EyeOff size={14} /> Close Listing
-                              </>
-                            ) : (
-                              <>
-                                <Eye size={14} /> Reopen Listing
-                              </>
+                          {/* Status Toggle & Details Actions */}
+                          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                            {/* Upgrade button for Standard listings */}
+                            {!parsed.isFeatured && (
+                              <button
+                                onClick={() => setUpgradeJobId(job.id)}
+                                className="btn btn-primary"
+                                style={{ 
+                                  padding: '0.5rem 1rem', 
+                                  fontSize: '0.85rem',
+                                  background: 'rgba(250, 189, 47, 0.12)',
+                                  color: 'var(--primary)',
+                                  border: '1px solid rgba(250, 189, 47, 0.3)',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                ⚡ Upgrade to Featured
+                              </button>
                             )}
-                          </button>
 
-                          <Link href={`/jobs/${job.id}`} style={{ textDecoration: 'none' }}>
-                            <button className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-                              View Live Page
+                            <button
+                              disabled={updatingJobId === job.id}
+                              onClick={() => handleToggleJobStatus(job.id, job.status)}
+                              className="btn btn-secondary"
+                              style={{ 
+                                padding: '0.5rem 1rem', 
+                                fontSize: '0.85rem', 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '0.35rem', 
+                                borderColor: parsed.isOpen ? '#ef4444' : 'var(--primary)',
+                                color: parsed.isOpen ? '#ef4444' : 'var(--primary)',
+                              }}
+                            >
+                              {updatingJobId === job.id ? (
+                                <Loader2 className="animate-spin" size={14} />
+                              ) : parsed.isOpen ? (
+                                <>
+                                  <EyeOff size={14} /> Close Listing
+                                </>
+                              ) : (
+                                <>
+                                  <Eye size={14} /> Reopen Listing
+                                </>
+                              )}
                             </button>
-                          </Link>
+
+                            <Link href={`/jobs/${job.id}`} style={{ textDecoration: 'none' }}>
+                              <button className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                                View Live Page
+                              </button>
+                            </Link>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -705,261 +893,752 @@ export default function RecruiterDashboardPage() {
             {/* APPLICANT STACK RANKER TAB */}
             {activeTab === 'applicants' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                
-                {/* Job Selection Dropdown & Sort selector */}
+                {selectedBusinessTier?.hasAI === false ? (
+                  /* Premium Blur Blocker for AI locks on Starter tier */
+                  <div style={{
+                    background: 'linear-gradient(135deg, rgba(20, 20, 20, 0.45) 0%, rgba(10, 10, 10, 0.55) 100%)',
+                    border: '1px solid rgba(250, 189, 47, 0.25)',
+                    borderRadius: '16px',
+                    padding: '5rem 2rem',
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '1.5rem',
+                    boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
+                    backdropFilter: 'blur(10px)',
+                    margin: '1.5rem 0'
+                  }}>
+                    <div style={{
+                      width: '72px',
+                      height: '72px',
+                      borderRadius: '50%',
+                      background: 'rgba(250, 189, 47, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'var(--primary)',
+                      border: '1px solid rgba(250, 189, 47, 0.25)',
+                      boxShadow: '0 0 35px rgba(250, 189, 47, 0.15)',
+                      fontSize: '2rem'
+                    }}>
+                      🔒
+                    </div>
+                    <div>
+                      <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontSize: '1.5rem', fontWeight: 800, letterSpacing: '-0.4px' }}>
+                        AI Stack Ranking Locked
+                      </h3>
+                      <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.6, maxWidth: '520px' }}>
+                        Google Gemini-powered intelligent applicant stack ranking is a premium Recruiter Pro benefit. Upgrade your company subscription to instantly scan, rank, and evaluate incoming candidate portfolios.
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '1rem', width: '100%', maxWidth: '380px', marginTop: '0.5rem' }}>
+                      <button onClick={() => setActiveTab('billing')} className="btn btn-primary" style={{ width: '100%', padding: '0.85rem', fontWeight: 700, fontSize: '0.95rem', justifyContent: 'center', cursor: 'pointer' }}>
+                        Upgrade Subscription to Pro ⚡
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Job Selection Dropdown & Sort selector */}
+                    <div style={{ 
+                      background: 'var(--surface-color)', 
+                      border: '1px solid var(--glass-border)', 
+                      borderRadius: '12px', 
+                      padding: '1.5rem',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '1rem'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', fontWeight: 600 }}>Select Role:</span>
+                        <select
+                          className="input-field"
+                          style={{ padding: '0.5rem 2rem 0.5rem 1rem', width: 'auto', minWidth: '220px', margin: 0, fontSize: '0.9rem', fontWeight: 700 }}
+                          value={selectedJobIdForApplicants}
+                          onChange={(e) => {
+                            setSelectedJobIdForApplicants(e.target.value);
+                            setExpandedApplicantId(null);
+                          }}
+                          disabled={jobs.length === 0}
+                        >
+                          {jobs.map(j => (
+                            <option key={j.id} value={j.id}>💼 {j.title} ({parseJobStatus(j.status).isOpen ? 'Active' : 'Closed'})</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Rank by:</span>
+                        <select 
+                          value={sortBy} 
+                          onChange={(e) => {
+                            setSortBy(e.target.value as any);
+                            setExpandedApplicantId(null);
+                          }}
+                          style={{
+                            background: 'var(--surface-highlight)',
+                            border: '1px solid var(--glass-border)',
+                            borderRadius: '8px',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.875rem',
+                            padding: '0.45rem 1.5rem 0.45rem 0.75rem',
+                            outline: 'none',
+                            cursor: 'pointer',
+                            fontWeight: 700
+                          }}
+                        >
+                          <option value="ai">🧠 AI Stack Rank</option>
+                          <option value="newest">⏰ Most Recent</option>
+                          <option value="oldest">⏳ Oldest Applied</option>
+                          <option value="first_name">🔤 Alphabetical (First Name)</option>
+                          <option value="last_name">🔤 Alphabetical (Last Name)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {jobs.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'var(--surface-color)', borderRadius: '16px', border: '1px dashed var(--glass-border)' }}>
+                        <Users size={36} color="var(--text-secondary)" style={{ marginBottom: '1rem' }} />
+                        <h4 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>No Applicants Pool</h4>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: '380px', margin: '0 auto' }}>
+                          Once you post an active opportunity, your candidate stack rank database is initialized immediately.
+                        </p>
+                      </div>
+                    ) : !selectedJobIdForApplicants ? (
+                      <div style={{ textAlign: 'center', padding: '2rem' }}>
+                        <p style={{ color: 'var(--text-secondary)' }}>Please select a job listing from the switcher dropdown above.</p>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                        
+                        {/* Real Applicants banner + Active AI stack ranker button */}
+                        {realApplicants.length > 0 && (
+                          <div style={{ 
+                            background: 'linear-gradient(135deg, rgba(250, 189, 47, 0.08) 0%, rgba(253, 186, 116, 0.05) 100%)', 
+                            border: '1px solid rgba(250, 189, 47, 0.25)', 
+                            padding: '1.5rem', 
+                            borderRadius: '16px', 
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                            gap: '1rem',
+                            boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
+                          }}>
+                            <div style={{ flex: 1, minWidth: '280px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontWeight: 800, marginBottom: '0.35rem' }}>
+                                <Sparkles size={18} />
+                                <h4 style={{ margin: 0, fontSize: '1.05rem' }}>Active Listing: {realApplicants.length} Real Applicants</h4>
+                              </div>
+                              <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.5 }}>
+                                Leverage advanced context-aware Google Gemini engines to evaluate these candidate portfolios dynamically against the opening's requirements.
+                              </p>
+                            </div>
+                            
+                            <div>
+                              <button
+                                onClick={handleRunAIStackRank}
+                                disabled={isStackRanking}
+                                className="btn btn-primary"
+                                style={{ 
+                                  padding: '0.75rem 1.5rem', 
+                                  fontSize: '0.9rem', 
+                                  fontWeight: 700, 
+                                  display: 'inline-flex', 
+                                  alignItems: 'center', 
+                                  gap: '0.5rem',
+                                  cursor: 'pointer',
+                                  boxShadow: '0 4px 15px rgba(250, 189, 47, 0.2)'
+                                }}
+                              >
+                                {isStackRanking ? (
+                                  <>
+                                    <Loader2 className="animate-spin" size={16} />
+                                    <span>Ranking Candidates...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span>Run AI Stack Rank</span>
+                                    <span>🧠</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Loading State for Real Applicants */}
+                        {isLoadingRealApplicants ? (
+                          <div className="flex-center" style={{ padding: '4rem 0' }}>
+                            <Loader2 className="animate-spin text-primary" size={32} />
+                            <p style={{ color: 'var(--text-secondary)', marginLeft: '1rem', margin: 0 }}>Syncing candidates from database...</p>
+                          </div>
+                        ) : realApplicants.length === 0 ? (
+                          /* Empty Applicants State (Strictly No Mock Data Fallback in real dashboard) */
+                          <div style={{ textAlign: 'center', padding: '5rem 2rem', background: 'var(--surface-color)', borderRadius: '16px', border: '1px dashed var(--glass-border)' }}>
+                            <Users size={36} color="var(--text-secondary)" opacity={0.3} style={{ marginBottom: '1rem', marginInline: 'auto' }} />
+                            <h4 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>No Applicants Yet</h4>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', maxWidth: '420px', margin: '0 auto', lineHeight: 1.6 }}>
+                              No candidates have applied for this position yet. When candidates apply with their CareerReport profiles, they will instantly appear here for AI screening.
+                            </p>
+                          </div>
+                        ) : (
+                          /* Sorted Applicants List */
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            {getSortedApplicants().map((applicant, index) => {
+                              const isExpanded = expandedApplicantId === applicant.id;
+                          
+                              return (
+                                <div 
+                                  key={applicant.id} 
+                                  onClick={() => setExpandedApplicantId(isExpanded ? null : applicant.id)}
+                                  style={{ 
+                                    background: 'var(--surface-color)', 
+                                    padding: '1.25rem 1.5rem', 
+                                    borderRadius: '12px', 
+                                    border: '1px solid var(--glass-border)', 
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    borderLeft: sortBy === 'ai' 
+                                      ? `5px solid ${index === 0 ? 'var(--primary)' : index === 1 ? 'var(--accent)' : 'var(--text-secondary)'}`
+                                      : '1px solid var(--glass-border)'
+                                  }}
+                                  className="job-card job-card-hover"
+                                >
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                    <div>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <span style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)' }}>
+                                          {applicant.firstName} {applicant.lastName}
+                                        </span>
+                                      </div>
+                                      <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                                        {applicant.yoe} YOE • {applicant.skills}
+                                      </div>
+                                    </div>
+
+                                    {/* Score Indicator Badges */}
+                                    <div style={{ textAlign: 'right' }}>
+                                      {sortBy === 'ai' ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
+                                          <span style={{ 
+                                            background: index === 0 
+                                              ? 'rgba(250, 189, 47, 0.15)' 
+                                              : index === 1 
+                                              ? 'rgba(56, 189, 248, 0.15)' 
+                                              : 'rgba(255, 255, 255, 0.05)', 
+                                            color: index === 0 
+                                              ? 'var(--primary)' 
+                                              : index === 1 
+                                              ? 'var(--accent)' 
+                                              : 'var(--text-secondary)', 
+                                            fontSize: '0.8rem', 
+                                            fontWeight: 800, 
+                                            padding: '3px 10px', 
+                                            borderRadius: '20px' 
+                                          }}>
+                                            Rank #{index + 1}
+                                          </span>
+                                          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                            Compatibility: {applicant.aiScore}
+                                          </span>
+                                        </div>
+                                      ) : sortBy === 'newest' || sortBy === 'oldest' ? (
+                                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 600 }}>
+                                          Applied: {formatTimeAgo(applicant.appliedDate)}
+                                        </span>
+                                      ) : (
+                                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 600 }}>
+                                          A-Z Sequence
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Expandable AI Relevance Reasoning */}
+                                  {sortBy === 'ai' && (
+                                    <div style={{ 
+                                      marginTop: isExpanded ? '1rem' : '0.4rem',
+                                      paddingTop: isExpanded ? '1rem' : '0',
+                                      borderTop: isExpanded ? '1px dashed var(--glass-border)' : 'none',
+                                      fontSize: '0.9rem',
+                                      color: 'var(--text-secondary)',
+                                      transition: 'all 0.2s ease',
+                                    }}>
+                                      {isExpanded ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--primary)', fontWeight: 700 }}>
+                                            <Sparkles size={16} /> <span>{applicant.aiLabel} Assessment Reason</span>
+                                          </div>
+                                          <p style={{ margin: 0, lineHeight: 1.6 }}>
+                                            {applicant.aiExplanation}
+                                          </p>
+                                        </div>
+                                      ) : (
+                                        <span style={{ fontSize: '0.8rem', opacity: 0.7, textDecoration: 'underline' }}>
+                                          Expand AI Match Evaluation ➔
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* BILLING & PLANS TAB */}
+            {activeTab === 'billing' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                 <div style={{ 
-                  background: 'var(--surface-color)', 
+                  background: 'linear-gradient(135deg, var(--surface-highlight) 0%, var(--surface-color) 100%)', 
+                  borderRadius: '16px', 
                   border: '1px solid var(--glass-border)', 
-                  borderRadius: '12px', 
-                  padding: '1.5rem',
+                  padding: '2rem', 
+                  boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   flexWrap: 'wrap',
-                  gap: '1rem'
+                  gap: '1.5rem'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', fontWeight: 600 }}>Select Role:</span>
-                    <select
-                      className="input-field"
-                      style={{ padding: '0.5rem 2rem 0.5rem 1rem', width: 'auto', minWidth: '220px', margin: 0, fontSize: '0.9rem', fontWeight: 700 }}
-                      value={selectedJobIdForApplicants}
-                      onChange={(e) => {
-                        setSelectedJobIdForApplicants(e.target.value);
-                        setExpandedApplicantId(null);
-                      }}
-                      disabled={jobs.length === 0}
-                    >
-                      {jobs.map(j => (
-                        <option key={j.id} value={j.id}>💼 {j.title} ({j.status === 'open' ? 'Active' : 'Closed'})</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Rank by:</span>
-                    <select 
-                      value={sortBy} 
-                      onChange={(e) => {
-                        setSortBy(e.target.value as any);
-                        setExpandedApplicantId(null);
-                      }}
-                      style={{
-                        background: 'var(--surface-highlight)',
-                        border: '1px solid var(--glass-border)',
-                        borderRadius: '8px',
-                        color: 'var(--text-primary)',
-                        fontSize: '0.875rem',
-                        padding: '0.45rem 1.5rem 0.45rem 0.75rem',
-                        outline: 'none',
-                        cursor: 'pointer',
-                        fontWeight: 700
-                      }}
-                    >
-                      <option value="ai">🧠 AI Stack Rank</option>
-                      <option value="newest">⏰ Most Recent</option>
-                      <option value="oldest">⏳ Oldest Applied</option>
-                      <option value="first_name">🔤 Alphabetical (First Name)</option>
-                      <option value="last_name">🔤 Alphabetical (Last Name)</option>
-                    </select>
-                  </div>
-                </div>
-
-                {jobs.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'var(--surface-color)', borderRadius: '16px', border: '1px dashed var(--glass-border)' }}>
-                    <Users size={36} color="var(--text-secondary)" style={{ marginBottom: '1rem' }} />
-                    <h4 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>No Applicants Pool</h4>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: '380px', margin: '0 auto' }}>
-                      Once you post an active opportunity, your candidate stack rank database is initialized immediately.
+                  <div>
+                    <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 0.5rem 0', letterSpacing: '-0.3px' }}>
+                      Subscription & Active Posting Limits
+                    </h3>
+                    <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '0.925rem', lineHeight: 1.5, maxWidth: '580px' }}>
+                      Manage subscription tiers for <strong>{selectedBusiness?.name}</strong>. Plans define the maximum active jobs allowed simultaneously and unlock advanced Google Gemini AI Stack Ranking features.
                     </p>
                   </div>
-                ) : !selectedJobIdForApplicants ? (
-                  <div style={{ textAlign: 'center', padding: '2rem' }}>
-                    <p style={{ color: 'var(--text-secondary)' }}>Please select a job listing from the switcher dropdown above.</p>
+                  <div style={{ background: 'var(--surface-color)', padding: '1rem 1.5rem', borderRadius: '12px', border: '1px solid var(--glass-border)', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase' }}>Active Plan</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary)', marginTop: '0.25rem' }}>
+                      {selectedBusinessTier?.name || 'Free Starter'}
+                    </div>
                   </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                    
-                    {/* Real Applicants banner + Active AI stack ranker button */}
-                    {realApplicants.length > 0 && (
-                      <div style={{ 
-                        background: 'linear-gradient(135deg, rgba(250, 189, 47, 0.08) 0%, rgba(253, 186, 116, 0.05) 100%)', 
-                        border: '1px solid rgba(250, 189, 47, 0.25)', 
-                        padding: '1.5rem', 
-                        borderRadius: '16px', 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        alignItems: 'center',
-                        flexWrap: 'wrap',
-                        gap: '1rem',
-                        boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
-                      }}>
-                        <div style={{ flex: 1, minWidth: '280px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontWeight: 800, marginBottom: '0.35rem' }}>
-                            <Sparkles size={18} />
-                            <h4 style={{ margin: 0, fontSize: '1.05rem' }}>Active Listing: {realApplicants.length} Real Applicants</h4>
-                          </div>
-                          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.5 }}>
-                            Leverage advanced context-aware Google Gemini engines to evaluate these candidate portfolios dynamically against the opening's requirements.
-                          </p>
-                        </div>
-                        
-                        <div>
-                          <button
-                            onClick={handleRunAIStackRank}
-                            disabled={isStackRanking}
-                            className="btn btn-primary"
-                            style={{ 
-                              padding: '0.75rem 1.5rem', 
-                              fontSize: '0.9rem', 
-                              fontWeight: 700, 
-                              display: 'inline-flex', 
-                              alignItems: 'center', 
-                              gap: '0.5rem',
-                              cursor: 'pointer',
-                              boxShadow: '0 4px 15px rgba(250, 189, 47, 0.2)'
-                            }}
-                          >
-                            {isStackRanking ? (
-                              <>
-                                <Loader2 className="animate-spin" size={16} />
-                                <span>Ranking Candidates...</span>
-                              </>
-                            ) : (
-                              <>
-                                <span>Run AI Stack Rank</span>
-                                <span>🧠</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Loading State for Real Applicants */}
-                    {isLoadingRealApplicants ? (
-                      <div className="flex-center" style={{ padding: '4rem 0' }}>
-                        <Loader2 className="animate-spin text-primary" size={32} />
-                        <p style={{ color: 'var(--text-secondary)', marginLeft: '1rem', margin: 0 }}>Syncing candidates from database...</p>
-                      </div>
-                    ) : realApplicants.length === 0 ? (
-                      /* Empty Applicants State (Strictly No Mock Data Fallback in real dashboard) */
-                      <div style={{ textAlign: 'center', padding: '5rem 2rem', background: 'var(--surface-color)', borderRadius: '16px', border: '1px dashed var(--glass-border)' }}>
-                        <Users size={36} color="var(--text-secondary)" opacity={0.3} style={{ marginBottom: '1rem', marginInline: 'auto' }} />
-                        <h4 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 0.5rem 0' }}>No Applicants Yet</h4>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.925rem', maxWidth: '420px', margin: '0 auto', lineHeight: 1.6 }}>
-                          No candidates have applied for this position yet. When candidates apply with their CareerReport profiles, they will instantly appear here for AI screening.
-                        </p>
-                      </div>
-                    ) : (
-                      /* Sorted Applicants List */
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        {getSortedApplicants().map((applicant, index) => {
-                          const isExpanded = expandedApplicantId === applicant.id;
-                      
-                      return (
-                        <div 
-                          key={applicant.id} 
-                          onClick={() => setExpandedApplicantId(isExpanded ? null : applicant.id)}
-                          style={{ 
-                            background: 'var(--surface-color)', 
-                            padding: '1.25rem 1.5rem', 
-                            borderRadius: '12px', 
-                            border: '1px solid var(--glass-border)', 
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            borderLeft: sortBy === 'ai' 
-                              ? `5px solid ${index === 0 ? 'var(--primary)' : index === 1 ? 'var(--accent)' : 'var(--text-secondary)'}`
-                              : '1px solid var(--glass-border)'
-                          }}
-                          className="job-card job-card-hover"
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-                            <div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)' }}>
-                                  {applicant.firstName} {applicant.lastName}
-                                </span>
-                              </div>
-                              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                                {applicant.yoe} YOE • {applicant.skills}
-                              </div>
-                            </div>
-
-                            {/* Score Indicator Badges */}
-                            <div style={{ textAlign: 'right' }}>
-                              {sortBy === 'ai' ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
-                                  <span style={{ 
-                                    background: index === 0 
-                                      ? 'rgba(250, 189, 47, 0.15)' 
-                                      : index === 1 
-                                      ? 'rgba(56, 189, 248, 0.15)' 
-                                      : 'rgba(255, 255, 255, 0.05)', 
-                                    color: index === 0 
-                                      ? 'var(--primary)' 
-                                      : index === 1 
-                                      ? 'var(--accent)' 
-                                      : 'var(--text-secondary)', 
-                                    fontSize: '0.8rem', 
-                                    fontWeight: 800, 
-                                    padding: '3px 10px', 
-                                    borderRadius: '20px' 
-                                  }}>
-                                    Rank #{index + 1}
-                                  </span>
-                                  <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                    Compatibility: {applicant.aiScore}
-                                  </span>
-                                </div>
-                              ) : sortBy === 'newest' || sortBy === 'oldest' ? (
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 600 }}>
-                                  Applied: {formatTimeAgo(applicant.appliedDate)}
-                                </span>
-                              ) : (
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 600 }}>
-                                  A-Z Sequence
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Expandable AI Relevance Reasoning */}
-                          {sortBy === 'ai' && (
-                            <div style={{ 
-                              marginTop: isExpanded ? '1rem' : '0.4rem',
-                              paddingTop: isExpanded ? '1rem' : '0',
-                              borderTop: isExpanded ? '1px dashed var(--glass-border)' : 'none',
-                              fontSize: '0.9rem',
-                              color: 'var(--text-secondary)',
-                              transition: 'all 0.2s ease',
-                            }}>
-                              {isExpanded ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--primary)', fontWeight: 700 }}>
-                                    <Sparkles size={16} /> <span>{applicant.aiLabel} Assessment Reason</span>
-                                  </div>
-                                  <p style={{ margin: 0, lineHeight: 1.6 }}>
-                                    {applicant.aiExplanation}
-                                  </p>
-                                </div>
-                              ) : (
-                                <span style={{ fontSize: '0.8rem', opacity: 0.7, textDecoration: 'underline' }}>
-                                  Expand AI Match Evaluation ➔
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
                 </div>
-                )}
+
+                {/* Subscriptions Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+                  {Object.values(BUSINESS_TIERS).map(plan => {
+                    const isCurrentPlan = selectedBusinessTier?.id === plan.id;
+                    return (
+                      <div 
+                        key={plan.id}
+                        style={{
+                          background: isCurrentPlan
+                            ? 'linear-gradient(135deg, rgba(250, 189, 47, 0.05) 0%, var(--surface-color) 100%)'
+                            : 'var(--surface-color)',
+                          border: isCurrentPlan
+                            ? '2px solid var(--primary)'
+                            : '1px solid var(--glass-border)',
+                          borderRadius: '16px',
+                          padding: '2rem 1.5rem',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          boxShadow: isCurrentPlan ? '0 10px 25px rgba(250, 189, 47, 0.08)' : 'none',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        {isCurrentPlan && (
+                          <div style={{
+                            position: 'absolute',
+                            top: 0,
+                            right: 0,
+                            background: 'var(--primary)',
+                            color: 'var(--bg-color)',
+                            fontSize: '0.65rem',
+                            fontWeight: 800,
+                            padding: '4px 12px',
+                            borderBottomLeftRadius: '8px',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em'
+                          }}>
+                            Active Plan
+                          </div>
+                        )}
+
+                        <div>
+                          <h4 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)' }}>{plan.name}</h4>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem', marginTop: '0.75rem', marginBottom: '1.5rem' }}>
+                            <span style={{ fontSize: '1.75rem', fontWeight: 800, color: plan.price > 0 ? 'var(--primary)' : 'var(--text-primary)' }}>
+                              ${plan.price}
+                            </span>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>/ month</span>
+                          </div>
+
+                          <hr style={{ border: 'none', borderTop: '1px solid var(--glass-border)', margin: '1rem 0' }} />
+
+                          <ul style={{ padding: 0, margin: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                            <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span style={{ color: 'var(--success)', fontWeight: 'bold' }}>✓</span>
+                              <strong>{plan.maxJobs === 9999 ? 'Unlimited' : plan.maxJobs}</strong> Active Job Postings
+                            </li>
+                            <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span style={{ color: plan.hasAI ? 'var(--success)' : 'var(--danger)', fontWeight: 'bold' }}>
+                                {plan.hasAI ? '✓' : '✕'}
+                              </span>
+                              Gemini AI Stack Ranking {plan.hasAI ? 'Enabled' : 'Locked'}
+                            </li>
+                            <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span style={{ color: 'var(--success)', fontWeight: 'bold' }}>✓</span>
+                              Verified Business Branding
+                            </li>
+                          </ul>
+                        </div>
+
+                        <button
+                          disabled={isCurrentPlan}
+                          onClick={() => {
+                            setSelectedUpgradePlanId(plan.id);
+                            setShowPlanCheckout(true);
+                          }}
+                          className={isCurrentPlan ? "btn btn-secondary" : "btn btn-primary"}
+                          style={{
+                            width: '100%',
+                            marginTop: '2rem',
+                            padding: '0.65rem',
+                            fontWeight: 700,
+                            fontSize: '0.9rem',
+                            justifyContent: 'center',
+                            cursor: isCurrentPlan ? 'default' : 'pointer',
+                            opacity: isCurrentPlan ? 0.7 : 1
+                          }}
+                        >
+                          {isCurrentPlan ? 'Current Active Tier' : 'Upgrade Plan ⚡'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </>
+        )}
+
+        {/* Sandbox Stripe Plan Checkout Modal */}
+        {showPlanCheckout && selectedUpgradePlanId && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.85)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 9999,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '1.5rem'
+          }} onClick={() => !isProcessingPlanUpgrade && setShowPlanCheckout(false)}>
+            <div style={{
+              background: 'var(--surface-color)',
+              border: '1px solid var(--glass-border)',
+              borderRadius: '20px',
+              width: '100%',
+              maxWidth: '480px',
+              overflow: 'hidden',
+              boxShadow: '0 30px 70px rgba(0,0,0,0.5)'
+            }} onClick={e => e.stopPropagation()}>
+              
+              {/* Modal Header */}
+              <div style={{ background: 'var(--surface-highlight)', padding: '1.5rem 2rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyItems: 'center', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span>Stripe Subscription Checkout</span>
+                    <span style={{ fontSize: '0.9rem', color: 'var(--primary)' }}>🔒</span>
+                  </h3>
+                  <p style={{ margin: '0.2rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Partnered secure simulated payment gateway</p>
+                </div>
+                {!isProcessingPlanUpgrade && (
+                  <button onClick={() => setShowPlanCheckout(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.2rem', padding: '0.25rem' }}>✕</button>
+                )}
+              </div>
+
+              {/* Modal Body */}
+              <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                
+                {/* Order Summary */}
+                <div style={{ background: 'rgba(250, 189, 47, 0.05)', border: '1px dashed rgba(250, 189, 47, 0.25)', borderRadius: '12px', padding: '1rem 1.25rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                    <span>Upgrade Plan: {BUSINESS_TIERS[selectedUpgradePlanId]?.name}</span>
+                    <span>${BUSINESS_TIERS[selectedUpgradePlanId]?.price}.00</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                    <span>Active Post Limit</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {BUSINESS_TIERS[selectedUpgradePlanId]?.maxJobs === 9999 ? 'Unlimited' : `${BUSINESS_TIERS[selectedUpgradePlanId]?.maxJobs} Listings`}
+                    </span>
+                  </div>
+                  <hr style={{ border: 'none', borderTop: '1px solid var(--glass-border)', margin: '0.75rem 0' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)' }}>
+                    <span>First Month Charge</span>
+                    <span style={{ color: 'var(--primary)' }}>${BUSINESS_TIERS[selectedUpgradePlanId]?.price}.00 USD</span>
+                  </div>
+                </div>
+
+                {/* Card Inputs */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="label" style={{ fontSize: '0.75rem' }}>Cardholder Name</label>
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder="e.g. Alec Brandt"
+                      className="input-field" 
+                      style={{ marginBottom: 0 }}
+                      value={planCardName}
+                      onChange={e => setPlanCardName(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="label" style={{ fontSize: '0.75rem' }}>Card Number</label>
+                    <input 
+                      type="text" 
+                      required 
+                      maxLength={19}
+                      placeholder="4000 1234 5678 9010"
+                      className="input-field" 
+                      style={{ marginBottom: 0 }}
+                      value={planCardNumber}
+                      onChange={e => {
+                        const val = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
+                        setPlanCardNumber(val);
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="label" style={{ fontSize: '0.75rem' }}>Expiration (MM/YY)</label>
+                      <input 
+                        type="text" 
+                        required 
+                        maxLength={5}
+                        placeholder="12/29"
+                        className="input-field" 
+                        style={{ marginBottom: 0 }}
+                        value={planCardExpiry}
+                        onChange={e => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          setPlanCardExpiry(val.length > 2 ? `${val.slice(0, 2)}/${val.slice(2, 4)}` : val);
+                        }}
+                      />
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="label" style={{ fontSize: '0.75rem' }}>CVC / CVV</label>
+                      <input 
+                        type="password" 
+                        required 
+                        maxLength={4}
+                        placeholder="•••"
+                        className="input-field" 
+                        style={{ marginBottom: 0 }}
+                        value={planCardCvc}
+                        onChange={e => setPlanCardCvc(e.target.value.replace(/\D/g, ''))}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Submit Action */}
+                <button
+                  onClick={handleUpgradePlan}
+                  disabled={isProcessingPlanUpgrade || !planCardName || planCardNumber.length < 15}
+                  className="btn btn-primary"
+                  style={{ 
+                    padding: '0.9rem', 
+                    fontSize: '1rem', 
+                    fontWeight: 700, 
+                    justifyContent: 'center', 
+                    marginTop: '0.5rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 20px rgba(250, 189, 47, 0.25)'
+                  }}
+                >
+                  {isProcessingPlanUpgrade ? (
+                    <>
+                      <Loader2 className="animate-spin" size={18} style={{ marginRight: '0.5rem' }} />
+                      <span>Processing Subscription Upgrade...</span>
+                    </>
+                  ) : (
+                    <span>Subscribe to {BUSINESS_TIERS[selectedUpgradePlanId]?.name}</span>
+                  )}
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* Sandbox Stripe Job Listings Featured Upgrade Modal */}
+        {upgradeJobId && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.85)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 9999,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '1.5rem'
+          }} onClick={() => !isProcessingUpgrade && setUpgradeJobId(null)}>
+            <div style={{
+              background: 'var(--surface-color)',
+              border: '1px solid var(--glass-border)',
+              borderRadius: '20px',
+              width: '100%',
+              maxWidth: '480px',
+              overflow: 'hidden',
+              boxShadow: '0 30px 70px rgba(0,0,0,0.5)'
+            }} onClick={e => e.stopPropagation()}>
+              
+              {/* Modal Header */}
+              <div style={{ background: 'var(--surface-highlight)', padding: '1.5rem 2rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyItems: 'center', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span>Stripe Featured Posting Checkout</span>
+                    <span style={{ fontSize: '0.9rem', color: 'var(--primary)' }}>🔒</span>
+                  </h3>
+                  <p style={{ margin: '0.2rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Secure simulated credit checkout portal</p>
+                </div>
+                {!isProcessingUpgrade && (
+                  <button onClick={() => setUpgradeJobId(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.2rem', padding: '0.25rem' }}>✕</button>
+                )}
+              </div>
+
+              {/* Modal Body */}
+              <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                
+                {/* Order Summary */}
+                <div style={{ background: 'rgba(250, 189, 47, 0.05)', border: '1px dashed rgba(250, 189, 47, 0.25)', borderRadius: '12px', padding: '1rem 1.25rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                    <span>Listing Upgrade: {jobs.find(j => j.id === upgradeJobId)?.title}</span>
+                    <span>$99.00</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                    <span>Active Duration</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>30 Days Pinned</span>
+                  </div>
+                  <hr style={{ border: 'none', borderTop: '1px solid var(--glass-border)', margin: '0.75rem 0' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)' }}>
+                    <span>Total Upgrade Bill</span>
+                    <span style={{ color: 'var(--primary)' }}>$99.00 USD</span>
+                  </div>
+                </div>
+
+                {/* Card Inputs */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="label" style={{ fontSize: '0.75rem' }}>Cardholder Name</label>
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder="e.g. Alec Brandt"
+                      className="input-field" 
+                      style={{ marginBottom: 0 }}
+                      value={upgradeCardName}
+                      onChange={e => setUpgradeCardName(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="label" style={{ fontSize: '0.75rem' }}>Card Number</label>
+                    <input 
+                      type="text" 
+                      required 
+                      maxLength={19}
+                      placeholder="4000 1234 5678 9010"
+                      className="input-field" 
+                      style={{ marginBottom: 0 }}
+                      value={upgradeCardNumber}
+                      onChange={e => {
+                        const val = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
+                        setUpgradeCardNumber(val);
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="label" style={{ fontSize: '0.75rem' }}>Expiration (MM/YY)</label>
+                      <input 
+                        type="text" 
+                        required 
+                        maxLength={5}
+                        placeholder="12/29"
+                        className="input-field" 
+                        style={{ marginBottom: 0 }}
+                        value={upgradeCardExpiry}
+                        onChange={e => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          setUpgradeCardExpiry(val.length > 2 ? `${val.slice(0, 2)}/${val.slice(2, 4)}` : val);
+                        }}
+                      />
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="label" style={{ fontSize: '0.75rem' }}>CVC / CVV</label>
+                      <input 
+                        type="password" 
+                        required 
+                        maxLength={4}
+                        placeholder="•••"
+                        className="input-field" 
+                        style={{ marginBottom: 0 }}
+                        value={upgradeCardCvc}
+                        onChange={e => setUpgradeCardCvc(e.target.value.replace(/\D/g, ''))}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Submit Action */}
+                <button
+                  onClick={handleUpgradeJob}
+                  disabled={isProcessingUpgrade || !upgradeCardName || upgradeCardNumber.length < 15}
+                  className="btn btn-primary"
+                  style={{ 
+                    padding: '0.9rem', 
+                    fontSize: '1rem', 
+                    fontWeight: 700, 
+                    justifyContent: 'center', 
+                    marginTop: '0.5rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 20px rgba(250, 189, 47, 0.25)'
+                  }}
+                >
+                  {isProcessingUpgrade ? (
+                    <>
+                      <Loader2 className="animate-spin" size={18} style={{ marginRight: '0.5rem' }} />
+                      <span>Processing Posting Promotion...</span>
+                    </>
+                  ) : (
+                    <span>Upgrade to Featured listing 🔥</span>
+                  )}
+                </button>
+              </div>
+
+            </div>
+          </div>
         )}
 
       </main>
