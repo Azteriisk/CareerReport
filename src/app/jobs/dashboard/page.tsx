@@ -701,7 +701,7 @@ export default function RecruiterDashboardPage() {
         </section>
 
         {/* TAB CONTROLS */}
-        <div className="dashboard-tabs hide-scrollbar">
+        <div className="dashboard-tabs hide-scrollbar" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '0.5rem', marginBottom: '2rem' }}>
           {[
             { id: 'overview', name: 'Dashboard Overview' },
             { id: 'jobs', name: 'Manage Job Listings' },
