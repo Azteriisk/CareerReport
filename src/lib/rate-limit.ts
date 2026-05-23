@@ -4,11 +4,6 @@
  * Works on Node.js runtimes (including Vercel serverless functions).
  * For Edge runtimes, this still limits within a warm instance —
  * for cross-instance limiting you'd need Upstash Redis / Vercel KV.
- *
- * Usage:
- *   const limiter = createRateLimiter({ windowMs: 60_000, maxRequests: 10 });
- *   const result = limiter.check(userId);
- *   if (!result.allowed) return 429;
  */
 
 interface RateLimiterOptions {
@@ -44,8 +39,6 @@ export function createRateLimiter(options: RateLimiterOptions) {
     }
   };
 
-  // Run sweep every 5 minutes — only in long-lived Node processes, not Edge
-  // Edge workers are short-lived so the store is naturally evicted
   const isEdge = typeof (globalThis as { EdgeRuntime?: string }).EdgeRuntime === 'string';
   if (typeof setInterval !== 'undefined' && !isEdge) {
     try { setInterval(sweep, 5 * 60 * 1000).unref?.(); } catch { /* not available */ }
@@ -85,3 +78,36 @@ export const aiRateLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 
 
 /** Stricter limiter for PDF import (vision calls are expensive) */
 export const pdfImportRateLimiter = createRateLimiter({ windowMs: 60_000, maxRequests: 3 });
+
+// ── New simpler checkout limiter added for shipability Phase 1 ──
+
+const checkoutRateLimitStore = new Map<string, number[]>();
+
+/**
+ * Check whether a key is within its rate limit window.
+ * Returns a simple boolean for quick checkout flow gating.
+ */
+export function checkRateLimit(
+  key: string,
+  maxRequests: number,
+  windowMs: number
+): boolean {
+  const now = Date.now();
+  const windowStart = now - windowMs;
+
+  let timestamps = checkoutRateLimitStore.get(key) ?? [];
+  timestamps = timestamps.filter(t => t > windowStart);
+
+  if (timestamps.length >= maxRequests) {
+    return false; // Rate limited
+  }
+
+  timestamps.push(now);
+  checkoutRateLimitStore.set(key, timestamps);
+  return true;
+}
+
+export function resetRateLimit(key: string): void {
+  checkoutRateLimitStore.delete(key);
+}
+

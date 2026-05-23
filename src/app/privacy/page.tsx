@@ -156,7 +156,24 @@ export default function PrivacyPolicyPage() {
           <hr style={{ border: 'none', height: '1px', background: 'var(--glass-border)', margin: '2rem 0' }} />
 
           <section style={{ marginBottom: '2.5rem' }}>
-            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>5. Data Control & Deletion</h2>
+            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>5. Payment & Financial Data</h2>
+            <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>
+              When you purchase a recruiter subscription or sponsor a job listing, your payments are securely processed by our payment provider, <strong>Stripe</strong>.
+            </p>
+            <ul style={{ paddingLeft: '1.25rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <li>
+                <strong style={{ color: 'var(--text-primary)' }}>Secure Processing:</strong> All payment transactions are handled directly by Stripe. CareerReport does not collect, process, or store your full credit card number, expiration date, or CVV.
+              </li>
+              <li>
+                <strong style={{ color: 'var(--text-primary)' }}>Data We Store:</strong> We only store your billing tier, subscription status, and a Stripe Customer ID reference to manage your active plans and enable access to your Stripe Customer Portal.
+              </li>
+            </ul>
+          </section>
+
+          <hr style={{ border: 'none', height: '1px', background: 'var(--glass-border)', margin: '2rem 0' }} />
+
+          <section style={{ marginBottom: '2.5rem' }}>
+            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>6. Data Control & Deletion</h2>
             <p style={{ marginBottom: '1rem', color: 'var(--text-primary)' }}>
               You retain absolute ownership and control over your data:
             </p>
@@ -170,7 +187,7 @@ export default function PrivacyPolicyPage() {
           <hr style={{ border: 'none', height: '1px', background: 'var(--glass-border)', margin: '2rem 0' }} />
 
           <section>
-            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>6. Contact Information</h2>
+            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>7. Contact Information</h2>
             <p style={{ color: 'var(--text-secondary)' }}>
               If you have any questions, concerns, or requests regarding this Privacy Policy or your data, please contact the Azterisk CareerReport Team at:
             </p>

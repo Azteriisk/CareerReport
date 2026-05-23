@@ -72,10 +72,28 @@ export async function POST(req: Request) {
       If the user provided existing skills in this category, refine, standardize, and expand upon them.
       Output ONLY a single comma-separated line of skills (e.g., "React, TypeScript, Node.js"). Do NOT output conversational filler, prefixes, or bullet points.`;
     } else if (type === 'cover-letter') {
+      const storyType = context.storyType || 'standard';
+      let storyInstruction = '';
+      if (storyType === 'passionate') {
+        storyInstruction = 'Tell a deeply personal, purpose-driven story about why they chose this specific field and company. Infuse deep interest and emotional resonance for their choice to apply.';
+      } else if (storyType === 'growth') {
+        storyInstruction = 'Focus on high-speed growth, adaptability, overcoming professional obstacles, and demonstrating quick-learning skills that make them scale seamlessly into the role.';
+      } else if (storyType === 'technical') {
+        storyInstruction = 'Emphasize architectural precision, technical excellence, clean coding/problem-solving paradigms, and concrete engineering metrics of past success.';
+      } else if (storyType === 'leadership') {
+        storyInstruction = 'Highlight leadership depth, cross-functional project management, team empowerment, and business/product metrics showing ownership and strategic thinking.';
+      } else {
+        storyInstruction = 'Maintain a balanced, standard, and highly polished corporate narrative connecting their skills directly to the role requirements.';
+      }
+
       systemPrompt = `You are an expert executive resume and career coach.
       Write a highly personalized, compelling, and professional Cover Letter based on:
       1. The user's entire resume profile data (basics, work history, skills).
       2. The Target Company Name, Target Job Title, and any Job Description/Role details provided in the context.
+      
+      STORY CONTEXT INSTRUCTION:
+      ${storyInstruction}
+      
       Make the letter stand out by connecting the user's career achievements directly to the company and role. Use a professional, confident tone.
       Ensure the output is formatted as a beautiful, standard business cover letter, including placeholders for date, addresses, and formal salutations.
       Output ONLY the cover letter text. Do NOT include any introductions or conversational filler outside the letter itself.`;
@@ -93,6 +111,12 @@ export async function POST(req: Request) {
     }
 
     const compressedContext = compressContext(context);
+    const compressedString = JSON.stringify(compressedContext);
+
+    // Hard limit on input context length to prevent token abuse (TDoS)
+    if (compressedString.length > 32000) {
+      return new Response(JSON.stringify({ error: 'Payload too large. Please shorten your resume data.' }), { status: 413 });
+    }
 
     const result = await generateText({
       model: google('gemini-2.5-flash'),

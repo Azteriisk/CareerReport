@@ -112,7 +112,8 @@ export default function JobsBoardPage() {
               logo: j.business_profiles?.name?.charAt(0) || 'J',
               logoUrl: j.business_profiles?.logo_url,
               isReal: true,
-              isFeatured: parsed.isFeatured
+              // Only actively-running (non-paused) sponsorships get featured treatment
+              isFeatured: parsed.isActivelyFeatured
             };
           });
 

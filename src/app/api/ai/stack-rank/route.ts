@@ -58,8 +58,14 @@ export async function POST(req: Request) {
     const jobTitle = sanitizeInput(rawJobTitle, 150);
     const jobDescription = sanitizeInput(rawJobDescription, 2500);
 
-    // Limit maximum candidates ranked in a single call to 15 to prevent token/timing denial of service
-    const candidatesToRank = rawCandidates.slice(0, 15);
+    if (rawCandidates.length > 15) {
+      return new Response(
+        JSON.stringify({ error: 'Payload too large. You can only stack rank a maximum of 15 candidates at once.' }),
+        { status: 413 }
+      );
+    }
+
+    const candidatesToRank = rawCandidates;
 
     const sanitizedCandidates = candidatesToRank.map(c => {
       return {

@@ -81,4 +81,18 @@ export interface ResumeData {
     description: string;
     url: string;
   }>;
+  coverLetter?: {
+    company: string;
+    jobTitle: string;
+    jobDesc?: string;
+    storyType?: string;
+    content: string;
+    isGuided?: boolean;
+    guidedSteps?: {
+      hook?: string;
+      value?: string;
+      align?: string;
+      close?: string;
+    };
+  };
 }

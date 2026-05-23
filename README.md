@@ -22,7 +22,25 @@
 
 ## 🚀 Core Innovations & Recent Accomplishments
 
-### 🤖 1. Invisible ATS & AI Metadata Layer (`AtsMetadata.tsx`)
+### 💼 1. Recruiter Monetization & Job Platform
+CareerReport now ships a complete recruiter-side business model with tiered subscriptions, per-listing sponsorships, and AI-powered applicant tools:
+* **Business Subscription Tiers (`src/lib/business-tier.ts`):** Four tiers — Free Starter (3 jobs), Recruiter Pro ($49/mo, 10 jobs + AI), Recruiter Enterprise ($149/mo, 25 jobs), and Unlimited ($299/mo, unlimited). Tier state is encoded directly in the existing `business_profiles.bio` field using a `[Tier: id]` tag, requiring zero DB migrations.
+* **Premium Seat Allocation:** Recruiter Pro includes 3 premium employee seats, Enterprise 5, Unlimited 10. Seat status is encoded in `company_employees.status` via a pipe-delimited `|premium` suffix.
+* **Sponsored Job Posts (`/jobs/sponsored`, $19/month per listing):** Recruiters can upgrade any standard listing to Featured directly from the Manage Listings tab. Featured posts receive a gold-highlighted card border, a `+25pt` algorithmic boost in the candidate relevance engine, and are pinned above all standard listings in every candidate's personalized feed. Matching candidates see a `✨ Sponsored Match for You` badge. Status is stored as `open:featured` in the existing `jobs.status` field — fully backwards-compatible via `parseJobStatus` / `encodeJobStatus` in `src/lib/job-tier.ts`.
+* **Pauseable Sponsorship Clock:** Recruiters can pause the 30-day featured clock at any time from the Manage Listings tab (`⏸ Pause Sponsorship`). While paused, the listing reverts to standard placement in the candidate feed and the countdown freezes. Resuming (`▶ Resume Sponsorship`) instantly restores full featured status. The pause state is encoded zero-migration-style as a third colon segment: `open:featured:paused`. Attentive admins can conserve budget by only running the clock during peak hiring hours.
+* **Non-Transferable Sponsorship Rule:** Each sponsorship credit is permanently bound to the listing it was purchased for. The checkout modal requires a checkbox acknowledgement before purchase can proceed. This is documented in `job-tier.ts` JSDoc and enforced in the dashboard UI.
+* **Sponsor Checkout Modal:** A premium glassmorphic in-dashboard checkout collects card details, shows a benefit summary, and simulates Stripe processing — designed to drop-replace with live Stripe Sessions when ready.
+* **Sponsored Jobs Info Page (`/jobs/sponsored`):** A full conversion-focused marketing page explaining how sponsored posts work, with animated stat counters, a step-by-step how-it-works section, benefit grid, pricing tiers, FAQ accordion, and dual CTAs linking directly to the recruiter dashboard.
+
+### ✍️ 2. Cover Letter Architect (`/builder`)
+A dual-mode cover letter system built directly into the resume builder:
+* **AI Storytelling Generator (Premium):** Five persona-based narrative tones — Standard Corporate, Passionate & Purpose-Driven, Growth & Adaptability, Technical Excellence, and Strategic Leadership — each using custom Gemini system prompts to write role-specific, career-story-driven cover letters referencing the target company and job title.
+* **Free Guided Creator (All Tiers):** A client-side 4-step guided letter builder (Hook → Value Story → Alignment → Close) that composes a real-time formatted business letter with no AI tokens, no premium gate.
+* **Per-Role Scope:** Cover letters are tied to a specific company + job title. They are not shown on the public profile — only available in the builder and optionally included in PDF exports.
+* **PDF Export Toggle:** An "Include Cover Letter" checkbox in the builder header injects a Georgia-serif formatted cover letter as Page 1 of the exported PDF, ahead of the resume pages.
+* **Zero-Migration Persistence:** Cover letter state is stored inside the existing `ResumeData.coverLetter` optional field and auto-saved through the existing Supabase sync loop.
+
+### 🤖 3. Invisible ATS & AI Metadata Layer (`AtsMetadata.tsx`)
 Stunning, heavily styled, and multi-column resumes often fail enterprise Applicant Tracking Systems (ATS) and AI search indexers that rely on naive text flow analysis. 
 * We inject a structured, high-fidelity **semantic metadata payload** directly into the resume DOM tree.
 * **Double-Layer Extraction:**
@@ -34,9 +52,16 @@ Stunning, heavily styled, and multi-column resumes often fail enterprise Applica
 * **Resilient AI PDF Import (Pro):** Multi-stage import pipeline for existing resumes:
   1. **Embedded JSON fast-path** — CareerReport exports include a machine-readable JSON block for instant, zero-token imports.
   2. **Text extraction + Gemini** — Standard PDFs are parsed with `pdf-parse`, then structured via `generateObject` and a strict Zod schema.
-  3. **Vision fallback** — Scanned or image-heavy PDFs with no selectable text are sent directly to Gemini as a PDF file input when text extraction fails.
-* **AI route hardening:** Server-side Pro verification, per-user rate limits (10 AI calls/min globally, 3 PDF imports/min), 8 MB file caps, 25-page limits, and sanitized career-context prompts to reduce abuse and runaway token usage.
-* **Career Context Prompt:** Users can set a global "Career Context Prompt" (e.g., *"Senior Staff Engineer targeting early-stage YC startups with high-impact, concise bullet points"*). This dynamically primes all AI writing assistants, tailoring professional summary rewrites, job bullets, and category skill generation.
+  3. **Vision fallback** — Scanned or image-heavy PDFs with no selectable text are sent directly to Gemini as a PDF file input.
+  - [x] Sponsor Bundles & Bulk Credits
+  - [x] Real-time Job Analytics (Views & Clicks)
+  - [x] Playwright E2E Testing Suite
+  - [x] Security Hardening & Rate Limiting
+
+### Long Term
+- Native Mobile App (iOS/Android) for Job Seekers (Web-only Recruiter Dashboard to avoid app store fees)
+- Resume Parsing via OCR / PDF extraction improvements
+- Automated Email Drip Campaigns for Candidates
 
 ### 💬 3. Professional Social Networking Suite
 Transitioned from a single resume builder into a collaborative network with Clerk authentication and custom JWT-to-Supabase RLS token mapping:
@@ -110,6 +135,14 @@ We follow a **"Diamond" testing strategy** to ensure full stability during rapid
 > The core layout engines, social infrastructure, and AI modules are fully operational. We actively maintain a checklist of recently implemented user flow improvements alongside upcoming milestones.
 
 ### ✅ Recent Accomplishments (Completed Tasks)
+* [x] **Recruiter Subscription Tiers:** Four-tier business model (Free → Pro → Enterprise → Unlimited) encoded zero-migration-style into `business_profiles.bio`. Defines active job slot limits, AI access, and premium seat counts per tier.
+* [x] **Premium Employee Seats:** Pro gets 3, Enterprise 5, Unlimited 10 premium seats — assignable by the company owner from the company profile page. Seat status encoded in `company_employees.status` via a `|premium` pipe suffix.
+* [x] **Sponsored Job Posts ($19/month):** One-click featured upgrade from the Recruiter Dashboard. Stores `open:featured` in the existing `jobs.status` field. Featured posts get gold card styling, `+25pt` relevance boost, and top-of-feed pinning for matching candidates.
+* [x] **Pauseable Sponsorship Clock:** Recruiters can freeze and resume the 30-day featured clock from the Manage Listings tab. Paused state encoded as `open:featured:paused` — listing reverts to standard placement while paused. New `toggleSponsorPause()` helper in `job-tier.ts` handles the transition.
+* [x] **Non-Transferable Sponsorship Gate:** Checkout modal requires checkbox acknowledgement that the credit is permanently bound to the target listing and cannot be reassigned. Enforced in both the UI and the `job-tier.ts` JSDoc.
+* [x] **Sponsor Checkout Modal:** In-dashboard glassmorphic checkout modal with benefit summary grid, order summary, card inputs, and simulated Stripe processing — architected to swap to live Stripe Sessions.
+* [x] **Sponsored Jobs Info Page (`/jobs/sponsored`):** Full conversion-focused recruiter marketing page — animated stat counters, how-it-works steps, benefit grid, pricing tiers (Single $19, Triple $49, Campaign $149), FAQ accordion, and hero mockup preview.
+* [x] **Cover Letter Architect (AI + Guided):** Dual-mode cover letter system in `/builder` — premium AI storytelling with 5 narrative tones via Gemini, and a free 4-step guided creator requiring zero AI tokens. Per-role scope (company + job title). PDF export toggle injects cover letter as Page 1.
 * [x] **Multipage Pagination Fix:** Restored `scrollWidth`-based page counting across builder, exports, and public profiles; added shared `resume-pagination` helper and Playwright regression tests.
 * [x] **PDF Import Reliability:** Added embedded-JSON fast path, Gemini vision fallback for scanned PDFs, and server-side Pro/rate-limit/size guards.
 * [x] **Guest Follow UX:** Unsigned visitors see Follow on profiles; tapping opens the Account Required modal with tailored benefits (not an immediate sign-in redirect).
@@ -131,13 +164,36 @@ We follow a **"Diamond" testing strategy** to ensure full stability during rapid
 * [ ] **Multi-DPI Display Layout Synchronization:** Variations in device hardware DPI can occasionally trigger minor layout offsets or slight pixel-spacing differences in resume templates when switching between high-DPI (Retina/4K) monitors and standard-definition screens. We are refining absolute sizing calculations to guarantee pixel-for-pixel rendering symmetry across all resolutions.
 
 ### 🔮 Feature Roadmap & Action Items (Remaining Tasks)
+
+#### 💳 Stripe Production Integration & Shipability (COMPLETED)
+* [x] **Live Stripe Checkout for Subscriptions:** Replaced the simulated plan upgrade modal in the Recruiter Dashboard with a real Stripe Checkout Session redirect (`/api/stripe/checkout-session`).
+* [x] **Live Stripe Checkout for Sponsored Posts:** Replaced the simulated featured-upgrade modal with a one-time Stripe Checkout Session.
+* [x] **Stripe Webhook Handler (`/api/webhooks/stripe`):** Implemented to handle `checkout.session.completed` for bundles and jobs, securely parsing zero-migration metadata.
+* [x] **Sponsored Post Expiration & Clock Control:** Implemented logic for pausing and resuming sponsorship clocks, and checking elapsed unpaused time.
+
+#### 📦 Sponsored Post Bundles (COMPLETED)
+* [x] **Bundle Credit System:** Implemented Triple Pack ($49, 3 credits) and Campaign Pack ($149, 10 credits) from the `/jobs/sponsored` pricing section. Stored credit balance in `business_profiles.bio` as `[SponsorCredits: N]` (zero-migration).
+* [x] **Credit Balance Display in Dashboard:** Show remaining sponsorship credits in the Billing tab and alongside the "Sponsor Post" button on each listing.
+* [x] **AI Analytics & Limits Hardening:** Implemented 32,000 char token TDoS protection on the AI generators, 15-candidate stack ranking limits, and RLS database lockdown policies.
+* [x] **Testing & Webhook Integreity:** Initialized Playwright E2E suite and ensured no mocked applicants or simulated data leaks to the recruiter dashboard.
+
+#### 📝 Cover Letter Enhancements
+* [ ] **Multiple Cover Letters:** Allow saving multiple cover letters per resume (one per company/role), stored as an array in `ResumeData.coverLetters[]`.
+* [ ] **Cover Letter Library UI:** Add a "My Cover Letters" panel in the builder sidebar listing saved letters by company/role, with edit/delete controls.
+* [ ] **Guided Creator Template Polish:** Offer 2–3 opening sentence templates per guided step to reduce blank-page friction for new users.
+
+#### 🧪 Testing & Infrastructure
 * [ ] **Expand Testing Suite:** Add E2E coverage for PDF import flows and additional social edge cases beyond current pagination and API smoke tests.
-* [ ] **Enterprise Job Matching Dashboards:** Add automated skill-gap analysis comparing resume bullet points against newly posted jobs to highlight missing competencies for applicants.
+* [ ] **Sponsored Post E2E Tests:** Add Playwright tests covering the sponsor modal open/submit/confirm flow and verifying that `jobs.status` updates to `open:featured` in the test DB.
 * [ ] **Automated ATS Success Testing Suite:** Deploy a programmatic testing harness that runs mock resumes through industry-standard ATS parsers (like Lever or Greenhouse) to measure parsing accuracy and refine the `AtsMetadata` invisible layers.
+
+#### 🌐 Platform Growth
+* [ ] **Enterprise Job Matching Dashboards:** Add automated skill-gap analysis comparing resume bullet points against newly posted jobs to highlight missing competencies for applicants.
 * [ ] **Instant Post Thread Previews:** Render the top three most recent conversation bubbles directly on the homepage social card feeds so users can preview discussions without clicking into full post dialogs.
 * [ ] **Advanced RLS Audit & DB Triggers:** Add Supabase database triggers to automatically clean up orphaned post comments, likes, or messaging channels if a user profile is deleted or updated.
 * [ ] **Roster RLS Safeguards:** Solidify backend RLS validation checks preventing a non-owner with team permissions from editing/modifying the owner's status record directly via API actions.
 * [ ] **Expanded Social Feed Metrics:** Add direct like, share, and comment count indicators to post feeds.
+* [ ] **Recruiter Analytics Dashboard:** Expose per-listing view counts, apply click-through rates, and sponsored vs. standard performance comparisons to help recruiters measure ROI.
 
 ---
 

@@ -21,8 +21,8 @@ import {
   Building
 } from 'lucide-react';
 import Link from 'next/link';
-import { parseJobStatus, encodeJobStatus } from '@/lib/job-tier';
-import { getBusinessTier, injectBusinessTier, cleanBusinessBio, BUSINESS_TIERS } from '@/lib/business-tier';
+import { parseJobStatus, encodeJobStatus, toggleSponsorPause } from '@/lib/job-tier';
+import { getBusinessTier, injectBusinessTier, cleanBusinessBio, BUSINESS_TIERS, getSponsorCredits } from '@/lib/business-tier';
 
 export default function RecruiterDashboardPage() {
   const { isSignedIn, user, isLoaded } = useUser();
@@ -41,13 +41,30 @@ export default function RecruiterDashboardPage() {
   const [isLoadingJobs, setIsLoadingJobs] = useState(false);
   const [updatingJobId, setUpdatingJobId] = useState<string | null>(null);
 
-  // Sync tab parameter from query string securely on load
+  // Sync tab parameter from query string and handle post-Stripe redirect feedback
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const tab = params.get('tab');
       if (tab === 'billing' || tab === 'jobs' || tab === 'applicants' || tab === 'overview') {
         setActiveTab(tab as any);
+      }
+      // Success feedback from Stripe redirect
+      const success = params.get('success');
+      const sponsored = params.get('sponsored');
+      const canceled = params.get('canceled');
+      if (success === 'plan') {
+        const tier = params.get('tier');
+        setSuccessBanner(`🎉 Plan upgraded successfully${tier ? ` to ${tier}` : ''}! Your new limits are active.`);
+      } else if (sponsored) {
+        setSuccessBanner(`🔥 Listing is now sponsored! It's live and featured across the platform.`);
+      } else if (canceled) {
+        setCancelBanner(true);
+      }
+      // Clean URL params without reload
+      if (success || sponsored || canceled) {
+        const cleanUrl = window.location.pathname + (tab ? `?tab=${tab}` : '');
+        window.history.replaceState({}, '', cleanUrl);
       }
     }
   }, []);
@@ -63,22 +80,24 @@ export default function RecruiterDashboardPage() {
   const [aiResults, setAiResults] = useState<Record<string, { aiScore: number; aiLabel: string; aiExplanation: string }>>({});
   const [isStackRanking, setIsStackRanking] = useState(false);
 
-  // Job Listing Premium Upgrade states
+  // ── Sponsor Modals ──
   const [upgradeJobId, setUpgradeJobId] = useState<string | null>(null);
-  const [upgradeCardName, setUpgradeCardName] = useState('');
-  const [upgradeCardNumber, setUpgradeCardNumber] = useState('');
-  const [upgradeCardExpiry, setUpgradeCardExpiry] = useState('');
-  const [upgradeCardCvc, setUpgradeCardCvc] = useState('');
   const [isProcessingUpgrade, setIsProcessingUpgrade] = useState(false);
+  const [sponsorNonTransferAck, setSponsorNonTransferAck] = useState(false);
+  
+  // ── Sponsor Bundles ──
+  const [isProcessingBundle, setIsProcessingBundle] = useState<string | null>(null);
+  const [isPausingJobId, setIsPausingJobId] = useState<string | null>(null);
 
   // Plan Subscription Premium Upgrade states
   const [showPlanCheckout, setShowPlanCheckout] = useState(false);
   const [selectedUpgradePlanId, setSelectedUpgradePlanId] = useState<string | null>(null);
-  const [planCardName, setPlanCardName] = useState('');
-  const [planCardNumber, setPlanCardNumber] = useState('');
-  const [planCardExpiry, setPlanCardExpiry] = useState('');
-  const [planCardCvc, setPlanCardCvc] = useState('');
   const [isProcessingPlanUpgrade, setIsProcessingPlanUpgrade] = useState(false);
+  const [employeeStatuses, setEmployeeStatuses] = useState<Record<string, string>>({});
+
+  // Toast/banner state for post-Stripe redirect feedback
+  const [successBanner, setSuccessBanner] = useState<string | null>(null);
+  const [cancelBanner, setCancelBanner] = useState(false);
 
   // 1. Verify permissions and load businesses
   useEffect(() => {
@@ -94,7 +113,7 @@ export default function RecruiterDashboardPage() {
         // A. Fetch owned businesses
         const { data: owned, error: ownedErr } = await supabase
           .from('business_profiles')
-          .select('id, name, slug, bio')
+          .select('id, name, slug, bio, owner_id')
           .eq('owner_id', user.id);
 
         if (ownedErr) throw ownedErr;
@@ -109,7 +128,8 @@ export default function RecruiterDashboardPage() {
               id,
               name,
               slug,
-              bio
+              bio,
+              owner_id
             )
           `)
           .eq('user_id', user.id)
@@ -118,22 +138,30 @@ export default function RecruiterDashboardPage() {
         if (empErr) throw empErr;
 
         // Combine unique business listings
-        const combinedMap = new Map<string, { id: string; name: string; slug: string; bio: string | null }>();
+        const combinedMap = new Map<string, { id: string; name: string; slug: string; bio: string | null; owner_id: string }>();
+        const statuses: Record<string, string> = {};
         
         if (owned) {
-          owned.forEach(b => combinedMap.set(b.id, b));
+          owned.forEach(b => {
+            combinedMap.set(b.id, b as any);
+            statuses[b.id] = 'owner';
+          });
         }
         
         if (employeeData) {
           employeeData.forEach((record: any) => {
             const bp = record.business_profiles as any;
             const status = record.status || '';
-            if (bp && status.includes('jobs')) {
-              combinedMap.set(bp.id, bp);
+            if (bp) {
+              statuses[bp.id] = status;
+              if (status.includes('jobs')) {
+                combinedMap.set(bp.id, bp);
+              }
             }
           });
         }
 
+        setEmployeeStatuses(statuses);
         const combinedList = Array.from(combinedMap.values());
 
         if (combinedList.length > 0) {
@@ -259,7 +287,7 @@ export default function RecruiterDashboardPage() {
     setUpdatingJobId(jobId);
     
     const parsed = parseJobStatus(currentStatus);
-    const newStatus = encodeJobStatus(!parsed.isOpen, parsed.isFeatured);
+    const newStatus = encodeJobStatus(!parsed.isOpen, parsed.isFeatured, parsed.isPaused);
 
     try {
       await getToken({ template: 'supabase' });
@@ -281,130 +309,108 @@ export default function RecruiterDashboardPage() {
     }
   };
 
-  // Process the Stripe payment simulation to upgrade an existing Standard post to Featured
-  const handleUpgradeJob = async () => {
-    if (!upgradeJobId) return;
-    setIsProcessingUpgrade(true);
-
+  // Toggle pause/resume on a sponsored listing's featured clock
+  const handleToggleSponsorPause = async (jobId: string, currentStatus: string) => {
+    setIsPausingJobId(jobId);
     try {
-      const jobToUpgrade = jobs.find(j => j.id === upgradeJobId);
-      if (!jobToUpgrade) throw new Error("Job not found.");
-
-      const parsed = parseJobStatus(jobToUpgrade.status);
-      const newStatus = encodeJobStatus(parsed.isOpen, true);
-
-      // Simulate network checkout lag for 2 seconds
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const newStatus = toggleSponsorPause(currentStatus);
 
       await getToken({ template: 'supabase' });
 
       const { error } = await supabase
         .from('jobs')
         .update({ status: newStatus })
-        .eq('id', upgradeJobId);
+        .eq('id', jobId);
 
       if (error) throw error;
 
-      // Update local state dynamically
-      setJobs(jobs.map(j => j.id === upgradeJobId ? { ...j, status: newStatus } : j));
-      
-      // Reset checkout states
-      setUpgradeJobId(null);
-      setUpgradeCardName('');
-      setUpgradeCardNumber('');
-      setUpgradeCardExpiry('');
-      setUpgradeCardCvc('');
-      alert("⚡ Job listing upgraded successfully! Your job is now Featured 🔥");
+      setJobs(jobs.map(j => j.id === jobId ? { ...j, status: newStatus } : j));
+    } catch (err: any) {
+      console.error('Failed to toggle sponsor pause:', err);
+      alert('Failed to update sponsorship state: ' + (err.message || 'Error occurred.'));
+    } finally {
+      setIsPausingJobId(null);
+    }
+  };
+
+  // Redirect to real Stripe Checkout for sponsored post ($19 one-time)
+  const handleUpgradeJob = async () => {
+    if (!upgradeJobId || !selectedBusinessId) return;
+    setIsProcessingUpgrade(true);
+    try {
+      const jobBeingUpgraded = jobs.find(j => j.id === upgradeJobId);
+      const credits = selectedBusiness ? getSponsorCredits(selectedBusiness.bio) : 0;
+
+      if (credits > 0) {
+        // Use a credit instead of Stripe
+        const res = await fetch('/api/jobs/sponsor-with-credit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobId: upgradeJobId, businessId: selectedBusinessId }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to apply sponsor credit.');
+        
+        // Success
+        setSuccessBanner('Sponsorship credit applied successfully! Listing is now featured.');
+        setUpgradeJobId(null);
+        setIsProcessingUpgrade(false);
+        // Refresh jobs and business to reflect deducted credit
+        const freshJobs = await supabase.from('jobs').select('*').eq('business_id', selectedBusinessId).order('created_at', { ascending: false });
+        if (freshJobs.data) setJobs(freshJobs.data);
+        const freshProfile = await supabase.from('business_profiles').select('bio').eq('id', selectedBusinessId).single();
+        if (freshProfile.data && selectedBusiness) {
+          selectedBusiness.bio = freshProfile.data.bio;
+        }
+      } else {
+        // Redirect to Stripe
+        const res = await fetch('/api/checkout/sponsored-post', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jobId: upgradeJobId,
+            businessId: selectedBusinessId,
+            jobTitle: jobBeingUpgraded?.title,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.url) throw new Error(data.error || 'Failed to create checkout session.');
+        window.location.href = data.url;
+      }
     } catch (err: any) {
       console.error(err);
-      alert("Failed to upgrade job listing: " + (err.message || 'Error occurred.'));
-    } finally {
+      alert('Failed to sponsor job: ' + (err.message || 'Error occurred.'));
       setIsProcessingUpgrade(false);
     }
   };
 
-  // Process the Stripe payment simulation to upgrade the subscription plan for a company profile
+  // Redirect to real Stripe Checkout for recruiter plan subscription
   const handleUpgradePlan = async () => {
     if (!selectedBusinessId || !selectedUpgradePlanId) return;
     setIsProcessingPlanUpgrade(true);
-
     try {
-      const activeBusiness = businesses.find(b => b.id === selectedBusinessId);
-      if (!activeBusiness) throw new Error("Business profile not found.");
-
-      const newBio = injectBusinessTier(activeBusiness.bio, selectedUpgradePlanId);
-
-      // Simulate network checkout lag for 2 seconds
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      await getToken({ template: 'supabase' });
-
-      const { error } = await supabase
-        .from('business_profiles')
-        .update({ bio: newBio })
-        .eq('id', selectedBusinessId);
-
-      if (error) throw error;
-
-      // Update local state dynamically
-      setBusinesses(businesses.map(b => b.id === selectedBusinessId ? { ...b, bio: newBio } : b));
-      
-      // Reset checkout states
-      setShowPlanCheckout(false);
-      setSelectedUpgradePlanId(null);
-      setPlanCardName('');
-      setPlanCardNumber('');
-      setPlanCardExpiry('');
-      setPlanCardCvc('');
-      alert(`⚡ Subscription plan successfully updated to ${BUSINESS_TIERS[selectedUpgradePlanId]?.name || 'new plan'}!`);
+      const res = await fetch('/api/checkout/recruiter-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessId: selectedBusinessId,
+          tierId: selectedUpgradePlanId,
+          email: user?.primaryEmailAddress?.emailAddress,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.url) throw new Error(data.error || 'Failed to create checkout session.');
+      window.location.href = data.url;
     } catch (err: any) {
       console.error(err);
-      alert("Failed to upgrade subscription plan: " + (err.message || 'Error occurred.'));
-    } finally {
+      alert('Failed to start checkout: ' + (err.message || 'Error occurred.'));
       setIsProcessingPlanUpgrade(false);
     }
+    // Don't reset — redirect is happening
   };
 
 
-  // Generate dynamic, realistic applicant data mapped to the selected job title
-  const getMockApplicantsForJob = (jobTitle: string) => {
-    const title = jobTitle || 'Developer';
-    return [
-      {
-        id: 'app-1',
-        firstName: 'Alex',
-        lastName: 'Rivera',
-        yoe: 5,
-        skills: `Expert in React, TypeScript, and ${title}-related workflows`,
-        appliedDate: new Date('2026-05-22T10:30:00Z'),
-        aiScore: 9.8,
-        aiLabel: 'AI: Outstanding',
-        aiExplanation: `Highest alignment with your ${title} requirements. Demonstrates strong framework mastery and robust production shipping background.`
-      },
-      {
-        id: 'app-2',
-        firstName: 'Sarah',
-        lastName: 'Chen',
-        yoe: 8,
-        skills: `Tech Lead • System Architecture • ${title} tooling`,
-        appliedDate: new Date('2026-05-22T08:15:00Z'),
-        aiScore: 9.4,
-        aiLabel: 'AI: Highly Qualified',
-        aiExplanation: `Exceptional leadership credentials matching the scope of your ${title} opening, with slight focus differences in core stack details.`
-      },
-      {
-        id: 'app-3',
-        firstName: 'Michael',
-        lastName: 'Foster',
-        yoe: 3,
-        skills: `Fullstack Developer • Node.js • ${title} generalist`,
-        appliedDate: new Date('2026-05-22T14:45:00Z'),
-        aiScore: 8.2,
-        aiLabel: 'AI: Good Match',
-        aiExplanation: `Solid mid-level candidate. Capable of driving standard developer tracks for your ${title} listing with minimal onboarding.`
-      }
-    ];
-  };
+  // Fetch jobs and stats when dashboard loads
 
   // Post candidates to Gemini API to rank them in real-time
   const handleRunAIStackRank = async () => {
@@ -583,7 +589,14 @@ export default function RecruiterDashboardPage() {
     const parsed = parseJobStatus(j.status);
     return !parsed.isOpen;
   }).length;
+  
+  const totalViews = jobs.reduce((sum, j) => sum + (j.views || 0), 0);
+  const totalClicks = jobs.reduce((sum, j) => sum + (j.clicks || 0), 0);
+  
   const totalApplicantsCount = realApplicants.length > 0 ? realApplicants.length : activeCount * 3;
+  const isOwner = selectedBusiness?.owner_id === user?.id;
+  const isPremiumEmployee = (employeeStatuses[selectedBusinessId] || '').includes('premium');
+  const isAILocked = selectedBusinessTier?.hasAI === false && !isOwner && !isPremiumEmployee;
 
   return (
     <div style={{ background: 'var(--bg-color)', minHeight: 'calc(100dvh - 82px)', color: 'var(--text-primary)' }}>
@@ -620,6 +633,52 @@ export default function RecruiterDashboardPage() {
         </div>
       </header>
 
+      {/* POST-STRIPE REDIRECT BANNERS */}
+      {successBanner && (
+        <div style={{
+          maxWidth: '1100px', margin: '1.5rem auto 0', padding: '0 1rem',
+        }}>
+          <div style={{
+            background: 'rgba(142,192,124,0.1)',
+            border: '1px solid rgba(142,192,124,0.35)',
+            borderRadius: '10px',
+            padding: '0.9rem 1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem',
+            fontSize: '0.9rem',
+            fontWeight: 600,
+            color: '#8ec07c',
+          }}>
+            <span>{successBanner}</span>
+            <button onClick={() => setSuccessBanner(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: '2px', flexShrink: 0 }}>✕</button>
+          </div>
+        </div>
+      )}
+      {cancelBanner && (
+        <div style={{
+          maxWidth: '1100px', margin: '1.5rem auto 0', padding: '0 1rem',
+        }}>
+          <div style={{
+            background: 'rgba(235,219,178,0.06)',
+            border: '1px solid rgba(235,219,178,0.15)',
+            borderRadius: '10px',
+            padding: '0.9rem 1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem',
+            fontSize: '0.9rem',
+            fontWeight: 600,
+            color: 'var(--text-secondary)',
+          }}>
+            <span>Checkout canceled — no charge was made.</span>
+            <button onClick={() => setCancelBanner(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: '2px', flexShrink: 0 }}>✕</button>
+          </div>
+        </div>
+      )}
+
       {/* SUB NAV PILLS / METRICS */}
       <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem 1rem 4rem 1rem' }}>
         
@@ -654,8 +713,8 @@ export default function RecruiterDashboardPage() {
 
           {/* Card 2 */}
           <div style={{ background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--glass-border)', padding: '1.5rem', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>Inactive Listings</span>
-            <div style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--text-secondary)', marginTop: '0.5rem' }}>{inactiveCount}</div>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>Total Job Views</span>
+            <div style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--text-secondary)', marginTop: '0.5rem' }}>{totalViews}</div>
           </div>
 
           {/* Card 3 */}
@@ -666,8 +725,8 @@ export default function RecruiterDashboardPage() {
 
           {/* Card 4 */}
           <div style={{ background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--glass-border)', padding: '1.5rem', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>Average AI Match Fit</span>
-            <div style={{ fontSize: '2.25rem', fontWeight: 800, color: '#10b981', marginTop: '0.5rem' }}>{activeCount > 0 ? '9.1 / 10' : '--'}</div>
+            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>Total Apply Clicks</span>
+            <div style={{ fontSize: '2.25rem', fontWeight: 800, color: '#10b981', marginTop: '0.5rem' }}>{totalClicks}</div>
           </div>
 
         </section>
@@ -826,28 +885,103 @@ export default function RecruiterDashboardPage() {
                                   ? `${job.salary_min ? `$${(job.salary_min / 1000).toFixed(0)}k` : ''} - ${job.salary_max ? `$${(job.salary_max / 1000).toFixed(0)}k` : ''}`
                                   : 'Competitive'}
                               </span>
+                              <span>•</span>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                <Eye size={14} /> {job.views || 0} Views
+                              </span>
+                              <span>•</span>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: 'var(--primary)' }}>
+                                <ArrowRight size={14} /> {job.clicks || 0} Apply Clicks
+                              </span>
                             </div>
                           </div>
 
                           {/* Status Toggle & Details Actions */}
-                          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                            {/* Upgrade button for Standard listings */}
+                          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                            {/* Sponsor / Featured upgrade button + info link for Standard listings */}
                             {!parsed.isFeatured && (
-                              <button
-                                onClick={() => setUpgradeJobId(job.id)}
-                                className="btn btn-primary"
-                                style={{ 
-                                  padding: '0.5rem 1rem', 
-                                  fontSize: '0.85rem',
-                                  background: 'rgba(250, 189, 47, 0.12)',
-                                  color: 'var(--primary)',
-                                  border: '1px solid rgba(250, 189, 47, 0.3)',
-                                  cursor: 'pointer'
-                                }}
-                              >
-                                ⚡ Upgrade to Featured
-                              </button>
+                              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                <button
+                                  onClick={() => {
+                                    setSponsorNonTransferAck(false);
+                                    setUpgradeJobId(job.id);
+                                  }}
+                                  className="btn"
+                                  style={{ 
+                                    padding: '0.5rem 1rem', 
+                                    fontSize: '0.85rem',
+                                    background: 'linear-gradient(135deg, rgba(250,189,47,0.15) 0%, rgba(251,191,36,0.08) 100%)',
+                                    color: 'var(--primary)',
+                                    border: '1px solid rgba(250, 189, 47, 0.4)',
+                                    cursor: 'pointer',
+                                    fontWeight: 700,
+                                    boxShadow: '0 0 12px rgba(250,189,47,0.08)'
+                                  }}
+                                >
+                                  ⚡ Sponsor Post — $19
+                                </button>
+                                <Link
+                                  href="/jobs/sponsored"
+                                  style={{ 
+                                    fontSize: '0.78rem',
+                                    color: 'var(--text-secondary)',
+                                    textDecoration: 'underline',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  How it works
+                                </Link>
+                              </div>
                             )}
+
+                            {/* Pause / Resume controls for sponsored listings */}
+                            {parsed.isFeatured && (
+                              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                <button
+                                  disabled={isPausingJobId === job.id}
+                                  onClick={() => handleToggleSponsorPause(job.id, job.status)}
+                                  className="btn"
+                                  style={{
+                                    padding: '0.4rem 0.9rem',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 700,
+                                    cursor: isPausingJobId === job.id ? 'not-allowed' : 'pointer',
+                                    border: parsed.isPaused
+                                      ? '1px solid rgba(250,189,47,0.5)'
+                                      : '1px solid rgba(250,189,47,0.2)',
+                                    background: parsed.isPaused
+                                      ? 'rgba(250,189,47,0.12)'
+                                      : 'rgba(250,189,47,0.05)',
+                                    color: 'var(--primary)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.35rem',
+                                  }}
+                                >
+                                  {isPausingJobId === job.id ? (
+                                    <Loader2 className="animate-spin" size={13} />
+                                  ) : parsed.isPaused ? (
+                                    <>▶ Resume Sponsorship</>
+                                  ) : (
+                                    <>⏸ Pause Sponsorship</>
+                                  )}
+                                </button>
+
+                                <span style={{
+                                  fontSize: '0.75rem',
+                                  color: parsed.isPaused ? 'var(--text-secondary)' : 'var(--primary)',
+                                  background: parsed.isPaused ? 'rgba(255,255,255,0.04)' : 'rgba(250,189,47,0.08)',
+                                  border: `1px solid ${parsed.isPaused ? 'rgba(255,255,255,0.08)' : 'rgba(250,189,47,0.2)'}`,
+                                  borderRadius: '6px',
+                                  padding: '3px 9px',
+                                  fontWeight: 700,
+                                  whiteSpace: 'nowrap',
+                                }}>
+                                  {parsed.isPaused ? '⏸ Sponsored · Paused' : '🔥 Sponsored · Active'}
+                                </span>
+                              </div>
+                            )}
+
 
                             <button
                               disabled={updatingJobId === job.id}
@@ -893,7 +1027,7 @@ export default function RecruiterDashboardPage() {
             {/* APPLICANT STACK RANKER TAB */}
             {activeTab === 'applicants' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {selectedBusinessTier?.hasAI === false ? (
+                {isAILocked ? (
                   /* Premium Blur Blocker for AI locks on Starter tier */
                   <div style={{
                     background: 'linear-gradient(135deg, rgba(20, 20, 20, 0.45) 0%, rgba(10, 10, 10, 0.55) 100%)',
@@ -1324,8 +1458,168 @@ export default function RecruiterDashboardPage() {
                     );
                   })}
                 </div>
+
+                {/* Manage Billing (Stripe Portal) */}
+                <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    onClick={() => {
+                      if (selectedBusinessId) {
+                        window.location.href = `/api/billing/portal?businessId=${selectedBusinessId}`;
+                      }
+                    }}
+                    className="btn btn-secondary"
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}
+                  >
+                    Manage Billing & Invoices ➔
+                  </button>
+                </div>
+
+                {/* Sponsorship Bundles */}
+                <div style={{
+                  background: 'var(--surface-color)',
+                  borderRadius: '16px',
+                  border: '1px solid var(--glass-border)',
+                  padding: '2rem',
+                  marginTop: '1.5rem',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.05)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <div>
+                      <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 0.5rem 0' }}>Sponsorship Bundles</h3>
+                      <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0, maxWidth: '500px' }}>
+                        Save on sponsored job listings by purchasing credits in bulk. Credits never expire and can be used on any active listing.
+                      </p>
+                    </div>
+                    <div style={{ background: 'rgba(250, 189, 47, 0.1)', padding: '0.75rem 1.25rem', borderRadius: '12px', border: '1px solid rgba(250, 189, 47, 0.3)', textAlign: 'center' }}>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase' }}>Available Credits</div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '0.2rem' }}>
+                        {selectedBusiness ? getSponsorCredits(selectedBusiness.bio) : 0}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+                    {/* Triple Pack */}
+                    <div style={{ border: '1px solid var(--glass-border)', borderRadius: '12px', padding: '1.5rem', background: 'var(--bg-color)', display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                        <div>
+                          <h4 style={{ margin: '0 0 0.25rem 0', fontWeight: 700, fontSize: '1.1rem' }}>Triple Pack</h4>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>3 Credits • Save $8</span>
+                        </div>
+                        <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary)' }}>$49</span>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          if (!selectedBusinessId) return;
+                          setIsProcessingBundle('triple');
+                          try {
+                            const res = await fetch('/api/checkout/sponsor-bundle', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ businessId: selectedBusinessId, bundleType: 'triple' })
+                            });
+                            const data = await res.json();
+                            if (data.url) window.location.href = data.url;
+                            else throw new Error(data.error || 'Failed to start checkout');
+                          } catch (err) {
+                            alert('Checkout failed: ' + err);
+                            setIsProcessingBundle(null);
+                          }
+                        }}
+                        disabled={isProcessingBundle !== null}
+                        className="btn btn-secondary"
+                        style={{ marginTop: 'auto', justifyContent: 'center', width: '100%', padding: '0.6rem' }}
+                      >
+                        {isProcessingBundle === 'triple' ? <Loader2 size={16} className="animate-spin" /> : 'Buy Triple Pack'}
+                      </button>
+                    </div>
+
+                    {/* Campaign Pack */}
+                    <div style={{ border: '2px solid var(--primary)', borderRadius: '12px', padding: '1.5rem', background: 'linear-gradient(135deg, rgba(250, 189, 47, 0.05) 0%, var(--bg-color) 100%)', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                      <div style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', background: 'var(--primary)', color: 'var(--bg-color)', fontSize: '0.65rem', fontWeight: 800, padding: '2px 10px', borderRadius: '10px', textTransform: 'uppercase' }}>Best Value</div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                        <div>
+                          <h4 style={{ margin: '0 0 0.25rem 0', fontWeight: 700, fontSize: '1.1rem' }}>Campaign Pack</h4>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>10 Credits • Save $41</span>
+                        </div>
+                        <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary)' }}>$149</span>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          if (!selectedBusinessId) return;
+                          setIsProcessingBundle('campaign');
+                          try {
+                            const res = await fetch('/api/checkout/sponsor-bundle', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ businessId: selectedBusinessId, bundleType: 'campaign' })
+                            });
+                            const data = await res.json();
+                            if (data.url) window.location.href = data.url;
+                            else throw new Error(data.error || 'Failed to start checkout');
+                          } catch (err) {
+                            alert('Checkout failed: ' + err);
+                            setIsProcessingBundle(null);
+                          }
+                        }}
+                        disabled={isProcessingBundle !== null}
+                        className="btn btn-primary"
+                        style={{ marginTop: 'auto', justifyContent: 'center', width: '100%', padding: '0.6rem' }}
+                      >
+                        {isProcessingBundle === 'campaign' ? <Loader2 size={16} className="animate-spin" /> : 'Buy Campaign Pack'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sponsored Post History */}
+                <div style={{
+                  background: 'var(--surface-color)',
+                  borderRadius: '16px',
+                  border: '1px solid var(--glass-border)',
+                  padding: '2rem',
+                  marginTop: '1.5rem',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.05)'
+                }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 1rem 0' }}>Sponsored Post History</h3>
+                  {jobs.filter(j => j.sponsored_until).length === 0 ? (
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: 0 }}>
+                      No sponsored posts yet. Upgrade a listing to featured from the Job Listings tab.
+                    </p>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid var(--glass-border)', color: 'var(--text-secondary)' }}>
+                            <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600 }}>Job Title</th>
+                            <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600 }}>Status</th>
+                            <th style={{ padding: '0.75rem 0.5rem', fontWeight: 600 }}>Sponsored Until</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {jobs.filter(j => j.sponsored_until).map(j => {
+                            const parsed = parseJobStatus(j.status);
+                            const isExpired = new Date(j.sponsored_until) < new Date();
+                            const statusText = isExpired ? 'Expired' : parsed.isFeatured ? 'Active' : 'Paused';
+                            const statusColor = isExpired ? 'var(--text-secondary)' : parsed.isFeatured ? 'var(--primary)' : 'var(--accent)';
+                            return (
+                              <tr key={j.id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                                <td style={{ padding: '1rem 0.5rem', fontWeight: 600, color: 'var(--text-primary)' }}>{j.title}</td>
+                                <td style={{ padding: '1rem 0.5rem', color: statusColor, fontWeight: 700 }}>{statusText}</td>
+                                <td style={{ padding: '1rem 0.5rem', color: 'var(--text-secondary)' }}>
+                                  {new Date(j.sponsored_until).toLocaleDateString()}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
+
           </>
         )}
 
@@ -1391,75 +1685,10 @@ export default function RecruiterDashboardPage() {
                   </div>
                 </div>
 
-                {/* Card Inputs */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="label" style={{ fontSize: '0.75rem' }}>Cardholder Name</label>
-                    <input 
-                      type="text" 
-                      required 
-                      placeholder="e.g. Alec Brandt"
-                      className="input-field" 
-                      style={{ marginBottom: 0 }}
-                      value={planCardName}
-                      onChange={e => setPlanCardName(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="label" style={{ fontSize: '0.75rem' }}>Card Number</label>
-                    <input 
-                      type="text" 
-                      required 
-                      maxLength={19}
-                      placeholder="4000 1234 5678 9010"
-                      className="input-field" 
-                      style={{ marginBottom: 0 }}
-                      value={planCardNumber}
-                      onChange={e => {
-                        const val = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
-                        setPlanCardNumber(val);
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="label" style={{ fontSize: '0.75rem' }}>Expiration (MM/YY)</label>
-                      <input 
-                        type="text" 
-                        required 
-                        maxLength={5}
-                        placeholder="12/29"
-                        className="input-field" 
-                        style={{ marginBottom: 0 }}
-                        value={planCardExpiry}
-                        onChange={e => {
-                          const val = e.target.value.replace(/\D/g, '');
-                          setPlanCardExpiry(val.length > 2 ? `${val.slice(0, 2)}/${val.slice(2, 4)}` : val);
-                        }}
-                      />
-                    </div>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="label" style={{ fontSize: '0.75rem' }}>CVC / CVV</label>
-                      <input 
-                        type="password" 
-                        required 
-                        maxLength={4}
-                        placeholder="•••"
-                        className="input-field" 
-                        style={{ marginBottom: 0 }}
-                        value={planCardCvc}
-                        onChange={e => setPlanCardCvc(e.target.value.replace(/\D/g, ''))}
-                      />
-                    </div>
-                  </div>
-                </div>
-
                 {/* Submit Action */}
                 <button
                   onClick={handleUpgradePlan}
-                  disabled={isProcessingPlanUpgrade || !planCardName || planCardNumber.length < 15}
+                  disabled={isProcessingPlanUpgrade}
                   className="btn btn-primary"
                   style={{ 
                     padding: '0.9rem', 
@@ -1467,17 +1696,18 @@ export default function RecruiterDashboardPage() {
                     fontWeight: 700, 
                     justifyContent: 'center', 
                     marginTop: '0.5rem',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 20px rgba(250, 189, 47, 0.25)'
+                    cursor: isProcessingPlanUpgrade ? 'not-allowed' : 'pointer',
+                    boxShadow: '0 4px 20px rgba(250, 189, 47, 0.25)',
+                    opacity: isProcessingPlanUpgrade ? 0.7 : 1
                   }}
                 >
                   {isProcessingPlanUpgrade ? (
                     <>
                       <Loader2 className="animate-spin" size={18} style={{ marginRight: '0.5rem' }} />
-                      <span>Processing Subscription Upgrade...</span>
+                      <span>Redirecting to Stripe...</span>
                     </>
                   ) : (
-                    <span>Subscribe to {BUSINESS_TIERS[selectedUpgradePlanId]?.name}</span>
+                    <span>Subscribe with Stripe ⚡</span>
                   )}
                 </button>
               </div>
@@ -1487,15 +1717,17 @@ export default function RecruiterDashboardPage() {
         )}
 
         {/* Sandbox Stripe Job Listings Featured Upgrade Modal */}
-        {upgradeJobId && (
+        {upgradeJobId && (() => {
+          const jobBeingUpgraded = jobs.find(j => j.id === upgradeJobId);
+          return (
           <div style={{
             position: 'fixed',
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.85)',
-            backdropFilter: 'blur(8px)',
+            backgroundColor: 'rgba(0,0,0,0.88)',
+            backdropFilter: 'blur(10px)',
             zIndex: 9999,
             display: 'flex',
             justifyContent: 'center',
@@ -1504,142 +1736,171 @@ export default function RecruiterDashboardPage() {
           }} onClick={() => !isProcessingUpgrade && setUpgradeJobId(null)}>
             <div style={{
               background: 'var(--surface-color)',
-              border: '1px solid var(--glass-border)',
+              border: '1px solid rgba(250,189,47,0.25)',
               borderRadius: '20px',
               width: '100%',
-              maxWidth: '480px',
+              maxWidth: '520px',
               overflow: 'hidden',
-              boxShadow: '0 30px 70px rgba(0,0,0,0.5)'
+              boxShadow: '0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(250,189,47,0.08)'
             }} onClick={e => e.stopPropagation()}>
               
               {/* Modal Header */}
-              <div style={{ background: 'var(--surface-highlight)', padding: '1.5rem 2rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyItems: 'center', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(250,189,47,0.08) 0%, var(--surface-highlight) 100%)',
+                padding: '1.5rem 2rem',
+                borderBottom: '1px solid rgba(250,189,47,0.15)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start'
+              }}>
                 <div>
-                  <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span>Stripe Featured Posting Checkout</span>
-                    <span style={{ fontSize: '0.9rem', color: 'var(--primary)' }}>🔒</span>
-                  </h3>
-                  <p style={{ margin: '0.2rem 0 0 0', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Secure simulated credit checkout portal</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                    <span style={{ fontSize: '1.25rem' }}>⚡</span>
+                    <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.2rem', fontWeight: 800 }}>
+                      Sponsor This Listing
+                    </h3>
+                    <span style={{
+                      background: 'rgba(250,189,47,0.12)',
+                      color: 'var(--primary)',
+                      fontSize: '0.65rem',
+                      fontWeight: 800,
+                      padding: '2px 8px',
+                      borderRadius: '10px',
+                      border: '1px solid rgba(250,189,47,0.2)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}>One-Time</span>
+                  </div>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                    Secure simulated payment — no real charges in sandbox mode
+                  </p>
                 </div>
                 {!isProcessingUpgrade && (
-                  <button onClick={() => setUpgradeJobId(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.2rem', padding: '0.25rem' }}>✕</button>
+                  <button
+                    onClick={() => setUpgradeJobId(null)}
+                    style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.2rem', padding: '0.25rem', lineHeight: 1 }}
+                  >✕</button>
                 )}
               </div>
 
               {/* Modal Body */}
-              <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                
+              <div style={{ padding: '1.75rem 2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+                {/* What you get */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+                  {[
+                    { icon: '🏆', text: 'Pinned above all standard posts' },
+                    { icon: '✨', text: '"Sponsored Match" badge for matched candidates' },
+                    { icon: '🎯', text: '+25pt algorithmic relevance boost' },
+                    { icon: '📅', text: '30-day featured placement' },
+                  ].map((b, i) => (
+                    <div key={i} style={{
+                      background: 'rgba(250,189,47,0.04)',
+                      border: '1px solid rgba(250,189,47,0.12)',
+                      borderRadius: '8px',
+                      padding: '0.6rem 0.75rem',
+                      fontSize: '0.78rem',
+                      color: 'var(--text-secondary)',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '0.4rem',
+                      lineHeight: 1.4
+                    }}>
+                      <span style={{ fontSize: '0.9rem', flexShrink: 0 }}>{b.icon}</span>
+                      {b.text}
+                    </div>
+                  ))}
+                </div>
+
                 {/* Order Summary */}
-                <div style={{ background: 'rgba(250, 189, 47, 0.05)', border: '1px dashed rgba(250, 189, 47, 0.25)', borderRadius: '12px', padding: '1rem 1.25rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                    <span>Listing Upgrade: {jobs.find(j => j.id === upgradeJobId)?.title}</span>
-                    <span>$99.00</span>
+                <div style={{
+                  background: 'rgba(250,189,47,0.05)',
+                  border: '1px dashed rgba(250,189,47,0.3)',
+                  borderRadius: '12px',
+                  padding: '1rem 1.25rem'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)', maxWidth: '280px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      🔥 Featured Upgrade — {jobBeingUpgraded?.title}
+                    </span>
+                    <span>$19.00</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                    <span>Active Duration</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
+                    <span>Duration</span>
                     <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>30 Days Pinned</span>
                   </div>
-                  <hr style={{ border: 'none', borderTop: '1px solid var(--glass-border)', margin: '0.75rem 0' }} />
+                  <hr style={{ border: 'none', borderTop: '1px solid var(--glass-border)', margin: '0.65rem 0' }} />
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)' }}>
-                    <span>Total Upgrade Bill</span>
-                    <span style={{ color: 'var(--primary)' }}>$99.00 USD</span>
+                    <span>Total</span>
+                    {selectedBusiness && getSponsorCredits(selectedBusiness.bio) > 0 ? (
+                      <span style={{ color: 'var(--primary)' }}>1 Credit ($0.00)</span>
+                    ) : (
+                      <span style={{ color: 'var(--primary)' }}>$19.00 USD</span>
+                    )}
                   </div>
                 </div>
 
-                {/* Card Inputs */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="label" style={{ fontSize: '0.75rem' }}>Cardholder Name</label>
-                    <input 
-                      type="text" 
-                      required 
-                      placeholder="e.g. Alec Brandt"
-                      className="input-field" 
-                      style={{ marginBottom: 0 }}
-                      value={upgradeCardName}
-                      onChange={e => setUpgradeCardName(e.target.value)}
+                {/* Non-transferable warning + acknowledgement gate */}
+                <div style={{
+                  background: 'rgba(251,73,52,0.05)',
+                  border: '1px solid rgba(251,73,52,0.2)',
+                  borderRadius: '10px',
+                  padding: '0.85rem 1rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.6rem',
+                }}>
+                  <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
+                    <strong style={{ color: '#fb4934' }}>⚠ Non-Transferable:</strong> This sponsorship credit is permanently bound to <strong style={{ color: 'var(--text-primary)' }}>{jobBeingUpgraded?.title}</strong> and cannot be moved to another listing. The clock can be <strong>paused</strong> at any time from your dashboard to conserve time, but cannot be reassigned.
+                  </p>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                    <input
+                      type="checkbox"
+                      checked={sponsorNonTransferAck}
+                      onChange={e => setSponsorNonTransferAck(e.target.checked)}
+                      style={{ marginTop: '2px', accentColor: 'var(--primary)', flexShrink: 0 }}
                     />
-                  </div>
-
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="label" style={{ fontSize: '0.75rem' }}>Card Number</label>
-                    <input 
-                      type="text" 
-                      required 
-                      maxLength={19}
-                      placeholder="4000 1234 5678 9010"
-                      className="input-field" 
-                      style={{ marginBottom: 0 }}
-                      value={upgradeCardNumber}
-                      onChange={e => {
-                        const val = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
-                        setUpgradeCardNumber(val);
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="label" style={{ fontSize: '0.75rem' }}>Expiration (MM/YY)</label>
-                      <input 
-                        type="text" 
-                        required 
-                        maxLength={5}
-                        placeholder="12/29"
-                        className="input-field" 
-                        style={{ marginBottom: 0 }}
-                        value={upgradeCardExpiry}
-                        onChange={e => {
-                          const val = e.target.value.replace(/\D/g, '');
-                          setUpgradeCardExpiry(val.length > 2 ? `${val.slice(0, 2)}/${val.slice(2, 4)}` : val);
-                        }}
-                      />
-                    </div>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="label" style={{ fontSize: '0.75rem' }}>CVC / CVV</label>
-                      <input 
-                        type="password" 
-                        required 
-                        maxLength={4}
-                        placeholder="•••"
-                        className="input-field" 
-                        style={{ marginBottom: 0 }}
-                        value={upgradeCardCvc}
-                        onChange={e => setUpgradeCardCvc(e.target.value.replace(/\D/g, ''))}
-                      />
-                    </div>
-                  </div>
+                    I understand this sponsorship is non-transferable and tied to this specific listing.
+                  </label>
                 </div>
 
                 {/* Submit Action */}
                 <button
                   onClick={handleUpgradeJob}
-                  disabled={isProcessingUpgrade || !upgradeCardName || upgradeCardNumber.length < 15}
+                  disabled={isProcessingUpgrade || !sponsorNonTransferAck}
                   className="btn btn-primary"
                   style={{ 
                     padding: '0.9rem', 
                     fontSize: '1rem', 
                     fontWeight: 700, 
-                    justifyContent: 'center', 
-                    marginTop: '0.5rem',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 20px rgba(250, 189, 47, 0.25)'
+                    justifyContent: 'center',
+                    cursor: isProcessingUpgrade || !sponsorNonTransferAck ? 'not-allowed' : 'pointer',
+                    boxShadow: sponsorNonTransferAck ? '0 4px 20px rgba(250,189,47,0.25)' : 'none',
+                    opacity: isProcessingUpgrade || !sponsorNonTransferAck ? 0.55 : 1
                   }}
                 >
                   {isProcessingUpgrade ? (
                     <>
-                      <Loader2 className="animate-spin" size={18} style={{ marginRight: '0.5rem' }} />
-                      <span>Processing Posting Promotion...</span>
+                      <Loader2 className="animate-spin" size={18} />
+                      <span>{selectedBusiness && getSponsorCredits(selectedBusiness.bio) > 0 ? 'Applying Credit...' : 'Redirecting to Stripe...'}</span>
                     </>
                   ) : (
-                    <span>Upgrade to Featured listing 🔥</span>
+                    <span>{selectedBusiness && getSponsorCredits(selectedBusiness.bio) > 0 ? `Apply 1 Sponsorship Credit 🔥 (${getSponsorCredits(selectedBusiness.bio)} left)` : 'Pay $19 with Stripe 🔥'}</span>
                   )}
                 </button>
+
+                <p style={{ textAlign: 'center', fontSize: '0.72rem', color: 'var(--text-secondary)', margin: 0 }}>
+                  {selectedBusiness && getSponsorCredits(selectedBusiness.bio) > 0 ? '🔒 You will not be charged to your card.' : '🔒 Secure checkout via Stripe.'}
+                  <Link href="/jobs/sponsored" style={{ color: 'var(--primary)', textDecoration: 'underline', marginLeft: '0.5rem' }}>
+                    Learn how sponsored posts work →
+                  </Link>
+                </p>
               </div>
 
             </div>
           </div>
-        )}
+          );
+        })()}
 
       </main>
       

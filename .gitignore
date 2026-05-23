@@ -52,3 +52,14 @@ next-env.d.ts
 playwright-report/
 test-results/
 
+# Supabase local config
+supabase/.temp/
+supabase/.branches/
+
+# Backups & Local DB dumps
+*.sqlite
+*.sqlite3
+*.db
+*.bak
+*.swp
+*~

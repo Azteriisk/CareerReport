@@ -62,18 +62,65 @@ export function getBusinessTier(bio: string | null | undefined): BusinessTier {
 }
 
 /**
- * Strips the hidden metadata tags from the business bio so they
+ * Strips ALL hidden metadata tags from the business bio so they
  * are completely invisible to standard public users in the UI.
+ * Strips: [Tier: ...] and [StripeCustomer: ...]
  */
 export function cleanBusinessBio(bio: string | null | undefined): string {
   if (!bio) return '';
-  return bio.replace(/\s*\[Tier:\s*\w+\]/gi, '').trim();
+  return bio
+    .replace(/\s*\[Tier:\s*\w+\]/gi, '')
+    .replace(/\s*\[StripeCustomer:\s*[^\]]+\]/gi, '')
+    .replace(/\s*\[SponsorCredits:\s*\d+\]/gi, '')
+    .trim();
 }
 
 /**
  * Injects or updates a subscription tier tag inside the bio string.
  */
 export function injectBusinessTier(bio: string | null | undefined, tierId: string): string {
-  const cleanBio = cleanBusinessBio(bio);
-  return `${cleanBio}\n[Tier: ${tierId}]`.trim();
+  // Strip only the tier tag, preserve StripeCustomer tag
+  const withoutTier = (bio ?? '').replace(/\s*\[Tier:\s*\w+\]/gi, '').trim();
+  return `${withoutTier}\n[Tier: ${tierId}]`.trim();
+}
+
+// ── Stripe Customer ID helpers (zero-migration, stored in bio) ────────────────
+
+/**
+ * Extracts the Stripe customer ID from the business bio string.
+ * Returns null if not found.
+ */
+export function getStripeCustomerId(bio: string | null | undefined): string | null {
+  if (!bio) return null;
+  const match = bio.match(/\[StripeCustomer:\s*(cus_[^\]]+)\]/i);
+  return match ? match[1].trim() : null;
+}
+
+/**
+ * Injects or updates the Stripe customer ID tag in the bio string.
+ * Preserves all other existing tags.
+ */
+export function injectStripeCustomerId(bio: string | null | undefined, customerId: string): string {
+  const withoutCustomer = (bio ?? '').replace(/\s*\[StripeCustomer:\s*[^\]]+\]/gi, '').trim();
+  return `${withoutCustomer}\n[StripeCustomer: ${customerId}]`.trim();
+}
+
+// ── Sponsor Credits helpers (zero-migration, stored in bio) ────────────────
+
+/**
+ * Extracts the remaining sponsor credits from the business bio string.
+ * Returns 0 if not found.
+ */
+export function getSponsorCredits(bio: string | null | undefined): number {
+  if (!bio) return 0;
+  const match = bio.match(/\[SponsorCredits:\s*(\d+)\]/i);
+  return match ? parseInt(match[1], 10) : 0;
+}
+
+/**
+ * Injects or updates the Sponsor Credits tag in the bio string.
+ */
+export function injectSponsorCredits(bio: string | null | undefined, credits: number): string {
+  const withoutCredits = (bio ?? '').replace(/\s*\[SponsorCredits:\s*\d+\]/gi, '').trim();
+  return credits > 0 ? `${withoutCredits}\n[SponsorCredits: ${credits}]`.trim() : withoutCredits;
 }

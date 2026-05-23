@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { Building2, Globe, MapPin, Users, Calendar, Briefcase, Mail, FileText, X, ChevronRight, BadgeCheck, Loader2, Edit, Check, UserMinus, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useUser } from '@clerk/nextjs';
+import { getBusinessTier } from '@/lib/business-tier';
 
 function parseEmployeeStatus(status: string | null) {
   if (!status) return { approved: false, permissions: [] as string[], title: '' };
@@ -299,7 +300,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
   };
 
   // Team Permissions Handlers
-  const handleTogglePermission = async (targetUserId: string, permission: 'posts' | 'jobs' | 'profile') => {
+  const handleTogglePermission = async (targetUserId: string, permission: 'posts' | 'jobs' | 'profile' | 'premium') => {
     const isTargetOwner = targetUserId === company.owner_id;
     if (isTargetOwner) {
       alert("Permission denied: Cannot edit the owner's permissions.");
@@ -315,6 +316,29 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
     if (!emp) return;
 
     const parsed = parseEmployeeStatus(emp.status);
+    
+    if (permission === 'premium') {
+      if (!isOwner) {
+        alert("Permission denied: Only the business owner can assign premium seats.");
+        return;
+      }
+      
+      if (!parsed.permissions.includes('premium')) {
+        const companyTier = getBusinessTier(company?.bio);
+        const limit = companyTier.id === 'pro' ? 3 : companyTier.id === 'enterprise' ? 5 : companyTier.id === 'unlimited' ? 10 : 0;
+        
+        const currentPremiumCount = allEmployeeRecords.filter(e => {
+          const p = parseEmployeeStatus(e.status);
+          return p.permissions.includes('premium') && e.user_id !== company.owner_id;
+        }).length;
+        
+        if (currentPremiumCount >= limit) {
+          alert(`❌ Premium seats limit reached (${currentPremiumCount}/${limit}). Please upgrade your company plan in the Recruiter Dashboard or revoke premium access from another team member first.`);
+          return;
+        }
+      }
+    }
+
     let newPerms: string[] = [];
     if (parsed.permissions.includes(permission)) {
       newPerms = parsed.permissions.filter(p => p !== permission);
@@ -1049,6 +1073,51 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
               <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 700 }}>Team Members & Permissions</h3>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0 0 2rem 0' }}>Assign granular permissions to team members. Unchecked capacities grant standard "Team Member Only" listing.</p>
               
+              {isOwner && (
+                <div style={{ 
+                  background: 'linear-gradient(135deg, rgba(250, 189, 47, 0.06) 0%, rgba(251, 191, 36, 0.01) 100%)', 
+                  border: '1px solid rgba(250, 189, 47, 0.25)', 
+                  padding: '1rem 1.5rem', 
+                  borderRadius: '10px', 
+                  marginBottom: '1.5rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '1rem'
+                }}>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      Premium Seats Assignment ⚡
+                    </h4>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                      As the company owner, you can designate team members to have Premium features (e.g. AI applicant stack ranking).
+                    </p>
+                  </div>
+                  {(() => {
+                    const companyTier = getBusinessTier(company?.bio);
+                    const limit = companyTier.id === 'pro' ? 3 : companyTier.id === 'enterprise' ? 5 : companyTier.id === 'unlimited' ? 10 : 0;
+                    const assignedPremiumCount = employees.filter(e => {
+                      const p = parseEmployeeStatus(e.status);
+                      return p.permissions.includes('premium') && e.user_id !== company.owner_id;
+                    }).length;
+                    return (
+                      <span style={{
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        color: assignedPremiumCount >= limit && limit > 0 ? 'var(--accent)' : 'var(--primary)',
+                        background: 'rgba(250, 189, 47, 0.1)',
+                        padding: '4px 12px',
+                        borderRadius: '20px',
+                        border: '1px solid rgba(250, 189, 47, 0.2)'
+                      }}>
+                        {assignedPremiumCount} / {limit} Seats Claimed ({companyTier.name})
+                      </span>
+                    );
+                  })()}
+                </div>
+              )}
+
               {employees.length === 0 ? (
                 <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic', margin: 0 }}>No approved team members yet.</p>
               ) : (
@@ -1061,6 +1130,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                         <th style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', textAlign: 'center' }}>Make Posts</th>
                         <th style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', textAlign: 'center' }}>Manage Jobs</th>
                         <th style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', textAlign: 'center' }}>Update Profile</th>
+                        <th style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', textAlign: 'center' }}>Premium Seat ⚡</th>
                         <th style={{ padding: '0.75rem 1rem', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '0.85rem', textTransform: 'uppercase', textAlign: 'right' }}>Actions</th>
                       </tr>
                     </thead>
@@ -1158,6 +1228,20 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                                 onChange={() => handleTogglePermission(emp.user_id, 'profile')}
                                 style={{ width: '18px', height: '18px', cursor: isOwnerRole ? 'default' : 'pointer', accentColor: 'var(--primary)' }}
                               />
+                            </td>
+                            
+                            <td style={{ padding: '1.25rem 1rem', textAlign: 'center' }}>
+                              {isOwnerRole ? (
+                                <span style={{ fontSize: '0.7rem', background: 'rgba(16, 185, 129, 0.12)', color: 'var(--accent)', padding: '4px 10px', borderRadius: '100px', fontWeight: 700 }}>Included (Owner)</span>
+                              ) : (
+                                <input 
+                                  type="checkbox"
+                                  checked={parsed.permissions.includes('premium')}
+                                  disabled={!isOwner}
+                                  onChange={() => handleTogglePermission(emp.user_id, 'premium')}
+                                  style={{ width: '18px', height: '18px', cursor: isOwner ? 'pointer' : 'default', accentColor: 'var(--primary)' }}
+                                />
+                              )}
                             </td>
                             
                             <td style={{ padding: '1.25rem 1rem', textAlign: 'right' }}>

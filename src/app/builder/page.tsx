@@ -102,6 +102,13 @@ function BuilderPageContent() {
   const [targetJobTitle, setTargetJobTitle] = useState('');
   const [targetJobDesc, setTargetJobDesc] = useState('');
   const [generatedCoverLetter, setGeneratedCoverLetter] = useState('');
+  const [coverLetterMode, setCoverLetterMode] = useState<'ai' | 'guided'>('ai');
+  const [storyType, setStoryType] = useState('standard');
+  const [includeCoverLetter, setIncludeCoverLetter] = useState(false);
+  const [guidedHook, setGuidedHook] = useState('');
+  const [guidedValue, setGuidedValue] = useState('');
+  const [guidedAlign, setGuidedAlign] = useState('');
+  const [guidedClose, setGuidedClose] = useState('');
   const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false);
   const [copiedCoverLetter, setCopiedCoverLetter] = useState(false);
   const [showCoverLetterSection, setShowCoverLetterSection] = useState(false);
@@ -311,6 +318,95 @@ function BuilderPageContent() {
     loadInitialData();
     return () => clearTimeout(clerkTimeout);
   }, [isLoaded, isSignedIn, user?.id, getToken]);
+
+  // Load cover letter details from data if present on initial load
+  useEffect(() => {
+    if (data?.coverLetter) {
+      if (data.coverLetter.company) setTargetCompany(data.coverLetter.company);
+      if (data.coverLetter.jobTitle) setTargetJobTitle(data.coverLetter.jobTitle);
+      if (data.coverLetter.jobDesc) setTargetJobDesc(data.coverLetter.jobDesc || '');
+      if (data.coverLetter.storyType) setStoryType(data.coverLetter.storyType);
+      if (data.coverLetter.content) setGeneratedCoverLetter(data.coverLetter.content);
+      if (data.coverLetter.isGuided) setCoverLetterMode('guided');
+      if (data.coverLetter.guidedSteps) {
+        if (data.coverLetter.guidedSteps.hook) setGuidedHook(data.coverLetter.guidedSteps.hook);
+        if (data.coverLetter.guidedSteps.value) setGuidedValue(data.coverLetter.guidedSteps.value);
+        if (data.coverLetter.guidedSteps.align) setGuidedAlign(data.coverLetter.guidedSteps.align);
+        if (data.coverLetter.guidedSteps.close) setGuidedClose(data.coverLetter.guidedSteps.close);
+      }
+    }
+  }, [data?.basics?.name]); // Run on initial load of the resume data to populate database values correctly
+
+  // Helper to update the cover letter object in ResumeData state
+  const saveCoverLetterToData = (
+    company: string,
+    title: string,
+    desc: string,
+    tone: string,
+    content: string,
+    mode: 'ai' | 'guided',
+    steps?: any
+  ) => {
+    setData(prev => ({
+      ...prev,
+      coverLetter: {
+        company,
+        jobTitle: title,
+        jobDesc: desc,
+        storyType: tone,
+        content,
+        isGuided: mode === 'guided',
+        guidedSteps: steps || null
+      }
+    }));
+    setSaveStatus('idle'); // Set dirty state for the autosave loop to trigger
+  };
+
+  // Synchronize compiled guided cover letter dynamically
+  useEffect(() => {
+    if (coverLetterMode === 'guided') {
+      const comp = targetCompany || '[Company]';
+      const title = targetJobTitle || '[Job Title]';
+      
+      const hook = guidedHook || `I am writing to express my enthusiastic interest in the ${title} position at ${comp}. With a proven track record in designing and building scalable software solutions, I am excited about the opportunity to contribute to your team.`;
+      const value = guidedValue || `Throughout my professional career, I have focused on engineering high-fidelity systems, refining user experiences, and collaborating with stakeholders. My skills in full-stack architecture, clean coding practices, and strategic execution align perfectly with the requirements of this role.`;
+      const align = guidedAlign || `I am particularly drawn to ${comp} because of your team's commitment to pushing engineering boundaries and cultivating an outstanding product culture. I would love to bring my technical expertise and creative problem-solving skills to help you achieve your goals.`;
+      const close = guidedClose || `Thank you for your time, consideration, and review of my application details. I look forward to the possibility of discussing how my background and past achievements can support your current priorities.`;
+      
+      // Update states if empty
+      if (!guidedHook) setGuidedHook(hook);
+      if (!guidedValue) setGuidedValue(value);
+      if (!guidedAlign) setGuidedAlign(align);
+      if (!guidedClose) setGuidedClose(close);
+      
+      // Concatenate the final letter
+      const compiled = `Dear Hiring Team,
+
+${hook}
+
+${value}
+
+${align}
+
+${close}
+
+Sincerely,
+${data.basics.name || 'Applicant'}`;
+
+      setGeneratedCoverLetter(compiled);
+      
+      // Push back to ResumeData
+      saveCoverLetterToData(
+        targetCompany,
+        targetJobTitle,
+        targetJobDesc,
+        storyType,
+        compiled,
+        'guided',
+        { hook, value, align, close }
+      );
+    }
+  }, [coverLetterMode, targetCompany, targetJobTitle, guidedHook, guidedValue, guidedAlign, guidedClose, data.basics.name]);
 
   // Lock body scroll on desktop
   useEffect(() => {
@@ -796,6 +892,7 @@ function BuilderPageContent() {
             targetCompany,
             targetJobTitle,
             targetJobDesc,
+            storyType,
             fullResume: data,
           },
           type: 'cover-letter',
@@ -805,7 +902,11 @@ function BuilderPageContent() {
 
       if (!response.ok) throw new Error('Generation failed');
       const text = await response.text();
-      setGeneratedCoverLetter(text.trim());
+      const content = text.trim();
+      setGeneratedCoverLetter(content);
+      
+      // Auto-save generated letter back to database via ResumeData state
+      saveCoverLetterToData(targetCompany, targetJobTitle, targetJobDesc, storyType, content, 'ai');
     } catch (e) {
       console.error(e);
       alert("Failed to generate cover letter. Please try again.");
@@ -1772,7 +1873,7 @@ function BuilderPageContent() {
             )}
           </div>
 
-          {/* AI Cover Letter Generator */}
+          {/* AI & Guided Cover Letter Generator */}
           <div style={{ marginTop: '2rem', background: 'var(--surface-highlight)', border: '1px solid var(--glass-border)', borderRadius: '12px', overflow: 'hidden' }}>
             <button
               onClick={() => setShowCoverLetterSection(!showCoverLetterSection)}
@@ -1790,8 +1891,7 @@ function BuilderPageContent() {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: 700, fontSize: '0.95rem' }}>
                 <FileText size={18} color="var(--primary)" />
-                <span>AI Cover Letter Generator</span>
-                {!isPro && <Lock size={12} style={{ color: 'var(--text-secondary)' }} />}
+                <span>Cover Letter Architect</span>
               </div>
               <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                 {showCoverLetterSection ? 'Collapse' : 'Expand'}
@@ -1800,22 +1900,173 @@ function BuilderPageContent() {
 
             {showCoverLetterSection && (
               <div style={{ padding: '1.25rem', borderTop: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'rgba(0, 0, 0, 0.15)' }}>
-                {!isPro ? (
-                  /* Locked marketing state for non-premium members */
-                  <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0' }}>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
-                      Write tailor-made, ATS-optimized cover letters for any target company instantly using your custom resume context.
-                    </p>
-                    <button
-                      className="btn btn-primary"
-                      style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '0.5rem' }}
-                      onClick={() => { setUpgradeFeature('AI Cover Letter Generator'); setUpgradeModalOpen(true); }}
-                    >
-                      <Lock size={14} /> Unlock Cover Letters (Pro)
-                    </button>
-                  </div>
-                ) : (
-                  /* Unlocked fully stateful inputs for premium members */
+                
+                {/* Mode Selector Tabs */}
+                <div style={{ display: 'flex', gap: '0.25rem', padding: '2px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid var(--glass-border)', marginBottom: '0.5rem' }}>
+                  <button
+                    onClick={() => setCoverLetterMode('ai')}
+                    style={{
+                      flex: 1,
+                      padding: '0.45rem',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      borderRadius: '6px',
+                      background: coverLetterMode === 'ai' ? 'var(--primary)' : 'transparent',
+                      color: coverLetterMode === 'ai' ? 'var(--bg-color)' : 'var(--text-secondary)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.25rem'
+                    }}
+                  >
+                    <span>🧠 AI Generator</span>
+                    {!isPro && <Lock size={10} />}
+                  </button>
+                  <button
+                    onClick={() => setCoverLetterMode('guided')}
+                    style={{
+                      flex: 1,
+                      padding: '0.45rem',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      borderRadius: '6px',
+                      background: coverLetterMode === 'guided' ? 'var(--primary)' : 'transparent',
+                      color: coverLetterMode === 'guided' ? 'var(--bg-color)' : 'var(--text-secondary)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.25rem'
+                    }}
+                  >
+                    <span>✍️ Guided Creator</span>
+                    <span style={{ fontSize: '0.65rem', background: 'rgba(16, 185, 129, 0.18)', color: 'var(--accent)', padding: '1px 6px', borderRadius: '4px', fontWeight: 800 }}>FREE</span>
+                  </button>
+                </div>
+
+                {/* AI GENERATOR TAB (Pro Protected) */}
+                {coverLetterMode === 'ai' && (
+                  !isPro ? (
+                    <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0' }}>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                        Write tailor-made, ATS-optimized cover letters for any target company instantly using your custom resume context and Gemini-powered storytelling tones.
+                      </p>
+                      <button
+                        className="btn btn-primary"
+                        style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '0.5rem' }}
+                        onClick={() => { setUpgradeFeature('AI Cover Letter Generator'); setUpgradeModalOpen(true); }}
+                      >
+                        <Lock size={14} /> Unlock AI Cover Letters (Pro)
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      <div>
+                        <label className="label" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.25rem', letterSpacing: '0.5px' }}>Target Company</label>
+                        <input
+                          type="text"
+                          className="input-field"
+                          placeholder="e.g. Google"
+                          value={targetCompany}
+                          onChange={e => setTargetCompany(e.target.value)}
+                          style={{ padding: '0.5rem 0.75rem', fontSize: '0.95rem' }}
+                        />
+                      </div>
+                      <div>
+                        <label className="label" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.25rem', letterSpacing: '0.5px' }}>Target Job Title</label>
+                        <input
+                          type="text"
+                          className="input-field"
+                          placeholder="e.g. Senior Software Engineer"
+                          value={targetJobTitle}
+                          onChange={e => setTargetJobTitle(e.target.value)}
+                          style={{ padding: '0.5rem 0.75rem', fontSize: '0.95rem' }}
+                        />
+                      </div>
+                      <div>
+                        <label className="label" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.25rem', letterSpacing: '0.5px' }}>Narrative Story Tone</label>
+                        <select
+                          className="input-field"
+                          value={storyType}
+                          onChange={e => setStoryType(e.target.value)}
+                          style={{ padding: '0.5rem 0.75rem', fontSize: '0.9rem', fontWeight: 600, background: 'var(--surface-color)', color: 'var(--text-primary)', width: '100%' }}
+                        >
+                          <option value="standard">Standard Corporate Narrative (Balanced)</option>
+                          <option value="passionate">Passionate & Purpose-Driven (Personal Story)</option>
+                          <option value="growth">Growth & Adaptability (Quick Learner/Scaler)</option>
+                          <option value="technical">Technical Excellence (Metrics & Architecture)</option>
+                          <option value="leadership">Strategic Leadership (Team Ownership & Metrics)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="label" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.25rem', letterSpacing: '0.5px' }}>Job Description/Requirements (Optional)</label>
+                        <textarea
+                          className="input-field"
+                          placeholder="Paste job context here to match your skills directly..."
+                          value={targetJobDesc}
+                          onChange={e => setTargetJobDesc(e.target.value)}
+                          style={{ minHeight: '60px', padding: '0.5rem 0.75rem', fontSize: '0.85rem', resize: 'vertical' }}
+                        />
+                      </div>
+
+                      <button
+                        className="btn btn-primary"
+                        disabled={isGeneratingCoverLetter}
+                        style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '0.5rem', padding: '0.65rem' }}
+                        onClick={handleGenerateCoverLetter}
+                      >
+                        {isGeneratingCoverLetter ? (
+                          <>
+                            <Loader2 size={16} className="animate-spin" />
+                            <span>Generating Story...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles size={16} />
+                            <span>Generate Cover Letter</span>
+                          </>
+                        )}
+                      </button>
+
+                      {generatedCoverLetter && (
+                        <div style={{ marginTop: '1rem', borderTop: '1px solid var(--glass-border)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)' }}>AI Generated Output</span>
+                            <button
+                              className="btn btn-secondary"
+                              onClick={handleCopyCoverLetter}
+                              style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                            >
+                              {copiedCoverLetter ? (
+                                <>
+                                  <CheckCircle size={10} color="var(--accent)" />
+                                  <span>Copied!</span>
+                                </>
+                              ) : (
+                                <span>Copy to Clipboard</span>
+                              )}
+                            </button>
+                          </div>
+                          <textarea
+                            className="input-field"
+                            value={generatedCoverLetter}
+                            onChange={e => {
+                              setGeneratedCoverLetter(e.target.value);
+                              saveCoverLetterToData(targetCompany, targetJobTitle, targetJobDesc, storyType, e.target.value, 'ai');
+                            }}
+                            style={{ minHeight: '200px', fontSize: '0.8rem', fontFamily: 'monospace', padding: '0.75rem', lineHeight: 1.4, resize: 'vertical' }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )
+                )}
+
+                {/* GUIDED CREATOR TAB (100% Free) */}
+                {coverLetterMode === 'guided' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     <div>
                       <label className="label" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.25rem', letterSpacing: '0.5px' }}>Target Company</label>
@@ -1839,65 +2090,84 @@ function BuilderPageContent() {
                         style={{ padding: '0.5rem 0.75rem', fontSize: '0.95rem' }}
                       />
                     </div>
-                    <div>
-                      <label className="label" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.25rem', letterSpacing: '0.5px' }}>Job Description/Requirements (Optional)</label>
-                      <textarea
-                        className="input-field"
-                        placeholder="Paste job context here to match your skills directly..."
-                        value={targetJobDesc}
-                        onChange={e => setTargetJobDesc(e.target.value)}
-                        style={{ minHeight: '60px', padding: '0.5rem 0.75rem', fontSize: '0.85rem', resize: 'vertical' }}
-                      />
-                    </div>
 
-                    <button
-                      className="btn btn-primary"
-                      disabled={isGeneratingCoverLetter}
-                      style={{ width: '100%', display: 'flex', justifyContent: 'center', gap: '0.5rem', padding: '0.65rem' }}
-                      onClick={handleGenerateCoverLetter}
-                    >
-                      {isGeneratingCoverLetter ? (
-                        <>
-                          <Loader2 size={16} className="animate-spin" />
-                          <span>Generating Letter...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles size={16} />
-                          <span>Generate Cover Letter</span>
-                        </>
-                      )}
-                    </button>
-
-                    {generatedCoverLetter && (
-                      <div style={{ marginTop: '1rem', borderTop: '1px solid var(--glass-border)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)' }}>Generated Output</span>
-                          <button
-                            className="btn btn-secondary"
-                            onClick={handleCopyCoverLetter}
-                            style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                          >
-                            {copiedCoverLetter ? (
-                              <>
-                                <CheckCircle size={10} color="var(--accent)" />
-                                <span>Copied!</span>
-                              </>
-                            ) : (
-                              <span>Copy to Clipboard</span>
-                            )}
-                          </button>
-                        </div>
+                    <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '1rem', marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--primary)' }}>✍️ Guided Cover Letter Editor</span>
+                      
+                      <div>
+                        <label className="label" style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Step 1: The Hook (Opening paragraph)</label>
                         <textarea
                           className="input-field"
-                          value={generatedCoverLetter}
-                          onChange={e => setGeneratedCoverLetter(e.target.value)}
-                          style={{ minHeight: '200px', fontSize: '0.8rem', fontFamily: 'monospace', padding: '0.75rem', lineHeight: 1.4, resize: 'vertical' }}
+                          placeholder="Why you are writing and excited about the position..."
+                          value={guidedHook}
+                          onChange={e => setGuidedHook(e.target.value)}
+                          style={{ minHeight: '60px', padding: '0.5rem', fontSize: '0.8rem', resize: 'vertical' }}
                         />
                       </div>
-                    )}
+                      <div>
+                        <label className="label" style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Step 2: The Value Story (Body paragraph)</label>
+                        <textarea
+                          className="input-field"
+                          placeholder="Highlight your skills, credentials, and accomplishments..."
+                          value={guidedValue}
+                          onChange={e => setGuidedValue(e.target.value)}
+                          style={{ minHeight: '70px', padding: '0.5rem', fontSize: '0.8rem', resize: 'vertical' }}
+                        />
+                      </div>
+                      <div>
+                        <label className="label" style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Step 3: Company Alignment (Why this company?)</label>
+                        <textarea
+                          className="input-field"
+                          placeholder="Connect your culture fit and alignment with their mission..."
+                          value={guidedAlign}
+                          onChange={e => setGuidedAlign(e.target.value)}
+                          style={{ minHeight: '60px', padding: '0.5rem', fontSize: '0.8rem', resize: 'vertical' }}
+                        />
+                      </div>
+                      <div>
+                        <label className="label" style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Step 4: Close & Call to Action</label>
+                        <textarea
+                          className="input-field"
+                          placeholder="Thank them and request a strategic follow-up discussion..."
+                          value={guidedClose}
+                          onChange={e => setGuidedClose(e.target.value)}
+                          style={{ minHeight: '50px', padding: '0.5rem', fontSize: '0.8rem', resize: 'vertical' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ borderTop: '1px dashed var(--glass-border)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)' }}>Aggregated Cover Letter Output</span>
+                        <button
+                          className="btn btn-secondary"
+                          onClick={handleCopyCoverLetter}
+                          style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                        >
+                          {copiedCoverLetter ? 'Copied!' : 'Copy to Clipboard'}
+                        </button>
+                      </div>
+                      <textarea
+                        className="input-field"
+                        value={generatedCoverLetter}
+                        onChange={e => {
+                          setGeneratedCoverLetter(e.target.value);
+                          saveCoverLetterToData(
+                            targetCompany,
+                            targetJobTitle,
+                            targetJobDesc,
+                            storyType,
+                            e.target.value,
+                            'guided',
+                            { hook: guidedHook, value: guidedValue, align: guidedAlign, close: guidedClose }
+                          );
+                        }}
+                        style={{ minHeight: '160px', fontSize: '0.775rem', fontFamily: 'monospace', padding: '0.75rem', lineHeight: 1.4, resize: 'vertical' }}
+                      />
+                    </div>
                   </div>
                 )}
+
               </div>
             )}
           </div>
@@ -2352,6 +2622,20 @@ function BuilderPageContent() {
             >
               <Save size={18} /> Save
             </button>
+            {generatedCoverLetter && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: 'rgba(255,255,255,0.03)', border: '1px solid var(--glass-border)', padding: '0.4rem 0.75rem', borderRadius: '8px' }}>
+                <input 
+                  type="checkbox" 
+                  id="includeCoverLetter"
+                  checked={includeCoverLetter} 
+                  onChange={e => setIncludeCoverLetter(e.target.checked)} 
+                  style={{ accentColor: 'var(--primary)', cursor: 'pointer' }}
+                />
+                <label htmlFor="includeCoverLetter" style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  💼 Export Cover Letter
+                </label>
+              </div>
+            )}
             <button
               onClick={() => {
                 if (!isSignedIn) {
@@ -2422,6 +2706,64 @@ function BuilderPageContent() {
             `}</style>
             {/* We scale the 850px layout slightly to fit 8.5in (816px) paper perfectly */}
             <div style={{ zoom: 0.96 }}>
+              {/* Optional Cover Letter page */}
+              {includeCoverLetter && generatedCoverLetter && (
+                <div className="resume-print-page" style={{
+                  width: '850px',
+                  height: '1100px',
+                  padding: '5rem 4.5rem',
+                  background: 'white',
+                  color: 'black',
+                  fontFamily: 'Georgia, serif',
+                  fontSize: '11pt',
+                  lineHeight: 1.6,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  boxSizing: 'border-box',
+                  position: 'relative'
+                }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
+                    <div>
+                      {/* Business letterhead */}
+                      <div style={{ borderBottom: '2px solid #eaeaea', paddingBottom: '1rem', marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                        <div>
+                          <strong style={{ fontSize: '1.75rem', letterSpacing: '-0.5px', color: '#1a1a1a' }}>{data.basics.name}</strong>
+                          <div style={{ fontSize: '1rem', color: '#8b5cf6', fontWeight: 600, marginTop: '2px' }}>{data.basics.label}</div>
+                        </div>
+                        <div style={{ textAlign: 'right', fontSize: '0.85rem', color: '#666' }}>
+                          {data.basics.email} | {data.basics.phone}<br />
+                          {data.basics.url || window.location.host}
+                        </div>
+                      </div>
+
+                      {/* Recipient block */}
+                      <div style={{ marginBottom: '2rem', fontSize: '0.95rem' }}>
+                        {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}<br /><br />
+                        <strong>Hiring Team</strong><br />
+                        {targetCompany || 'Target Company'}<br />
+                      </div>
+
+                      {/* Subject */}
+                      <div style={{ marginBottom: '1.5rem', fontSize: '1rem', fontWeight: 'bold', color: '#222' }}>
+                        Subject: Application for the {targetJobTitle || 'Open Position'} role
+                      </div>
+
+                      {/* Body */}
+                      <div style={{ whiteSpace: 'pre-wrap', color: '#333', textAlign: 'justify', fontSize: '0.95rem' }}>
+                        {generatedCoverLetter}
+                      </div>
+                    </div>
+
+                    {/* Sign-off */}
+                    <div style={{ marginTop: '2rem', fontSize: '0.95rem', color: '#333' }}>
+                      Sincerely,<br /><br />
+                      <strong>{data.basics.name}</strong>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {Array.from({ length: pageCount }).map((_, i) => (
                 <div key={`print-page-${i}`} className="resume-print-page" style={{
                   width: '850px',

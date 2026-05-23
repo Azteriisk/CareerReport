@@ -144,7 +144,30 @@ export default function TermsOfServicePage() {
           <hr style={{ border: 'none', height: '1px', background: 'var(--glass-border)', margin: '2rem 0' }} />
 
           <section style={{ marginBottom: '2.5rem' }}>
-            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>5. Limitation of Liability</h2>
+            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>5. Payments & Sponsorship Policy</h2>
+            <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>
+              Certain features on CareerReport, such as Recruiter Subscriptions and Sponsored Job Listings, require payment. By purchasing a subscription or sponsorship, you agree to the following:
+            </p>
+            <ul style={{ paddingLeft: '1.25rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <li>
+                <strong style={{ color: 'var(--text-primary)' }}>Sponsored Posts:</strong> Billed as a one-time $19 charge for a 30-day active featured window.
+              </li>
+              <li>
+                <strong style={{ color: 'var(--text-primary)' }}>Non-Transferable:</strong> Sponsorship credits are permanently bound to the specific job listing they were purchased for. They cannot be transferred to another listing.
+              </li>
+              <li>
+                <strong style={{ color: 'var(--text-primary)' }}>Pause Feature:</strong> You may pause your sponsored listing clock to freeze the 30-day window. Pausing is not a refund.
+              </li>
+              <li>
+                <strong style={{ color: 'var(--text-primary)' }}>No Refunds:</strong> There are no refunds on partially consumed subscription periods or sponsored time.
+              </li>
+            </ul>
+          </section>
+
+          <hr style={{ border: 'none', height: '1px', background: 'var(--glass-border)', margin: '2rem 0' }} />
+
+          <section style={{ marginBottom: '2.5rem' }}>
+            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>6. Limitation of Liability</h2>
             <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>
               CareerReport is provided on an "AS IS" and "AS AVAILABLE" basis without any express or implied warranties of merchantability, uptime, speed, or fitness for a particular purpose. 
             </p>
@@ -156,7 +179,7 @@ export default function TermsOfServicePage() {
           <hr style={{ border: 'none', height: '1px', background: 'var(--glass-border)', margin: '2rem 0' }} />
 
           <section style={{ marginBottom: '2.5rem' }}>
-            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>6. Termination & Suspension</h2>
+            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>7. Termination & Suspension</h2>
             <p style={{ color: 'var(--text-secondary)' }}>
               We reserve the right, in our sole discretion and without prior notice, to suspend or terminate accounts, remove public profiles, and ban users who violate these Terms, engage in disruptive activities, or conduct fraud on the Platform.
             </p>
@@ -165,7 +188,7 @@ export default function TermsOfServicePage() {
           <hr style={{ border: 'none', height: '1px', background: 'var(--glass-border)', margin: '2rem 0' }} />
 
           <section>
-            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>7. Governing Law & Contact</h2>
+            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>8. Governing Law & Contact</h2>
             <p style={{ marginBottom: '1.25rem', color: 'var(--text-secondary)' }}>
               These Terms shall be governed by and construed in accordance with the laws of the State of Arkansas, United States, without regard to its conflict of law provisions.
             </p>
