@@ -929,7 +929,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                 </p>
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+              <div className="grid-cols-3">
                 {applications.map(app => {
                   const profile = app.profiles || {};
                   const name = profile.full_name || profile.username || 'Candidate';

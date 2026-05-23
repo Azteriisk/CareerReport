@@ -426,6 +426,26 @@ input[type="month"].empty-date:focus::-webkit-datetime-edit {
   }
 }
 
+/* Dashboard Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+@media (max-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
 
@@ -577,3 +597,20 @@ input[type="month"].empty-date:focus::-webkit-datetime-edit {
   align-items: center;
   justify-content: center;
 }
+
+/* Standardized Symmetric Grids (Prevents Orphaned Cards) */
+.grid-cols-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; }
+.grid-cols-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+.grid-cols-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+
+/* 4-column drops to 2x2. 3-column drops directly to 1-column to avoid a 2-and-1 orphan. */
+@media (max-width: 1024px) {
+  .grid-cols-4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 800px) {
+  .grid-cols-3 { grid-template-columns: 1fr; }
+  .grid-cols-2 { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .grid-cols-4 { grid-template-columns: 1fr; }
+}

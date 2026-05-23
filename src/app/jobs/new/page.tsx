@@ -441,7 +441,7 @@ export default function CreateJobPage() {
               {/* Pricing Plan Selector */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
                 <label className="label">Select Listing Plan</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem' }}>
+                <div className="grid-cols-2">
                   
                   {/* Standard Tier Card */}
                   <div 

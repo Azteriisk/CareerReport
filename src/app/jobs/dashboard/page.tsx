@@ -683,7 +683,7 @@ export default function RecruiterDashboardPage() {
       <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '2rem 1rem 4rem 1rem' }}>
         
         {/* STATS HIGHLIGHT GRID */}
-        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
+        <section className="stats-grid">
           
           {/* Card 1: Subscription Tier Slot Meter */}
           <div style={{ background: 'var(--surface-color)', borderRadius: '12px', border: '1px solid var(--glass-border)', padding: '1.5rem', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -776,7 +776,7 @@ export default function RecruiterDashboardPage() {
                   </p>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
+                <div className="grid-cols-2">
                   <div style={{ background: 'var(--surface-color)', borderRadius: '16px', border: '1px solid var(--glass-border)', padding: '1.75rem' }}>
                     <h4 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <Briefcase size={18} color="var(--primary)" /> Active Overview
@@ -1363,7 +1363,7 @@ export default function RecruiterDashboardPage() {
                 </div>
 
                 {/* Subscriptions Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+                <div className="grid-cols-4">
                   {Object.values(BUSINESS_TIERS).map(plan => {
                     const isCurrentPlan = selectedBusinessTier?.id === plan.id;
                     return (
@@ -1498,7 +1498,7 @@ export default function RecruiterDashboardPage() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+                  <div className="grid-cols-2">
                     {/* Triple Pack */}
                     <div style={{ border: '1px solid var(--glass-border)', borderRadius: '12px', padding: '1.5rem', background: 'var(--bg-color)', display: 'flex', flexDirection: 'column' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>

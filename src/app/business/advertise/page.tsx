@@ -146,11 +146,7 @@ export default function BusinessAdvertisePage() {
 
         {/* 3-COLUMN CORE ADVANTAGES */}
         <section style={{ marginBottom: '6rem' }}>
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
-            gap: '2rem' 
-          }}>
+          <div className="grid-cols-3">
             
             {/* Feature 1 */}
             <div style={{ 

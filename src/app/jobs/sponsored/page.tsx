@@ -400,10 +400,9 @@ export default function SponsoredJobsPage() {
           background: 'var(--surface-color)',
         }}
       >
-        <div style={{
+        <div className="grid-cols-3" style={{
           maxWidth: '900px', margin: '0 auto',
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '2rem', textAlign: 'center',
+          textAlign: 'center',
         }}>
           {[
             { value: `${stat1}×`, label: 'More views vs. standard listings', sub: 'Average across sponsored posts' },
@@ -449,7 +448,7 @@ export default function SponsoredJobsPage() {
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+          <div className="grid-cols-3">
             {HOW_IT_WORKS_STEPS.map((step, i) => (
               <div key={i} style={{
                 background: 'var(--surface-color)', borderRadius: '16px',
@@ -509,7 +508,7 @@ export default function SponsoredJobsPage() {
             </h2>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem' }}>
+          <div className="grid-cols-3">
             {BENEFITS.map((b, i) => (
               <div key={i} style={{
                 background: 'var(--bg-color)', borderRadius: '12px',
@@ -557,7 +556,7 @@ export default function SponsoredJobsPage() {
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
+          <div className="grid-cols-3" style={{ alignItems: 'start' }}>
             {PRICING_TIERS.map(tier => (
               <div key={tier.id} style={{
                 background: tier.highlight
@@ -643,14 +642,11 @@ export default function SponsoredJobsPage() {
       {/* ── SPONSOR CONTROLS CALLOUT ── */}
       <section style={{ padding: '4rem 1.5rem', borderBottom: '1px solid var(--glass-border)' }}>
         <div style={{ maxWidth: '860px', margin: '0 auto' }}>
-          <div style={{
+          <div className="grid-cols-2" style={{
             background: 'linear-gradient(135deg, rgba(250,189,47,0.07) 0%, var(--surface-color) 60%)',
             border: '1px solid rgba(250,189,47,0.25)',
             borderRadius: '20px',
             padding: '2.5rem',
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-            gap: '2rem',
             alignItems: 'start',
           }}>
             <div>
