@@ -2220,7 +2220,7 @@ ${data.basics.name || 'Applicant'}`;
             top: '117px',
             left: 0,
             right: 0,
-            bottom: '60px',
+            bottom: 0,
             zIndex: 5,
             overflow: 'hidden'
           } : {

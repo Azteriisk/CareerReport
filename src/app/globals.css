@@ -624,6 +624,16 @@ input[type="month"].empty-date:focus::-webkit-datetime-edit {
   }
 }
 
+/* Hide Number Input Spinners */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
 .animate-spin {
   animation: spin 1s linear infinite;
 }

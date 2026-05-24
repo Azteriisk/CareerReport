@@ -267,7 +267,7 @@ export default function CreateJobPage() {
       <div style={{ maxWidth: '700px', margin: '0 auto', background: 'var(--surface-color)', padding: '2.5rem', borderRadius: '16px', border: '1px solid var(--glass-border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
           <div style={{ width: '56px', height: '56px', background: 'var(--primary)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bg-color)' }}>
-            <FileText size={32} />
+            <Briefcase size={32} />
           </div>
           <div>
             <h1 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--text-primary)' }}>Post a New Job</h1>
