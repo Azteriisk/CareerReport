@@ -2578,6 +2578,7 @@ ${data.basics.name || 'Applicant'}`;
             className={isMobile ? "hide-scrollbar" : ""}
             style={{ 
               display: 'flex', 
+              justifyContent: isMobile ? 'center' : 'flex-start',
               gap: '0.75rem',
               width: isMobile ? '100%' : 'auto',
               overflowX: isMobile ? 'auto' : 'visible',
