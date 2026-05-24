@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { RepostModal } from './RepostModal';
 import { CommentSection } from './CommentSection';
 import { createNotification } from '@/lib/notifications';
+import { hasPremiumGlow } from '@/lib/premium-tier';
 
 export interface Post {
   id: string;
@@ -21,6 +22,8 @@ export interface Post {
     username: string;
     full_name: string;
     avatar_url: string;
+    is_pro?: boolean;
+    bio?: string;
   };
 }
 
@@ -92,7 +95,6 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
     let isMounted = true;
     async function loadMetrics() {
       try {
-        // 1. Fetch comments count
         const { count: commCount, error: commError } = await supabase
           .from('comments')
           .select('*', { count: 'exact', head: true })
@@ -102,7 +104,6 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
           setCommentsCount(commCount);
         }
 
-        // 2. Fetch reposts count
         const { count: repCount, error: repError } = await supabase
           .from('posts')
           .select('*', { count: 'exact', head: true })
@@ -136,7 +137,7 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
           if (userIds.length > 0) {
             const { data: profiles } = await supabase
               .from('profiles')
-              .select('id, username, full_name, avatar_url')
+              .select('id, username, full_name, avatar_url, is_pro, bio')
               .in('id', userIds);
             (profiles || []).forEach((p: any) => { profileMap[p.id] = p; });
           }
@@ -156,18 +157,14 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
 
   const handleDelete = async () => {
     if (!confirmDelete) {
-      // First click: arm the button
       setConfirmDelete(true);
-      // Auto-disarm after 3 seconds if user doesn't confirm
       setTimeout(() => setConfirmDelete(false), 3000);
       return;
     }
-    // Second click: actually delete
     setIsDeleting(true);
     setConfirmDelete(false);
     try {
       const token = await getToken({ template: 'supabase' });
-      
 
       if (post.image_url) {
         const fileName = post.image_url.split('/').pop();
@@ -194,10 +191,8 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
     setLikeLoading(true);
 
     const token = await getToken({ template: 'supabase' });
-    
 
     if (liked) {
-      // Unlike
       const { error } = await supabase
         .from('post_likes')
         .delete()
@@ -207,11 +202,9 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
       if (!error) {
         setLiked(false);
         setLikeCount(prev => Math.max(0, prev - 1));
-        // Sync the count column
         await supabase.from('posts').update({ likes_count: Math.max(0, likeCount - 1) }).eq('id', post.id);
       }
     } else {
-      // Like
       const { error } = await supabase
         .from('post_likes')
         .insert([{ post_id: post.id, user_id: user!.id }]);
@@ -230,7 +223,6 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
 
   return (
     <>
-      {/* Lightbox */}
       {lightboxOpen && post.image_url && (
         <div onClick={() => setLightboxOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', cursor: 'zoom-out' }}>
           <button onClick={() => setLightboxOpen(false)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
@@ -240,15 +232,18 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
         </div>
       )}
 
-      {/* Repost Modal */}
       {repostModalOpen && (
         <RepostModal post={post} onClose={() => setRepostModalOpen(false)} onReposted={() => { if (onRepost) onRepost(); }} />
       )}
 
-      {/* Post Card */}
-      <div className="post-card-container" style={{ background: 'var(--surface-color)', borderRadius: '16px', marginBottom: '1rem', border: '1px solid var(--glass-border)', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
+      <div className="post-card-container" style={{ 
+        background: 'var(--surface-color)', 
+        borderRadius: '16px', 
+        marginBottom: '1rem', 
+        border: hasPremiumGlow(profile?.is_pro, profile?.bio) ? '1px solid var(--primary)' : '1px solid var(--glass-border)', 
+        boxShadow: hasPremiumGlow(profile?.is_pro, profile?.bio) ? '0 0 20px rgba(250, 189, 47, 0.15)' : '0 2px 10px rgba(0,0,0,0.05)' 
+      }}>
 
-        {/* Repost attribution */}
         {isRepost && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '0.75rem', paddingLeft: '4px' }}>
             <Repeat2 size={14} />
@@ -256,7 +251,6 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
           </div>
         )}
 
-        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <Link href={`/u/${profile?.username}`} style={{ display: 'flex', gap: '0.75rem', textDecoration: 'none', color: 'inherit', alignItems: 'center' }}>
             {profile?.avatar_url ? (
@@ -299,7 +293,6 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
           </div>
         </div>
 
-        {/* Content */}
         <div style={{ paddingLeft: '56px', marginTop: '0.35rem' }}>
           {post.content && (
             <p style={{ color: 'var(--text-primary)', lineHeight: 1.5, margin: '0 0 0.75rem 0', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
@@ -315,9 +308,7 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
 
           {isRepost && post.original_post && <EmbeddedPost post={post.original_post} />}
 
-          {/* Action Bar */}
           <div style={{ display: 'flex', gap: '2rem', color: 'var(--text-secondary)' }}>
-            {/* Comments */}
             <button
               className="btn-icon"
               onClick={() => setShowComments(prev => !prev)}
@@ -327,7 +318,6 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
               {commentsCount > 0 && <span>{commentsCount}</span>}
             </button>
 
-            {/* Likes — disabled for own posts */}
             <button
               className="btn-icon"
               onClick={handleLike}
@@ -344,7 +334,6 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
               <span>{likeCount}</span>
             </button>
 
-            {/* Repost */}
             <button
               className="btn-icon"
               onClick={() => isSignedIn && setRepostModalOpen(true)}
@@ -360,7 +349,6 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
             </button>
           </div>
 
-          {/* Thread Preview (when showComments is false) */}
           {!showComments && previewComments.length > 0 && (
             <div style={{
               marginTop: '0.85rem',

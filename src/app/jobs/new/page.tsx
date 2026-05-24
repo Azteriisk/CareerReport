@@ -189,11 +189,9 @@ export default function CreateJobPage() {
     setError('');
 
     try {
-      // Simulate Stripe/gateway handshake
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
       const token = await getToken({ template: 'supabase' });
 
+      // 1. Create the job in the database FIRST, but hidden (closed)
       const { data, error: insertError } = await supabase
         .from('jobs')
         .insert({
@@ -204,20 +202,37 @@ export default function CreateJobPage() {
           salary_max: salaryMax ? parseInt(salaryMax) : null,
           is_remote: workArrangement === 'Remote',
           location: location ? `${location} • ${workArrangement} • ${jobType}` : `${workArrangement} • ${jobType}`,
-          status: encodeJobStatus(true, true, false, payType) // active, featured, not paused, dynamic payType
+          status: encodeJobStatus(false, true, false, payType) // closed, featured, not paused (hidden until paid)
         })
         .select()
         .single();
 
       if (insertError) throw insertError;
 
-      setShowCheckout(false);
-      router.push(`/jobs/${data.id}`);
+      // 2. Obtain a Stripe Checkout Session for the new Job ID
+      const res = await fetch('/api/checkout/sponsored-post', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jobId: data.id,
+          businessId: selectedBusinessId,
+          jobTitle: title
+        })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to initialize Stripe checkout');
+      }
+
+      const { url } = await res.json();
+
+      // 3. Redirect to Stripe
+      window.location.href = url;
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Payment accepted but listing creation failed. Please contact support.');
+      setError(err.message || 'Listing creation failed. Please contact support.');
       setShowCheckout(false);
-    } finally {
       setIsProcessingPayment(false);
     }
   };

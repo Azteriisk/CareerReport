@@ -1,8 +1,9 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { X, User, Trash2, CheckCircle, AlertCircle, Loader2, Settings } from 'lucide-react';
+import { X, User, Trash2, CheckCircle, AlertCircle, Loader2, Settings, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useClerk } from '@clerk/nextjs';
+import { hasPremiumGlow, togglePremiumGlowPreference } from '@/lib/premium-tier';
 
 interface SettingsModalProps {
   user: any;
@@ -19,6 +20,11 @@ export function SettingsModal({ user, profileData, onClose, onUpdate }: Settings
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Premium features
+  const isPro = profileData?.is_pro === true;
+  const [showPremiumGlow, setShowPremiumGlow] = useState(() => hasPremiumGlow(isPro, profileData?.bio));
+  const [isSavingGlow, setIsSavingGlow] = useState(false);
 
   // Keep input synced with profile data if it loads late or updates
   useEffect(() => {
@@ -109,6 +115,27 @@ export function SettingsModal({ user, profileData, onClose, onUpdate }: Settings
     window.location.href = '/';
   };
 
+  const handleToggleGlow = async () => {
+    if (isSavingGlow) return;
+    setIsSavingGlow(true);
+    
+    const newGlowState = !showPremiumGlow;
+    const newBio = togglePremiumGlowPreference(profileData?.bio, newGlowState);
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ bio: newBio })
+      .eq('id', user.id);
+
+    setIsSavingGlow(false);
+    if (error) {
+      alert('Error updating preferences: ' + error.message);
+    } else {
+      setShowPremiumGlow(newGlowState);
+      onUpdate({ ...profileData, bio: newBio });
+    }
+  };
+
   return (
     <div style={{ 
       position: 'fixed', 
@@ -188,6 +215,58 @@ export function SettingsModal({ user, profileData, onClose, onUpdate }: Settings
               </button>
             )}
           </div>
+
+          {/* Premium Features Section */}
+          {isPro && (
+            <>
+              <div style={{ height: '1px', background: 'var(--glass-border)', margin: '2rem 0' }} />
+              
+              <div style={{ marginBottom: '2.5rem' }}>
+                <h3 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Sparkles size={20} color="var(--primary)" /> Premium Features
+                </h3>
+                
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'var(--bg-color)', border: '1px solid var(--glass-border)', borderRadius: '12px' }}>
+                  <div>
+                    <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.95rem', color: 'var(--text-primary)' }}>Premium Profile Glow</h4>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Show a tasteful gold glow around your profile and posts.</p>
+                  </div>
+                  
+                  <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', opacity: isSavingGlow ? 0.5 : 1 }}>
+                    <div style={{ position: 'relative' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={showPremiumGlow} 
+                        onChange={handleToggleGlow} 
+                        disabled={isSavingGlow}
+                        style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }} 
+                      />
+                      <div style={{ 
+                        width: '44px', 
+                        height: '24px', 
+                        background: showPremiumGlow ? 'var(--primary)' : 'var(--glass-border)', 
+                        borderRadius: '24px',
+                        transition: 'background 0.3s',
+                        position: 'relative'
+                      }}>
+                        <div style={{
+                          position: 'absolute',
+                          top: '2px',
+                          left: showPremiumGlow ? '22px' : '2px',
+                          width: '20px',
+                          height: '20px',
+                          background: '#fff',
+                          borderRadius: '50%',
+                          transition: 'left 0.3s',
+                          boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                        }} />
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </>
+          )}
 
           <div style={{ height: '1px', background: 'var(--glass-border)', margin: '2rem 0' }} />
 

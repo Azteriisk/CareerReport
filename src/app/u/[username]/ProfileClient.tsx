@@ -13,6 +13,7 @@ import { Feed } from '@/components/Feed';
 import { FollowListModal } from '@/components/FollowListModal';
 import { useUser } from '@clerk/nextjs';
 import Link from 'next/link';
+import { hasPremiumGlow } from '@/lib/premium-tier';
 
 export function ProfileClient({ username }: { username: string }) {
   const { user } = useUser();
@@ -89,7 +90,7 @@ export function ProfileClient({ username }: { username: string }) {
 
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, username')
+        .select('id, full_name, avatar_url, username, is_pro, bio')
         .eq('username', username)
         .single();
 
@@ -182,12 +183,12 @@ export function ProfileClient({ username }: { username: string }) {
           background: 'var(--surface-color)',
           borderRadius: '16px',
           padding: '1.5rem',
-          border: '1px solid var(--glass-border)',
+          border: hasPremiumGlow(profileData?.is_pro, profileData?.bio) ? '1px solid var(--primary)' : '1px solid var(--glass-border)',
           display: 'flex',
           flexDirection: isMobile ? 'column' : 'row',
           alignItems: isMobile ? 'center' : 'flex-start',
           gap: '1.5rem',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+          boxShadow: hasPremiumGlow(profileData?.is_pro, profileData?.bio) ? '0 0 25px rgba(250, 189, 47, 0.15)' : '0 4px 20px rgba(0,0,0,0.1)'
         }}>
           {profileData?.avatar_url ? (
             <img src={profileData.avatar_url} alt={profileData.full_name || 'Profile'} style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--glass-border)' }} />
