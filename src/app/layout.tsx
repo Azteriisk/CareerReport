@@ -38,7 +38,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      appearance={{
+        layout: {
+          termsPageUrl: "https://careerreport.azterisk.net/terms",
+          privacyPageUrl: "https://careerreport.azterisk.net/privacy",
+        }
+      }}
+    >
       <html lang="en" suppressHydrationWarning className={plusJakartaSans.variable}>
         <head>
           {/* Resume template Google Fonts */}

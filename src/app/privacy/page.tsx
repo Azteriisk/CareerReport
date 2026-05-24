@@ -114,6 +114,9 @@ export default function PrivacyPolicyPage() {
               <li>
                 <strong style={{ color: 'var(--text-primary)' }}>Technical Analytics:</strong> We use <strong>Vercel Analytics</strong> and <strong>Vercel Speed Insights</strong> to collect anonymized usage details, including page load latency, browser type, device type, and visited links, to keep our systems fast and stable.
               </li>
+              <li>
+                <strong style={{ color: 'var(--text-primary)' }}>Cookies & Local Storage:</strong> We utilize essential cookies and local browser storage to manage authenticated user sessions (via Clerk), maintain your theme preferences, and ensure platform security.
+              </li>
             </ul>
           </section>
 
@@ -150,6 +153,9 @@ export default function PrivacyPolicyPage() {
               <li>
                 <strong style={{ color: 'var(--text-primary)' }}>Vercel:</strong> Hosts our global edge serverless network, speed trackers, and analytics.
               </li>
+              <li>
+                <strong style={{ color: 'var(--text-primary)' }}>Google Cloud / Gemini AI:</strong> When you use our AI text generation tools (such as AI summaries or bullet points), relevant sections of your resume are securely transmitted to Google's API to generate the requested text. This data is processed transiently and is NOT used to train Google's global models.
+              </li>
             </ul>
           </section>
 
@@ -158,7 +164,7 @@ export default function PrivacyPolicyPage() {
           <section style={{ marginBottom: '2.5rem' }}>
             <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>5. Payment & Financial Data</h2>
             <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>
-              When you purchase a recruiter subscription or sponsor a job listing, your payments are securely processed by our payment provider, <strong>Stripe</strong>.
+              When you purchase a Premium User Subscription or sponsor a job listing as a recruiter, your payments are securely processed by our payment provider, <strong>Stripe</strong>.
             </p>
             <ul style={{ paddingLeft: '1.25rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <li>
@@ -186,8 +192,20 @@ export default function PrivacyPolicyPage() {
 
           <hr style={{ border: 'none', height: '1px', background: 'var(--glass-border)', margin: '2rem 0' }} />
 
+          <section style={{ marginBottom: '2.5rem' }}>
+            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>7. Regional Rights & International Transfers</h2>
+            <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>
+              If you reside in California (under the CCPA/CPRA) or the European Economic Area (under the GDPR), you have specific rights regarding your personal data, including the right to access, rectify, export, and delete your information. You may exercise these rights directly within your account settings or by contacting our support team.
+            </p>
+            <p style={{ color: 'var(--text-secondary)' }}>
+              Additionally, please note that CareerReport operates globally. Your data may be transferred to, stored, and processed in the United States or other countries where our sub-processors (such as Clerk and Vercel) maintain facilities. By using the Platform, you consent to these international data transfers.
+            </p>
+          </section>
+
+          <hr style={{ border: 'none', height: '1px', background: 'var(--glass-border)', margin: '2rem 0' }} />
+
           <section>
-            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>7. Contact Information</h2>
+            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>8. Contact Information</h2>
             <p style={{ color: 'var(--text-secondary)' }}>
               If you have any questions, concerns, or requests regarding this Privacy Policy or your data, please contact the Azterisk CareerReport Team at:
             </p>

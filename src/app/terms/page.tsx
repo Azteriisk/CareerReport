@@ -92,6 +92,9 @@ export default function TermsOfServicePage() {
             <p style={{ color: 'var(--text-secondary)' }}>
               If you do not agree to these Terms, you must not use or access the Platform. We reserve the right to modify these Terms at any time, and your continued use of CareerReport following any updates constitutes absolute acceptance of the revised Terms.
             </p>
+            <p style={{ marginTop: '1rem', color: 'var(--text-secondary)' }}>
+              <strong style={{ color: 'var(--text-primary)' }}>Age Restriction:</strong> You must be at least 18 years of age to create an account on CareerReport. By registering, you represent and warrant that you meet this age requirement.
+            </p>
           </section>
 
           <hr style={{ border: 'none', height: '1px', background: 'var(--glass-border)', margin: '2rem 0' }} />
@@ -100,6 +103,9 @@ export default function TermsOfServicePage() {
             <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>2. Description of Services</h2>
             <p style={{ color: 'var(--text-secondary)' }}>
               CareerReport is an interactive online platform that enables registered users to build custom professional resumes, display public-facing portfolio profiles, connect and network with other professionals, post updates, send real-time direct messages, and apply for employment listings via our jobs board.
+            </p>
+            <p style={{ marginTop: '1rem', color: 'var(--text-secondary)' }}>
+              <strong style={{ color: 'var(--text-primary)' }}>Employment Disclaimer:</strong> CareerReport is a technology platform and tool. We are not an employer, recruiting agency, or staffing firm. We do not guarantee job placement, interview success, or verify the absolute accuracy, safety, or legitimacy of third-party employment listings posted on our jobs board. You apply to external opportunities at your own risk.
             </p>
           </section>
 
@@ -139,18 +145,24 @@ export default function TermsOfServicePage() {
             <p style={{ color: 'var(--text-secondary)' }}>
               By creating a public resume profile, you grant CareerReport and Azterisk a limited, non-exclusive, royalty-free, worldwide license to host, parse, cache, format, and display your public content strictly to render it to visitors on the internet and deliver the core services of our Platform.
             </p>
+            <p style={{ marginTop: '1rem', color: 'var(--text-secondary)' }}>
+              <strong style={{ color: 'var(--text-primary)' }}>DMCA & Copyright Policy:</strong> We respect the intellectual property rights of others. If you believe that your copyrighted work has been copied or uploaded to CareerReport in a way that constitutes copyright infringement, please contact our support team with a formal DMCA takedown notice. Azterisk will promptly investigate, remove infringing content, and may terminate the accounts of repeat infringers.
+            </p>
           </section>
 
           <hr style={{ border: 'none', height: '1px', background: 'var(--glass-border)', margin: '2rem 0' }} />
 
           <section style={{ marginBottom: '2.5rem' }}>
-            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>5. Payments & Sponsorship Policy</h2>
+            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>5. Payments & Subscription Policy</h2>
             <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>
-              Certain features on CareerReport, such as Recruiter Subscriptions and Sponsored Job Listings, require payment. By purchasing a subscription or sponsorship, you agree to the following:
+              Certain features on CareerReport, such as Premium User Subscriptions and Sponsored Job Listings, require payment. By purchasing a subscription or sponsorship, you agree to the following:
             </p>
             <ul style={{ paddingLeft: '1.25rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <li>
-                <strong style={{ color: 'var(--text-primary)' }}>Sponsored Posts:</strong> Billed as a one-time $19 charge for a 30-day active featured window.
+                <strong style={{ color: 'var(--text-primary)' }}>Premium Subscriptions:</strong> Premium features (including AI generation and multiple resumes) are billed as a recurring $4.00 USD monthly charge. You may cancel your subscription at any time; however, there are no refunds for partially used billing periods. Your premium access will continue until the end of your current billing cycle.
+              </li>
+              <li>
+                <strong style={{ color: 'var(--text-primary)' }}>Sponsored Posts:</strong> Job sponsorships are billed as a one-time $19.00 USD charge for a 30-day active featured window.
               </li>
               <li>
                 <strong style={{ color: 'var(--text-primary)' }}>Non-Transferable:</strong> Sponsorship credits are permanently bound to the specific job listing they were purchased for. They cannot be transferred to another listing.
@@ -159,7 +171,7 @@ export default function TermsOfServicePage() {
                 <strong style={{ color: 'var(--text-primary)' }}>Pause Feature:</strong> You may pause your sponsored listing clock to freeze the 30-day window. Pausing is not a refund.
               </li>
               <li>
-                <strong style={{ color: 'var(--text-primary)' }}>No Refunds:</strong> There are no refunds on partially consumed subscription periods or sponsored time.
+                <strong style={{ color: 'var(--text-primary)' }}>No Refunds:</strong> Except where mandated by law, there are no refunds on partially consumed subscription periods or sponsored time.
               </li>
             </ul>
           </section>
@@ -167,7 +179,16 @@ export default function TermsOfServicePage() {
           <hr style={{ border: 'none', height: '1px', background: 'var(--glass-border)', margin: '2rem 0' }} />
 
           <section style={{ marginBottom: '2.5rem' }}>
-            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>6. Limitation of Liability</h2>
+            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>6. Indemnification</h2>
+            <p style={{ color: 'var(--text-secondary)' }}>
+              You agree to indemnify, defend, and hold harmless Azterisk, its founders, affiliates, and operators from any and all claims, liabilities, damages, losses, costs, expenses, or fees (including reasonable attorneys' fees) arising from your violation of these Terms, your misuse of the Platform, or your infringement of any intellectual property or other right of any person or entity.
+            </p>
+          </section>
+
+          <hr style={{ border: 'none', height: '1px', background: 'var(--glass-border)', margin: '2rem 0' }} />
+
+          <section style={{ marginBottom: '2.5rem' }}>
+            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>7. Limitation of Liability</h2>
             <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)' }}>
               CareerReport is provided on an "AS IS" and "AS AVAILABLE" basis without any express or implied warranties of merchantability, uptime, speed, or fitness for a particular purpose. 
             </p>
@@ -179,7 +200,7 @@ export default function TermsOfServicePage() {
           <hr style={{ border: 'none', height: '1px', background: 'var(--glass-border)', margin: '2rem 0' }} />
 
           <section style={{ marginBottom: '2.5rem' }}>
-            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>7. Termination & Suspension</h2>
+            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>8. Termination & Suspension</h2>
             <p style={{ color: 'var(--text-secondary)' }}>
               We reserve the right, in our sole discretion and without prior notice, to suspend or terminate accounts, remove public profiles, and ban users who violate these Terms, engage in disruptive activities, or conduct fraud on the Platform.
             </p>
@@ -188,7 +209,7 @@ export default function TermsOfServicePage() {
           <hr style={{ border: 'none', height: '1px', background: 'var(--glass-border)', margin: '2rem 0' }} />
 
           <section>
-            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>8. Governing Law & Contact</h2>
+            <h2 style={{ fontSize: '1.4rem', color: 'var(--primary)', marginBottom: '1rem', fontWeight: 700 }}>9. Governing Law & Contact</h2>
             <p style={{ marginBottom: '1.25rem', color: 'var(--text-secondary)' }}>
               These Terms shall be governed by and construed in accordance with the laws of the State of Arkansas, United States, without regard to its conflict of law provisions.
             </p>
