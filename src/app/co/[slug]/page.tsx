@@ -663,7 +663,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
           
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-              <h1 style={{ margin: 0, fontSize: '2.5rem', color: 'var(--text-primary)', fontWeight: 800 }}>{company.name}</h1>
+              <h1 style={{ margin: 0, fontSize: '2.5rem', color: 'var(--text-primary)', fontWeight: 800, wordBreak: 'break-word' }}>{company.name}</h1>
               <span title="Verified Business Account" style={{ display: 'flex' }}><BadgeCheck size={26} color="var(--primary)" /></span>
               
               {hasProfilePermission && (
@@ -806,7 +806,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                     <Link key={job.id} href={`/jobs/${job.id}`} style={{ textDecoration: 'none' }}>
                       <div className="job-card-hover" style={{ background: 'var(--surface-color)', border: '1px solid var(--glass-border)', padding: '1.5rem', borderRadius: '12px', transition: 'all 0.2s ease', cursor: 'pointer' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-                          <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 600 }}>{job.title}</h3>
+                          <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 600, wordBreak: 'break-word' }}>{job.title}</h3>
                           {(job.salary_min || job.salary_max) && (
                             <span style={{ color: 'var(--success)', fontWeight: 600, fontSize: '0.9rem', background: 'rgba(16, 185, 129, 0.1)', padding: '0.25rem 0.75rem', borderRadius: '100px' }}>
                               {formatSalary(job.salary_min, job.salary_max, parseJobStatus(job.status).payType)}
@@ -814,7 +814,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                           )}
                         </div>
                         
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', margin: '0 0 1.5rem 0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', margin: '0 0 1.5rem 0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', wordBreak: 'break-word' }}>
                           {job.description}
                         </p>
                         
@@ -994,7 +994,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                         )}
 
                         {profile.career_context && (
-                          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 1rem 0', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.5 }}>
+                          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 1rem 0', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', lineHeight: 1.5, wordBreak: 'break-word' }}>
                             {profile.career_context}
                           </p>
                         )}
@@ -1026,7 +1026,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '0 0 1.5rem 0' }}>Search and add registered professionals directly by their unique username.</p>
               
               <form onSubmit={handleInviteMember} style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                <div style={{ position: 'relative', flex: 1, minWidth: '240px' }}>
+                <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
                   <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)', fontWeight: 600 }}>@</span>
                   <input 
                     type="text"
