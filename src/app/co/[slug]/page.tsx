@@ -651,9 +651,9 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
   return (
     <main style={{ minHeight: '100dvh', background: 'var(--bg-color)' }}>
       {/* Hero Header */}
-      <div style={{ background: 'var(--surface-color)', borderBottom: '1px solid var(--glass-border)', padding: '4rem 0' }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 1.5rem', display: 'flex', gap: '2rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          <div className="card" style={{ width: "120px", height: "120px", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0, padding: 0 }}>
+      <div style={{ background: 'var(--surface-color)', borderBottom: '1px solid var(--glass-border)', padding: 'clamp(2rem, 5vw, 4rem) 0' }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 1.5rem', display: 'flex', gap: 'clamp(1rem, 3vw, 2rem)', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div className="card" style={{ width: "clamp(80px, 20vw, 120px)", height: "clamp(80px, 20vw, 120px)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0, padding: 0 }}>
             {company.logo_url ? (
               <img src={company.logo_url} alt={`${company.name} logo`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
@@ -661,9 +661,9 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
             )}
           </div>
           
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ flex: '1 1 300px', minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-              <h1 style={{ margin: 0, fontSize: '2.5rem', color: 'var(--text-primary)', fontWeight: 800, wordBreak: 'break-word' }}>{company.name}</h1>
+              <h1 style={{ margin: 0, fontSize: 'clamp(1.5rem, 5vw, 2.5rem)', color: 'var(--text-primary)', fontWeight: 800, wordBreak: 'break-word' }}>{company.name}</h1>
               <span title="Verified Business Account" style={{ display: 'flex' }}><BadgeCheck size={26} color="var(--primary)" /></span>
               
               {hasProfilePermission && (
