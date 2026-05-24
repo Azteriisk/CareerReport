@@ -649,7 +649,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
   }
 
   return (
-    <main style={{ minHeight: '100dvh', background: 'var(--bg-color)' }}>
+    <main style={{ minHeight: '100dvh', background: 'var(--bg-color)', overflowX: 'hidden', width: '100%', minWidth: 0 }}>
       {/* Hero Header */}
       <div style={{ background: 'var(--surface-color)', borderBottom: '1px solid var(--glass-border)', padding: 'clamp(2rem, 5vw, 4rem) 0' }}>
         <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 1.5rem', display: 'flex', gap: 'clamp(1rem, 3vw, 2rem)', alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -703,7 +703,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
       </div>
 
       {/* Main Panel */}
-      <div style={{ maxWidth: '1000px', margin: '3rem auto', padding: '0 1.5rem' }}>
+      <div style={{ maxWidth: '1000px', margin: 'clamp(1.5rem, 5vw, 3rem) auto', padding: '0 clamp(1rem, 5vw, 1.5rem)', minWidth: 0 }}>
         
         {(isOwner || hasJobsPermission) && (
           <div 
@@ -797,14 +797,14 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
               </div>
               
               {jobs.length === 0 ? (
-                <div style={{ background: 'var(--surface-color)', border: '1px dashed var(--glass-border)', padding: '4rem 2rem', borderRadius: '16px', textAlign: 'center' }}>
-                  <p style={{ color: 'var(--text-secondary)', margin: 0 }}>There are no open positions at {company.name} right now.</p>
+                <div style={{ background: 'var(--surface-color)', border: '1px dashed var(--glass-border)', padding: 'clamp(2rem, 5vw, 4rem) clamp(1rem, 5vw, 2rem)', borderRadius: '16px', textAlign: 'center' }}>
+                  <p style={{ color: 'var(--text-secondary)', margin: 0, wordBreak: 'break-word' }}>There are no open positions at {company.name} right now.</p>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   {jobs.map(job => (
                     <Link key={job.id} href={`/jobs/${job.id}`} style={{ textDecoration: 'none' }}>
-                      <div className="job-card-hover" style={{ background: 'var(--surface-color)', border: '1px solid var(--glass-border)', padding: '1.5rem', borderRadius: '12px', transition: 'all 0.2s ease', cursor: 'pointer' }}>
+                      <div className="job-card-hover" style={{ background: 'var(--surface-color)', border: '1px solid var(--glass-border)', padding: 'clamp(1rem, 4vw, 1.5rem)', borderRadius: '12px', transition: 'all 0.2s ease', cursor: 'pointer' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                           <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 600, wordBreak: 'break-word' }}>{job.title}</h3>
                           {(job.salary_min || job.salary_max) && (
@@ -888,7 +888,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
                     const name = profile.full_name || profile.username || 'Team Member';
                     return (
                       <Link key={emp.user_id} href={`/u/${profile.username}`} style={{ textDecoration: 'none' }}>
-                        <div className="hover-bg" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: 'var(--surface-color)', border: '1px solid var(--glass-border)', borderRadius: '12px' }}>
+                        <div className="hover-bg" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: 'clamp(0.75rem, 3vw, 1rem)', background: 'var(--surface-color)', border: '1px solid var(--glass-border)', borderRadius: '12px', flexWrap: 'wrap' }}>
                           <img 
                             src={profile.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${profile.username}`} 
                             alt={name}

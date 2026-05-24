@@ -22,6 +22,10 @@ function formatTimeAgo(date: Date) {
 export default function JobsBoardPage() {
   const { isSignedIn, user } = useUser();
   const [search, setSearch] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterLocation, setFilterLocation] = useState('');
+  const [filterWorkType, setFilterWorkType] = useState('Any');
+  const [filterPayType, setFilterPayType] = useState('Any');
   const [jobs, setJobs] = useState<any[]>([]);
   const [candidateProfile, setCandidateProfile] = useState<{ label: string; careerContext: string } | null>(null);
   const [candidateResume, setCandidateResume] = useState<any | null>(null);
@@ -125,6 +129,7 @@ export default function JobsBoardPage() {
               logo: j.business_profiles?.name?.charAt(0) || 'J',
               logoUrl: j.business_profiles?.logo_url,
               isReal: true,
+              payType: parsed.payType,
               // Only actively-running (non-paused) sponsorships get featured treatment
               isFeatured: parsed.isActivelyFeatured
             };
@@ -235,13 +240,35 @@ export default function JobsBoardPage() {
       };
     });
 
-    // Filter by search query if present, checking all fields backwards-compatibly
+    // Filter by search query and active filters
     const filtered = processed.filter((job: any) => {
-      if (!cleanSearch) return true;
-      return job.title.toLowerCase().includes(cleanSearch) ||
-             job.company.toLowerCase().includes(cleanSearch) ||
-             job.location.toLowerCase().includes(cleanSearch) ||
-             job.description.toLowerCase().includes(cleanSearch);
+      // 1. Text Search
+      if (cleanSearch) {
+        const matchesSearch = job.title.toLowerCase().includes(cleanSearch) ||
+                              job.company.toLowerCase().includes(cleanSearch) ||
+                              job.location.toLowerCase().includes(cleanSearch) ||
+                              job.description.toLowerCase().includes(cleanSearch);
+        if (!matchesSearch) return false;
+      }
+
+      // 2. Location Filter
+      if (filterLocation.trim() !== '') {
+        const locLower = filterLocation.toLowerCase().trim();
+        if (!job.location.toLowerCase().includes(locLower)) return false;
+      }
+
+      // 3. Work Type Filter
+      if (filterWorkType !== 'Any') {
+        if (job.type !== filterWorkType) return false;
+      }
+
+      // 4. Pay Type Filter
+      if (filterPayType !== 'Any') {
+        // e.g., 'salary', 'hourly', 'contract'
+        if (job.payType !== filterPayType.toLowerCase()) return false;
+      }
+
+      return true;
     });
 
     // Dynamic prioritization sort by matching score descending
@@ -260,7 +287,7 @@ export default function JobsBoardPage() {
     });
 
     setSortedJobs(sorted);
-  }, [jobs, candidateProfile, candidateResume, search]);
+  }, [jobs, candidateProfile, candidateResume, search, filterLocation, filterWorkType, filterPayType]);
 
 
   return (
@@ -282,10 +309,88 @@ export default function JobsBoardPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <button className={`btn btn-secondary ${styles.filterBtn}`}>
+          <button 
+            className={`btn btn-secondary ${styles.filterBtn}`}
+            onClick={() => setShowFilters(!showFilters)}
+            style={showFilters ? { background: 'var(--surface-highlight)', borderColor: 'var(--primary)' } : {}}
+          >
             <Filter size={18} /> Filters
           </button>
         </div>
+
+        {/* Filters Panel */}
+        {showFilters && (
+          <div style={{ background: 'var(--surface-color)', border: '1px solid var(--glass-border)', borderRadius: '12px', padding: '1.5rem', marginBottom: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Filter size={18} color="var(--primary)" /> Filter Opportunities
+              </h3>
+              <button 
+                onClick={() => {
+                  setFilterLocation('');
+                  setFilterWorkType('Any');
+                  setFilterPayType('Any');
+                }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                Clear All
+              </button>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+              {/* Location */}
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="label">Location</label>
+                <div style={{ position: 'relative' }}>
+                  <MapPin size={16} color="var(--text-secondary)" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    placeholder="City, State, or Zip" 
+                    style={{ paddingLeft: '2.5rem', marginBottom: 0 }}
+                    value={filterLocation}
+                    onChange={(e) => setFilterLocation(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Work Type */}
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="label">Work Type</label>
+                <select 
+                  className="input-field" 
+                  style={{ marginBottom: 0 }}
+                  value={filterWorkType}
+                  onChange={(e) => setFilterWorkType(e.target.value)}
+                >
+                  <option value="Any">Any Work Type</option>
+                  <option value="Full-time">Full-time</option>
+                  <option value="Part-time">Part-time</option>
+                  <option value="Contract">Contract</option>
+                  <option value="Freelance">Freelance</option>
+                  <option value="Internship">Internship</option>
+                  <option value="Remote">Remote Only</option>
+                </select>
+              </div>
+
+              {/* Pay Type */}
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="label">Pay Type</label>
+                <select 
+                  className="input-field" 
+                  style={{ marginBottom: 0 }}
+                  value={filterPayType}
+                  onChange={(e) => setFilterPayType(e.target.value)}
+                >
+                  <option value="Any">Any Pay Type</option>
+                  <option value="Salary">Salary</option>
+                  <option value="Hourly">Hourly</option>
+                  <option value="Contract">Contract / Project</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Personalized Feed Banner */}
         {(candidateResume || candidateProfile) && (

@@ -55,7 +55,7 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div style={{ flex: 1, display: "grid", position: "relative", overflowX: "hidden", overflowY: "hidden" }}>
+    <div style={{ flex: 1, display: "grid", position: "relative", overflowX: "hidden", overflowY: "hidden", minWidth: 0 }}>
       <AnimatePresence custom={direction} initial={false}>
         <motion.div
           key={pathname}
@@ -64,7 +64,7 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
           initial="initial"
           animate="animate"
           exit="exit"
-          style={{ gridArea: "1 / 1", flex: 1, display: "flex", flexDirection: "column", width: "100%", height: "100%" }}
+          style={{ gridArea: "1 / 1", flex: 1, display: "flex", flexDirection: "column", width: "100%", height: "100%", minWidth: 0 }}
         >
           {children}
         </motion.div>
