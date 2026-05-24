@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useUser, useAuth } from '@clerk/nextjs';
 import { supabase } from "@/lib/supabase";
 import { useRouter } from 'next/navigation';
-import { Briefcase, Building2, MapPin, DollarSign, Loader2 } from 'lucide-react';
+import { Briefcase, Building2, MapPin, DollarSign, Loader2, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { getBusinessTier } from '@/lib/business-tier';
 import { encodeJobStatus } from '@/lib/job-tier';
@@ -266,8 +266,8 @@ export default function CreateJobPage() {
     <main style={{ minHeight: 'calc(100dvh - 82px)', background: 'var(--bg-color)', padding: '4rem 1rem' }}>
       <div style={{ maxWidth: '700px', margin: '0 auto', background: 'var(--surface-color)', padding: '2.5rem', borderRadius: '16px', border: '1px solid var(--glass-border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-          <div style={{ width: '56px', height: '56px', background: 'rgba(169, 182, 101, 0.15)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Briefcase size={32} color="var(--success)" />
+          <div style={{ width: '56px', height: '56px', background: 'var(--primary)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bg-color)' }}>
+            <FileText size={32} />
           </div>
           <div>
             <h1 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--text-primary)' }}>Post a New Job</h1>
@@ -425,7 +425,7 @@ export default function CreateJobPage() {
                   </select>
                 </div>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="label">{payType === 'hourly' ? 'Min Hourly (USD)' : payType === 'contract' ? 'Min Contract (USD)' : 'Minimum Salary (USD)'}</label>
+                  <label className="label">{payType === 'hourly' ? 'Min Hourly' : payType === 'contract' ? 'Min Contract' : 'Min Salary'}</label>
                   <div style={{ position: 'relative' }}>
                     <DollarSign size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
                     <input
@@ -439,7 +439,7 @@ export default function CreateJobPage() {
                   </div>
                 </div>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="label">{payType === 'hourly' ? 'Max Hourly (USD)' : payType === 'contract' ? 'Max Contract (USD)' : 'Maximum Salary (USD)'}</label>
+                  <label className="label">{payType === 'hourly' ? 'Max Hourly' : payType === 'contract' ? 'Max Contract' : 'Max Salary'}</label>
                   <div style={{ position: 'relative' }}>
                     <DollarSign size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
                     <input

@@ -75,6 +75,15 @@ function BuilderPageContent() {
   const [isMobile, setIsMobile] = useState(false);
   const [mobileScale, setMobileScale] = useState(0.45);
 
+  useEffect(() => {
+    if (isMobile && activeTab === 'preview') {
+      document.body.classList.add('hide-footer');
+    } else {
+      document.body.classList.remove('hide-footer');
+    }
+    return () => document.body.classList.remove('hide-footer');
+  }, [isMobile, activeTab]);
+
   // Handle window resize for mobile detection and preview scaling
   useEffect(() => {
     const handleResize = () => {

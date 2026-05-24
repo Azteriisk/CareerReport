@@ -54,7 +54,7 @@ function EmbeddedPost({ post }: { post: Post }) {
         <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>@{profile?.username}</span>
       </Link>
       {post.content && (
-        <p style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontSize: '0.9rem', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{post.content}</p>
+        <p style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontSize: '0.9rem', lineHeight: 1.5, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{post.content}</p>
       )}
       {post.image_url && (
         <img src={post.image_url} alt="Attached" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '8px', display: 'block' }} />
@@ -302,7 +302,7 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
         {/* Content */}
         <div style={{ paddingLeft: '56px', marginTop: '0.35rem' }}>
           {post.content && (
-            <p style={{ color: 'var(--text-primary)', lineHeight: 1.5, margin: '0 0 0.75rem 0', whiteSpace: 'pre-wrap' }}>
+            <p style={{ color: 'var(--text-primary)', lineHeight: 1.5, margin: '0 0 0.75rem 0', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
               {post.content}
             </p>
           )}

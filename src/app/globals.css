@@ -864,4 +864,7 @@ input[type="month"].empty-date:focus::-webkit-datetime-edit {
 .text-2xl { font-size: 1.5rem; }
 .font-medium { font-weight: 500; }
 .font-semibold { font-weight: 600; }
-.font-bold { font-weight: 700; }
+.font-bold { font-weight: 700; }
+
+/* Hide footer completely when previewing on mobile */
+body.hide-footer .site-footer { display: none !important; }

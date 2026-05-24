@@ -314,18 +314,21 @@ export default function RecruiterDashboardPage() {
   const handleToggleSponsorPause = async (jobId: string, currentStatus: string) => {
     setIsPausingJobId(jobId);
     try {
-      const newStatus = toggleSponsorPause(currentStatus);
+      const res = await fetch('/api/jobs/toggle-pause', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId, currentStatus })
+      });
 
-      await getToken({ template: 'supabase' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to toggle pause');
 
-      const { error } = await supabase
-        .from('jobs')
-        .update({ status: newStatus })
-        .eq('id', jobId);
-
-      if (error) throw error;
-
-      setJobs(jobs.map(j => j.id === jobId ? { ...j, status: newStatus } : j));
+      setJobs(jobs.map(j => j.id === jobId ? { 
+        ...j, 
+        status: data.status,
+        sponsored_until: data.sponsored_until,
+        paused_at: data.paused_at
+      } : j));
     } catch (err: any) {
       console.error('Failed to toggle sponsor pause:', err);
       alert('Failed to update sponsorship state: ' + (err.message || 'Error occurred.'));

@@ -661,7 +661,7 @@ export default function CompanyProfilePage({ params }: { params: Promise<{ slug:
             )}
           </div>
           
-          <div style={{ flex: 1, minWidth: '280px' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
               <h1 style={{ margin: 0, fontSize: '2.5rem', color: 'var(--text-primary)', fontWeight: 800 }}>{company.name}</h1>
               <span title="Verified Business Account" style={{ display: 'flex' }}><BadgeCheck size={26} color="var(--primary)" /></span>
