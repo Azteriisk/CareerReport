@@ -45,7 +45,7 @@ export async function generateMetadata(
     description = `${resume.data.basics.label}. ${description}`;
   }
 
-  const images = profile.avatar_url ? [profile.avatar_url] : [];
+  const images = profile.avatar_url ? [profile.avatar_url] : ['/homepage.png'];
 
   return {
     title: `${title} | CareerReport`,

@@ -10,6 +10,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://careerreport.azterisk.net'),
   title: "CareerReport | Your Professional Network",
   description: "Create stunning public resumes and connect with the new generation of professionals.",
   openGraph: {
@@ -17,11 +18,20 @@ export const metadata: Metadata = {
     description: "Create stunning public resumes and connect with the new generation of professionals.",
     type: "website",
     siteName: "CareerReport",
+    images: [
+      {
+        url: "/homepage.png",
+        width: 1200,
+        height: 630,
+        alt: "CareerReport - Your Professional Network",
+      }
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "CareerReport | Your Professional Network",
     description: "Create stunning public resumes and connect with the new generation of professionals.",
+    images: ["/homepage.png"],
   }
 };
 
