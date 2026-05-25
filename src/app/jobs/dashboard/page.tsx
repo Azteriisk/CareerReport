@@ -99,6 +99,8 @@ export default function RecruiterDashboardPage() {
   // Toast/banner state for post-Stripe redirect feedback
   const [successBanner, setSuccessBanner] = useState<string | null>(null);
   const [cancelBanner, setCancelBanner] = useState(false);
+  const [showPlanCancelModal, setShowPlanCancelModal] = useState(false);
+  const [isCancelingPlan, setIsCancelingPlan] = useState(false);
 
   // 1. Verify permissions and load businesses
   useEffect(() => {
@@ -413,7 +415,27 @@ export default function RecruiterDashboardPage() {
     // Don't reset — redirect is happening
   };
 
-
+  const handleCancelPlan = async () => {
+    if (!selectedBusinessId) return;
+    setIsCancelingPlan(true);
+    try {
+      const res = await fetch('/api/billing/cancel-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ businessId: selectedBusinessId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to cancel plan.');
+      
+      setSuccessBanner(data.message || 'Subscription successfully scheduled for cancellation at the end of the billing period.');
+      setShowPlanCancelModal(false);
+    } catch (err: any) {
+      console.error(err);
+      alert('Failed to cancel plan: ' + (err.message || 'Error occurred.'));
+    } finally {
+      setIsCancelingPlan(false);
+    }
+  };
   // Fetch jobs and stats when dashboard loads
 
   // Post candidates to Gemini API to rank them in real-time
@@ -1128,6 +1150,25 @@ export default function RecruiterDashboardPage() {
                     >
                       Manage Billing &amp; Invoices ➔
                     </button>
+                    {selectedBusinessTier?.id !== 'starter' && (
+                      <button 
+                        onClick={() => setShowPlanCancelModal(true)} 
+                        style={{ 
+                          background: 'transparent', 
+                          border: 'none', 
+                          color: 'var(--text-secondary)', 
+                          textDecoration: 'underline', 
+                          fontSize: '0.75rem', 
+                          cursor: 'pointer', 
+                          marginTop: '0.5rem',
+                          textAlign: 'right',
+                          display: 'block',
+                          width: '100%'
+                        }}
+                      >
+                        Cancel Plan
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -1290,6 +1331,50 @@ export default function RecruiterDashboardPage() {
         )}
 
         {/* Sandbox Stripe Plan Checkout Modal */}
+        {showPlanCancelModal && (
+          <div className="modal-overlay" onClick={() => !isCancelingPlan && setShowPlanCancelModal(false)}>
+            <div className="modal-content" style={{ maxWidth: '420px', padding: '2rem' }} onClick={e => e.stopPropagation()}>
+              <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                <h3 style={{ fontSize: '1.5rem', margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontWeight: 800 }}>Cancel Plan?</h3>
+                <p style={{ color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>
+                  Are you sure you want to cancel your Recruiter Plan? Your active listings limit will drop to 1 and you will lose AI stack ranking at the end of your billing cycle.
+                </p>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <button
+                  className="btn btn-primary"
+                  style={{ width: '100%', padding: '0.8rem', justifyContent: 'center' }}
+                  onClick={() => setShowPlanCancelModal(false)}
+                  disabled={isCancelingPlan}
+                >
+                  Keep Plan
+                </button>
+                <button
+                  style={{ 
+                    width: '100%', 
+                    padding: '0.8rem', 
+                    background: 'transparent', 
+                    border: '1px solid var(--danger)', 
+                    color: 'var(--danger)', 
+                    borderRadius: '6px', 
+                    fontWeight: 700, 
+                    cursor: isCancelingPlan ? 'not-allowed' : 'pointer',
+                    opacity: isCancelingPlan ? 0.7 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem'
+                  }}
+                  onClick={handleCancelPlan}
+                  disabled={isCancelingPlan}
+                >
+                  {isCancelingPlan ? <><Loader2 size={16} className="animate-spin" /> Canceling...</> : 'Yes, Cancel Plan'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {showPlanCheckout && selectedUpgradePlanId && (
           <div className={styles.modalOverlay} onClick={() => !isProcessingPlanUpgrade && setShowPlanCheckout(false)}>
             <div className={styles.modalBox} onClick={e => e.stopPropagation()}>

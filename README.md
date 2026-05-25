@@ -134,7 +134,9 @@ We follow a **"Diamond" testing strategy** to ensure full stability during rapid
 > [!IMPORTANT]
 > The core layout engines, social infrastructure, and AI modules are fully operational. We actively maintain a checklist of recently implemented user flow improvements alongside upcoming milestones.
 
-### ✅ Recent Accomplishments (Completed Tasks)
+<details>
+<summary><b>✅ Recent Accomplishments (Completed Tasks)</b></summary>
+
 * [x] **Recruiter Subscription Tiers:** Four-tier business model (Free → Pro → Enterprise → Unlimited) encoded zero-migration-style into `business_profiles.bio`. Defines active job slot limits, AI access, and premium seat counts per tier.
 * [x] **Premium Employee Seats:** Pro gets 3, Enterprise 5, Unlimited 10 premium seats — assignable by the company owner from the company profile page. Seat status encoded in `company_employees.status` via a `|premium` pipe suffix.
 * [x] **Sponsored Job Posts ($19/month):** One-click featured upgrade from the Recruiter Dashboard. Stores `open:featured` in the existing `jobs.status` field. Featured posts get gold card styling, `+25pt` relevance boost, and top-of-feed pinning for matching candidates.
@@ -158,29 +160,23 @@ We follow a **"Diamond" testing strategy** to ensure full stability during rapid
 * [x] **Google Play Billing Bridge (TWA):** Integrated native Android Play Store payment prompts into the web app using Digital Goods and Payment Request APIs, falling back to Stripe on the web.
 * [x] **Google Developer API Verification:** Created backend secure verification routes (`/api/checkout/google-play`) to cryptographically validate subscription order tokens using Google Cloud JWT credentials.
 * [x] **Real-time Developer Notifications (RTDN):** Created Pub/Sub webhook endpoints (`/api/webhooks/google-play`) to auto-sync subscription cancels, expirations, and active states.
-
-### 🐛 Known Issues & DPI Syncing (Active Tasks)
-* [ ] **Mobile PDF Export Margins:** PDF printing layout margins and zoom scaling factors can behave inconsistently during direct mobile browser exports. Work is underway to standardize `@media print` queries for mobile viewport boundaries.
-* [ ] **Multi-DPI Display Layout Synchronization:** Variations in device hardware DPI can occasionally trigger minor layout offsets or slight pixel-spacing differences in resume templates when switching between high-DPI (Retina/4K) monitors and standard-definition screens. We are refining absolute sizing calculations to guarantee pixel-for-pixel rendering symmetry across all resolutions.
-
-### 🔮 Feature Roadmap & Action Items (Remaining Tasks)
-
-#### 💳 Stripe Production Integration & Shipability (COMPLETED)
 * [x] **Live Stripe Checkout for Subscriptions:** Replaced the simulated plan upgrade modal in the Recruiter Dashboard with a real Stripe Checkout Session redirect (`/api/stripe/checkout-session`).
 * [x] **Live Stripe Checkout for Sponsored Posts:** Replaced the simulated featured-upgrade modal with a one-time Stripe Checkout Session.
 * [x] **Stripe Webhook Handler (`/api/webhooks/stripe`):** Implemented to handle `checkout.session.completed` for bundles and jobs, securely parsing zero-migration metadata.
 * [x] **Sponsored Post Expiration & Clock Control:** Implemented logic for pausing and resuming sponsorship clocks, and checking elapsed unpaused time.
-
-#### 📦 Sponsored Post Bundles (COMPLETED)
 * [x] **Bundle Credit System:** Implemented Triple Pack ($49, 3 credits) and Campaign Pack ($149, 10 credits) from the `/jobs/sponsored` pricing section. Stored credit balance in `business_profiles.bio` as `[SponsorCredits: N]` (zero-migration).
 * [x] **Credit Balance Display in Dashboard:** Show remaining sponsorship credits in the Billing tab and alongside the "Sponsor Post" button on each listing.
 * [x] **AI Analytics & Limits Hardening:** Implemented 32,000 char token TDoS protection on the AI generators, 15-candidate stack ranking limits, and RLS database lockdown policies.
 * [x] **Testing & Webhook Integreity:** Initialized Playwright E2E suite and ensured no mocked applicants or simulated data leaks to the recruiter dashboard.
+* [x] **Multiple Cover Letters:** Allow saving multiple cover letters per resume (one per company/role), stored as an array in `ResumeData.coverLetters[]`.
+* [x] **Cover Letter Library UI:** Add a "My Cover Letters" panel in the builder sidebar listing saved letters by company/role, with edit/delete controls.
+* [x] **Guided Creator Template Polish:** Offer 2–3 opening sentence templates per guided step to reduce blank-page friction for new users.
 
-#### 📝 Cover Letter Enhancements
-* [ ] **Multiple Cover Letters:** Allow saving multiple cover letters per resume (one per company/role), stored as an array in `ResumeData.coverLetters[]`.
-* [ ] **Cover Letter Library UI:** Add a "My Cover Letters" panel in the builder sidebar listing saved letters by company/role, with edit/delete controls.
-* [ ] **Guided Creator Template Polish:** Offer 2–3 opening sentence templates per guided step to reduce blank-page friction for new users.
+</details>
+
+---
+
+### 🔮 Feature Roadmap & Action Items (Remaining Tasks)
 
 #### 🧪 Testing & Infrastructure
 * [ ] **Expand Testing Suite:** Add E2E coverage for PDF import flows and additional social edge cases beyond current pagination and API smoke tests.
@@ -228,8 +224,6 @@ We follow a **"Diamond" testing strategy** to ensure full stability during rapid
    npm run dev
    ```
 
-5. **Open browser:** Navigate to [http://localhost:3000](http://localhost:3000) to view CareerReport locally.
-
 ---
 
 ## 📝 License & Proprietary Protections
@@ -240,5 +234,3 @@ This project is source-available and licensed under the **PolyForm Noncommercial
 * **Commercial Restrictions:** Any commercial exploitation, distribution for monetary compensation, or deployment of CareerReport as a competing hosted SaaS product by third parties is **strictly prohibited**.
 
 For full legal details, please refer to the [LICENSE](./LICENSE) file. All commercial rights and monetization pipelines are exclusively reserved by the author.
-
-

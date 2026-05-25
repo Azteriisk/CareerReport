@@ -39,7 +39,7 @@ export function UpgradeModal({
 
   const handleGooglePlayCheckout = async () => {
     if (!isSignedIn || !user) return;
-    
+
     setLoadingMessage({
       title: 'Connecting to Google Play...',
       description: 'Opening the Google Play Billing dialog. Please complete the purchase in the native prompt.'
@@ -77,7 +77,7 @@ export function UpgradeModal({
 
       // Signal success to the billing sheet
       await paymentResponse.complete('success');
-      
+
       // Reload page or trigger success state to refresh is_pro fields
       window.location.reload();
     } catch (err: any) {
@@ -130,7 +130,7 @@ export function UpgradeModal({
       }
 
       const { url } = await response.json();
-      
+
       // Redirect the user to the Stripe Checkout Page
       window.location.href = url;
     } catch (err: any) {
@@ -171,16 +171,16 @@ export function UpgradeModal({
         boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
         position: 'relative'
       }} onClick={e => e.stopPropagation()}>
-        
+
         {/* Close Button */}
         {!loading && (
-          <button 
+          <button
             onClick={handleClose}
-            className="btn-icon hover-opacity" 
-            style={{ 
-              position: 'absolute', 
-              top: '1.25rem', 
-              right: '1.25rem', 
+            className="btn-icon hover-opacity"
+            style={{
+              position: 'absolute',
+              top: '1.25rem',
+              right: '1.25rem',
               color: 'var(--text-secondary)',
               background: 'transparent',
               border: 'none',
@@ -206,26 +206,26 @@ export function UpgradeModal({
         ) : !isSignedIn ? (
           /* Premium Auth Prompt for Unsigned Guest Users */
           <div>
-            <div style={{ 
-              background: 'linear-gradient(135deg, var(--surface-highlight) 0%, var(--surface-color) 100%)', 
-              padding: '2.5rem 2rem 2rem 2rem', 
+            <div style={{
+              background: 'linear-gradient(135deg, var(--surface-highlight) 0%, var(--surface-color) 100%)',
+              padding: '2.5rem 2rem 2rem 2rem',
               textAlign: 'center',
               borderBottom: '1px solid var(--glass-border)'
             }}>
-              <div style={{ 
-                width: '64px', 
-                height: '64px', 
-                background: 'var(--primary)', 
-                borderRadius: '50%', 
-                display: 'flex', 
-                alignItems: 'center', 
+              <div style={{
+                width: '64px',
+                height: '64px',
+                background: 'var(--primary)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 1.25rem',
                 boxShadow: '0 0 25px rgba(250, 189, 47, 0.45)'
               }}>
                 <Sparkles size={32} color="var(--bg-color)" />
               </div>
-              
+
               <h2 style={{ fontSize: '1.65rem', fontWeight: 800, margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Account Required</h2>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', margin: 0, lineHeight: 1.5 }}>
                 To unlock powerful features like <strong>{featureName}</strong>, you need to create a free account or sign in first.
@@ -259,26 +259,26 @@ export function UpgradeModal({
         ) : (
           /* Upgrade Description Step */
           <div>
-            <div style={{ 
-              background: 'linear-gradient(135deg, var(--surface-highlight) 0%, var(--surface-color) 100%)', 
-              padding: '2.5rem 2rem 2rem 2rem', 
+            <div style={{
+              background: 'linear-gradient(135deg, var(--surface-highlight) 0%, var(--surface-color) 100%)',
+              padding: '2.5rem 2rem 2rem 2rem',
               textAlign: 'center',
               borderBottom: '1px solid var(--glass-border)'
             }}>
-              <div style={{ 
-                width: '64px', 
-                height: '64px', 
-                background: 'var(--primary)', 
-                borderRadius: '50%', 
-                display: 'flex', 
-                alignItems: 'center', 
+              <div style={{
+                width: '64px',
+                height: '64px',
+                background: 'var(--primary)',
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 1.25rem',
                 boxShadow: '0 0 25px rgba(250, 189, 47, 0.45)'
               }}>
                 <Sparkles size={32} color="var(--bg-color)" />
               </div>
-              
+
               <h2 style={{ fontSize: '1.65rem', fontWeight: 800, margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Unlock {featureName}</h2>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', margin: 0, lineHeight: 1.5 }}>
                 Upgrade to CareerReport Pro to instantly generate, rewrite, and import your resumes with state-of-the-art AI.
@@ -295,11 +295,10 @@ export function UpgradeModal({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2.25rem' }}>
                 {[
                   "Save and manage multiple resumes",
+                  "Manage your Cover Letter Library",
                   "Instantly import and parse PDF resumes",
                   "AI-powered professional summaries",
-                  "Smart bullet point generation for jobs",
-                  "Priority access to new templates",
-                  "Advanced analytics for your profile"
+                  "Smart bullet point generation for jobs"
                 ].map((feature, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', color: 'var(--text-primary)' }}>
                     <CheckCircle size={18} color="var(--primary)" style={{ flexShrink: 0 }} />
@@ -308,12 +307,12 @@ export function UpgradeModal({
                 ))}
               </div>
 
-              <button 
-                className="btn btn-primary" 
-                style={{ 
-                  width: '100%', 
-                  padding: '1.1rem', 
-                  fontSize: '1.1rem', 
+              <button
+                className="btn btn-primary"
+                style={{
+                  width: '100%',
+                  padding: '1.1rem',
+                  fontSize: '1.1rem',
                   fontWeight: 700,
                   display: 'flex',
                   justifyContent: 'center',
@@ -326,8 +325,8 @@ export function UpgradeModal({
                 <Lock size={18} /> {isTwa ? 'Subscribe with Google Play - $4/mo' : 'Upgrade to Pro - $4/mo'}
               </button>
               <p style={{ textAlign: 'center', margin: '1rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                {isTwa 
-                  ? 'Cancel anytime via Google Play Subscriptions. Secured by Google Play.' 
+                {isTwa
+                  ? 'Cancel anytime via Google Play Subscriptions. Secured by Google Play.'
                   : 'Cancel anytime. Secure checkout powered by Stripe.'}
               </p>
             </div>

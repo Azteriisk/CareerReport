@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic';
 import { defaultResume } from '@/lib/default-resume';
 import { pageCountFromScrollWidth } from '@/lib/resume-pagination';
 import { ResumeData } from '@/lib/resume-schema';
-import { useReactToPrint } from 'react-to-print';
 import { Download, Sparkles, LayoutTemplate, Lock, RefreshCw, Plus, Minus, Trash2, Upload, Save, CheckCircle, AlertCircle, Info, Share2, X, Loader2, Wand2, FileText, Edit, Copy, Check, Globe } from 'lucide-react';
 import { useUser, useAuth, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
 import { supabase } from "@/lib/supabase";
@@ -16,10 +15,11 @@ import { AtsMetadata } from '@/components/AtsMetadata';
 import { BuilderErrorBoundary } from '@/components/BuilderErrorBoundary';
 
 // Dynamically import heavy components so they're code-split from the initial bundle
-const TemplateModern = dynamic(() => import('@/components/TemplateModern').then(m => ({ default: m.TemplateModern })));
-const TemplateClassic = dynamic(() => import('@/components/TemplateClassic').then(m => ({ default: m.TemplateClassic })));
-const TemplateMinimal = dynamic(() => import('@/components/TemplateMinimal').then(m => ({ default: m.TemplateMinimal })));
-const TemplateModernSplit = dynamic(() => import('@/components/TemplateModernSplit').then(m => ({ default: m.TemplateModernSplit })));
+const loadingFallback = () => <div style={{ minHeight: '850px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Loader2 className="animate-spin" size={48} style={{ color: 'var(--primary)', opacity: 0.5 }} /></div>;
+const TemplateModern = dynamic(() => import('@/components/TemplateModern').then(m => ({ default: m.TemplateModern })), { loading: loadingFallback });
+const TemplateClassic = dynamic(() => import('@/components/TemplateClassic').then(m => ({ default: m.TemplateClassic })), { loading: loadingFallback });
+const TemplateMinimal = dynamic(() => import('@/components/TemplateMinimal').then(m => ({ default: m.TemplateMinimal })), { loading: loadingFallback });
+const TemplateModernSplit = dynamic(() => import('@/components/TemplateModernSplit').then(m => ({ default: m.TemplateModernSplit })), { loading: loadingFallback });
 const ImageCropper = dynamic(() => import('@/components/ImageCropper').then(m => ({ default: m.ImageCropper })));
 const UpgradeModal = dynamic(() => import('@/components/UpgradeModal').then(m => ({ default: m.UpgradeModal })));
 
@@ -68,7 +68,6 @@ const MonthYearPicker = ({ value, onChange, disabled }: { value: string, onChang
 
 function BuilderPageContent() {
   const { isSignedIn, isLoaded, user } = useUser();
-  const { getToken } = useAuth();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
 
@@ -109,6 +108,57 @@ function BuilderPageContent() {
   const [showSectionMenu, setShowSectionMenu] = useState(false);
   const [targetCompany, setTargetCompany] = useState('');
   const [targetJobTitle, setTargetJobTitle] = useState('');
+  const [zoom, setZoom] = useState(0.85);
+  
+  const previewContainerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const container = previewContainerRef.current;
+    if (!container) return;
+
+    let startDist = 0;
+
+    const getDist = (touches: TouchList) => {
+      return Math.hypot(
+        touches[0].clientX - touches[1].clientX,
+        touches[0].clientY - touches[1].clientY
+      );
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        startDist = getDist(e.touches);
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        if (e.cancelable) e.preventDefault(); // Stop native browser zoom
+        const currentDist = getDist(e.touches);
+        const scale = currentDist / startDist;
+        setZoom(z => Math.max(0.3, Math.min(z * scale, 2)));
+        startDist = currentDist; // Update for next frame
+      }
+    };
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        if (e.cancelable) e.preventDefault();
+        const zoomChange = e.deltaY * -0.005;
+        setZoom(z => Math.max(0.3, Math.min(z + zoomChange, 2)));
+      }
+    };
+
+    container.addEventListener('touchstart', handleTouchStart, { passive: false });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
+
   const [targetJobDesc, setTargetJobDesc] = useState('');
   const [generatedCoverLetter, setGeneratedCoverLetter] = useState('');
   const [coverLetterMode, setCoverLetterMode] = useState<'ai' | 'guided'>('ai');
@@ -142,6 +192,8 @@ function BuilderPageContent() {
   const [showResumesDropdown, setShowResumesDropdown] = useState(false);
   const [resumeRenameId, setResumeRenameId] = useState<string | null>(null);
   const [renameText, setRenameText] = useState('');
+  const [coverLetterRenameId, setCoverLetterRenameId] = useState<string | null>(null);
+  const [coverLetterRenameText, setCoverLetterRenameText] = useState('');
 
   // Track which optional sections are actively in the editor
   const [hasProjectsSection, setHasProjectsSection] = useState(false);
@@ -152,6 +204,8 @@ function BuilderPageContent() {
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [upgradeFeature, setUpgradeFeature] = useState('');
+  const [showProCancelModal, setShowProCancelModal] = useState(false);
+  const [isCancelingPro, setIsCancelingPro] = useState(false);
   const [undoData, setUndoData] = useState<ResumeData | null>(null);
   const [showUndo, setShowUndo] = useState(false);
   const [careerContext, setCareerContext] = useState('');
@@ -326,27 +380,69 @@ function BuilderPageContent() {
 
     loadInitialData();
     return () => clearTimeout(clerkTimeout);
-  }, [isLoaded, isSignedIn, user?.id, getToken]);
+  }, [isLoaded, isSignedIn, user?.id]);
 
-  // Load cover letter details from data if present on initial load
+  // Migrate legacy coverLetter and set active cover letter
   useEffect(() => {
-    if (data?.coverLetter) {
-      if (data.coverLetter.company) setTargetCompany(data.coverLetter.company);
-      if (data.coverLetter.jobTitle) setTargetJobTitle(data.coverLetter.jobTitle);
-      if (data.coverLetter.jobDesc) setTargetJobDesc(data.coverLetter.jobDesc || '');
-      if (data.coverLetter.storyType) setStoryType(data.coverLetter.storyType);
-      if (data.coverLetter.content) setGeneratedCoverLetter(data.coverLetter.content);
-      if (data.coverLetter.isGuided) setCoverLetterMode('guided');
-      if (data.coverLetter.guidedSteps) {
-        if (data.coverLetter.guidedSteps.hook) setGuidedHook(data.coverLetter.guidedSteps.hook);
-        if (data.coverLetter.guidedSteps.value) setGuidedValue(data.coverLetter.guidedSteps.value);
-        if (data.coverLetter.guidedSteps.align) setGuidedAlign(data.coverLetter.guidedSteps.align);
-        if (data.coverLetter.guidedSteps.close) setGuidedClose(data.coverLetter.guidedSteps.close);
-      }
+    // Migrate legacy coverLetter object to the new array if needed
+    if (data?.coverLetter && (!data?.coverLetters || data.coverLetters.length === 0)) {
+      const migratedId = 'legacy-1';
+      setData(prev => ({
+        ...prev,
+        coverLetters: [
+          {
+            id: migratedId,
+            name: `${prev.coverLetter!.company || 'Target Company'} - ${prev.coverLetter!.jobTitle || 'Role'}`,
+            ...prev.coverLetter!
+          }
+        ],
+        metadata: {
+          ...prev.metadata,
+          activeCoverLetterId: migratedId
+        },
+        coverLetter: undefined
+      }));
+      setSaveStatus('idle');
+      return; // Wait for next render cycle
     }
-  }, [data?.basics?.name]); // Run on initial load of the resume data to populate database values correctly
 
-  // Helper to update the cover letter object in ResumeData state
+    // Load active cover letter into UI state
+    const activeId = data?.metadata?.activeCoverLetterId;
+    const activeLetter = data?.coverLetters?.find(c => c.id === activeId) || data?.coverLetters?.[0];
+    
+    if (activeLetter) {
+      setTargetCompany(activeLetter.company || '');
+      setTargetJobTitle(activeLetter.jobTitle || '');
+      setTargetJobDesc(activeLetter.jobDesc || '');
+      setStoryType(activeLetter.storyType || 'standard');
+      setGeneratedCoverLetter(activeLetter.content || '');
+      setCoverLetterMode(activeLetter.isGuided ? 'guided' : 'ai');
+      
+      if (activeLetter.guidedSteps) {
+        setGuidedHook(activeLetter.guidedSteps.hook || '');
+        setGuidedValue(activeLetter.guidedSteps.value || '');
+        setGuidedAlign(activeLetter.guidedSteps.align || '');
+        setGuidedClose(activeLetter.guidedSteps.close || '');
+      } else {
+        setGuidedHook('');
+        setGuidedValue('');
+        setGuidedAlign('');
+        setGuidedClose('');
+      }
+    } else {
+      setTargetCompany('');
+      setTargetJobTitle('');
+      setTargetJobDesc('');
+      setStoryType('standard');
+      setGeneratedCoverLetter('');
+      setGuidedHook('');
+      setGuidedValue('');
+      setGuidedAlign('');
+      setGuidedClose('');
+    }
+  }, [data?.metadata?.activeCoverLetterId, data?.coverLetters?.length, data?.basics?.name]);
+
+  // Helper to update the active cover letter in the array
   const saveCoverLetterToData = (
     company: string,
     title: string,
@@ -356,21 +452,125 @@ function BuilderPageContent() {
     mode: 'ai' | 'guided',
     steps?: any
   ) => {
-    setData(prev => ({
-      ...prev,
-      coverLetter: {
-        company,
-        jobTitle: title,
-        jobDesc: desc,
-        storyType: tone,
-        content,
-        isGuided: mode === 'guided',
-        guidedSteps: steps || null
-      }
-    }));
+    setData(prev => {
+      const activeId = prev.metadata?.activeCoverLetterId;
+      if (!activeId) return prev; // Do nothing if no active cover letter
+
+      const existingLetters = prev.coverLetters || [];
+      const updatedLetters = existingLetters.map(cl => 
+        cl.id === activeId
+          ? {
+              ...cl,
+              company,
+              jobTitle: title,
+              jobDesc: desc,
+              storyType: tone,
+              content,
+              isGuided: mode === 'guided',
+              guidedSteps: steps || undefined
+            }
+          : cl
+      );
+
+      return {
+        ...prev,
+        coverLetters: updatedLetters
+      };
+    });
     setSaveStatus('idle'); // Set dirty state for the autosave loop to trigger
   };
 
+  const handleCreateCoverLetter = () => {
+    if (!isPro && (data.coverLetters || []).length >= 1) {
+      setUpgradeFeature('Unlimited Cover Letters');
+      setUpgradeModalOpen(true);
+      return;
+    }
+    const newId = `cl-${Date.now()}`;
+    setData(prev => ({
+      ...prev,
+      coverLetters: [
+        ...(prev.coverLetters || []),
+        {
+          id: newId,
+          name: 'New Cover Letter',
+          company: '',
+          jobTitle: '',
+          content: '',
+          isGuided: false
+        }
+      ],
+      metadata: {
+        ...prev.metadata,
+        activeCoverLetterId: newId
+      }
+    }));
+    setSaveStatus('idle');
+  };
+
+  const handleDuplicateCoverLetter = (id: string) => {
+    if (!isPro && (data.coverLetters || []).length >= 1) {
+      setUpgradeFeature('Unlimited Cover Letters');
+      setUpgradeModalOpen(true);
+      return;
+    }
+    setData(prev => {
+      const source = prev.coverLetters?.find(c => c.id === id);
+      if (!source) return prev;
+      
+      const newId = `cl-${Date.now()}`;
+      return {
+        ...prev,
+        coverLetters: [
+          ...(prev.coverLetters || []),
+          {
+            ...source,
+            id: newId,
+            name: `${source.name} (Copy)`
+          }
+        ],
+        metadata: {
+          ...prev.metadata,
+          activeCoverLetterId: newId
+        }
+      };
+    });
+    setSaveStatus('idle');
+  };
+
+  const handleDeleteCoverLetter = (id: string) => {
+    if (!confirm('Are you sure you want to delete this cover letter?')) return;
+    
+    setData(prev => {
+      const filtered = (prev.coverLetters || []).filter(c => c.id !== id);
+      // If we delete the active one, select the first available or null
+      const nextActiveId = prev.metadata?.activeCoverLetterId === id 
+        ? (filtered[0]?.id || null) 
+        : prev.metadata?.activeCoverLetterId;
+        
+      return {
+        ...prev,
+        coverLetters: filtered,
+        metadata: {
+          ...prev.metadata,
+          activeCoverLetterId: nextActiveId || undefined
+        }
+      };
+    });
+    setSaveStatus('idle');
+  };
+
+  const handleRenameCoverLetter = (id: string, newName: string) => {
+    if (!newName.trim()) return;
+    setData(prev => ({
+      ...prev,
+      coverLetters: (prev.coverLetters || []).map(c => 
+        c.id === id ? { ...c, name: newName.trim() } : c
+      )
+    }));
+    setSaveStatus('idle');
+    setCoverLetterRenameId(null);
+  };
   // Synchronize compiled guided cover letter dynamically
   useEffect(() => {
     if (coverLetterMode === 'guided') {
@@ -502,7 +702,7 @@ ${data.basics.name || 'Applicant'}`;
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [data, template, isPublic, isSignedIn, user?.id, getToken, isPro, activeResumeId]);
+  }, [data, template, isPublic, isSignedIn, user?.id, isPro, activeResumeId]);
 
   const handleManualSave = () => {
     setSaveStatus('saving');
@@ -521,6 +721,28 @@ ${data.basics.name || 'Applicant'}`;
       }
     } catch (e) {
       setSaveStatus('error');
+    }
+  };
+
+  const handleCancelPro = async () => {
+    setIsCancelingPro(true);
+    try {
+      const res = await fetch('/api/checkout/cancel-pro', { method: 'POST' });
+      const body = await res.json();
+      
+      if (body.isGooglePlay) {
+        window.location.href = body.redirectUrl;
+        return;
+      }
+      
+      if (!res.ok) throw new Error(body.error || 'Failed to cancel subscription');
+      
+      alert(body.message || 'Subscription successfully scheduled for cancellation at the end of the billing period.');
+      setShowProCancelModal(false);
+    } catch (err: any) {
+      alert('Cancellation failed: ' + err.message);
+    } finally {
+      setIsCancelingPro(false);
     }
   };
 
@@ -748,9 +970,35 @@ ${data.basics.name || 'Applicant'}`;
     return () => observer.disconnect();
   }, [data, template, data.metadata?.scale, data.metadata?.pageMargin]);
 
-  const handlePrint = useReactToPrint({
-    contentRef
-  });
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handlePrint = async () => {
+    setIsExporting(true);
+    try {
+      const { generatePdfBlob } = await import('@/components/pdf/ResumePDFPreview');
+
+      const exportData = { ...data };
+      if (includeCoverLetter && generatedCoverLetter) {
+        exportData.coverLetters = []; // Force fallback to single letter so the unsaved text renders
+        exportData.coverLetter = { content: generatedCoverLetter, company: targetCompany, jobTitle: targetJobTitle };
+      }
+
+      const blob = await generatePdfBlob(exportData, template, includeCoverLetter);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${data.basics.name ? data.basics.name.trim().replace(/\s+/g, '') : 'Resume'}_CareerReport.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const [aiLoading, setAiLoading] = useState<Record<string, boolean>>({});
 
@@ -1420,41 +1668,41 @@ ${data.basics.name || 'Applicant'}`;
                   </div>
                 </div>
 
-                {/* Page Margin */}
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Page Margins</span>
-                    <span style={{ color: 'var(--primary)', fontWeight: 700 }}>{(data.metadata?.pageMargin || 0.42).toFixed(2)}in</span>
-                  </label>
-                  <input
-                    type="range" min="0.2" max="0.75" step="0.01"
-                    value={data.metadata?.pageMargin || 0.42}
-                    onChange={(e) => setData(prev => ({ ...prev, metadata: { ...prev.metadata, pageMargin: parseFloat(e.target.value) } }))}
-                    style={{ width: '100%' }}
-                  />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                    <span>Narrow</span><span>Standard</span><span>Wide</span>
+                {/* Page Margins */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1rem' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Top/Bottom Margins</span>
+                      <span style={{ color: 'var(--primary)', fontWeight: 700 }}>{(data.metadata?.pageMargin || 0.42).toFixed(2)}in</span>
+                    </label>
+                    <input
+                      type="range" min="0.2" max="0.75" step="0.01"
+                      value={data.metadata?.pageMargin || 0.42}
+                      onChange={(e) => setData(prev => ({ ...prev, metadata: { ...prev.metadata, pageMargin: parseFloat(e.target.value) } }))}
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="label" style={{ fontSize: '0.8rem', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Left/Right Margins</span>
+                      <span style={{ color: 'var(--primary)', fontWeight: 700 }}>{(data.metadata?.pageMarginLR ?? data.metadata?.pageMargin ?? 0.42).toFixed(2)}in</span>
+                    </label>
+                    <input
+                      type="range" min="0.2" max="0.75" step="0.01"
+                      value={data.metadata?.pageMarginLR ?? data.metadata?.pageMargin ?? 0.42}
+                      onChange={(e) => setData(prev => ({ ...prev, metadata: { ...prev.metadata, pageMarginLR: parseFloat(e.target.value) } }))}
+                      style={{ width: '100%' }}
+                    />
                   </div>
                 </div>
 
                 {/* Theme Color (Modern templates only) */}
-                {(template === 'modern' || template === 'modern-split') && (
+                {(template === 'modern' || template === 'modern-split' || template === 'minimal') && (
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="label" style={{ fontSize: '0.8rem' }}>Accent Color</label>
                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                       <input type="color" value={data.metadata?.themeColor || '#3b82f6'} onChange={(e) => setData(prev => ({ ...prev, metadata: { ...prev.metadata, themeColor: e.target.value } }))} style={{ width: '32px', height: '32px', padding: '0', border: 'none', borderRadius: '4px', cursor: 'pointer', background: 'transparent' }} />
                       <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{data.metadata?.themeColor || '#3b82f6'}</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Sidebar Color (Minimal only) */}
-                {template === 'minimal' && (
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="label" style={{ fontSize: '0.8rem' }}>Sidebar Background</label>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                      <input type="color" value={data.metadata?.minimalSidebarColor || '#fafafa'} onChange={(e) => setData(prev => ({ ...prev, metadata: { ...prev.metadata, minimalSidebarColor: e.target.value } }))} style={{ width: '32px', height: '32px', padding: '0', border: 'none', borderRadius: '4px', cursor: 'pointer', background: 'transparent' }} />
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{data.metadata?.minimalSidebarColor || '#fafafa'}</span>
                     </div>
                   </div>
                 )}
@@ -1910,6 +2158,110 @@ ${data.basics.name || 'Applicant'}`;
             {showCoverLetterSection && (
               <div style={{ padding: '1.25rem', borderTop: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '1.25rem', background: 'rgba(0, 0, 0, 0.15)' }}>
                 
+                {/* Cover Letter Library UI */}
+                {isPro ? (
+                  <div style={{ marginBottom: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label className="label" style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>My Cover Letters</label>
+                      <button 
+                        onClick={handleCreateCoverLetter}
+                        style={{ background: 'transparent', border: 'none', color: 'var(--primary)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px' }}
+                      >
+                        <Plus size={12} /> New
+                      </button>
+                    </div>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {(data.coverLetters || []).map(letter => {
+                        const isActive = data.metadata?.activeCoverLetterId === letter.id;
+                        const isRenaming = coverLetterRenameId === letter.id;
+                        
+                        return (
+                          <div 
+                            key={letter.id} 
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'space-between',
+                              padding: '0.5rem 0.75rem',
+                              background: isActive ? 'rgba(56, 189, 248, 0.1)' : 'rgba(255,255,255,0.02)',
+                              border: `1px solid ${isActive ? 'var(--primary)' : 'var(--glass-border)'}`,
+                              borderRadius: '6px',
+                              cursor: 'pointer'
+                            }}
+                            onClick={() => {
+                              if (!isRenaming) {
+                                setData(prev => ({
+                                  ...prev,
+                                  metadata: { ...prev.metadata, activeCoverLetterId: letter.id }
+                                }));
+                              }
+                            }}
+                          >
+                            {isRenaming ? (
+                              <div style={{ display: 'flex', gap: '4px', flex: 1, marginRight: '8px' }}>
+                                <input 
+                                  autoFocus
+                                  type="text" 
+                                  value={coverLetterRenameText}
+                                  onChange={e => setCoverLetterRenameText(e.target.value)}
+                                  style={{ flex: 1, padding: '2px 6px', fontSize: '0.8rem', background: 'var(--bg-color)', border: '1px solid var(--primary)', color: 'var(--text-primary)', borderRadius: '4px' }}
+                                  onClick={e => e.stopPropagation()}
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') handleRenameCoverLetter(letter.id, coverLetterRenameText);
+                                    if (e.key === 'Escape') setCoverLetterRenameId(null);
+                                  }}
+                                />
+                                <button onClick={(e) => { e.stopPropagation(); handleRenameCoverLetter(letter.id, coverLetterRenameText); }} style={{ background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: '4px', padding: '0 6px', cursor: 'pointer' }}><CheckCircle size={12}/></button>
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: '0.85rem', fontWeight: isActive ? 700 : 500, color: isActive ? 'var(--primary)' : 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
+                                {letter.name || 'Untitled Cover Letter'}
+                              </span>
+                            )}
+                            
+                            {!isRenaming && (
+                              <div style={{ display: 'flex', gap: '6px', opacity: isActive ? 1 : 0.6 }} onClick={e => e.stopPropagation()}>
+                                <button onClick={() => { setCoverLetterRenameId(letter.id); setCoverLetterRenameText(letter.name || ''); }} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '2px' }} title="Rename"><Edit size={12} /></button>
+                                <button onClick={() => handleDuplicateCoverLetter(letter.id)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '2px' }} title="Duplicate"><Copy size={12} /></button>
+                                <button onClick={() => handleDeleteCoverLetter(letter.id)} style={{ background: 'transparent', border: 'none', color: 'var(--error)', cursor: 'pointer', padding: '2px' }} title="Delete"><Trash2 size={12} /></button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      {(!data.coverLetters || data.coverLetters.length === 0) && (
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontStyle: 'italic', padding: '0.5rem' }}>No saved cover letters. Click "New" to start.</div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div 
+                    style={{ 
+                      padding: '1.25rem', 
+                      background: 'rgba(250, 189, 47, 0.08)', 
+                      border: '1px solid rgba(250, 189, 47, 0.25)', 
+                      borderRadius: '8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.5rem',
+                      alignItems: 'center',
+                      textAlign: 'center',
+                      marginBottom: '0.5rem'
+                    }}
+                  >
+                    <Lock size={18} color="var(--accent)" />
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 700 }}>Cover Letter Library</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>Upgrade to Pro to create, save, and manage multiple tailored cover letters for different roles.</span>
+                    <button 
+                      onClick={() => { setUpgradeFeature('Manage your Cover Letter Library'); setUpgradeModalOpen(true); }}
+                      style={{ marginTop: '0.5rem', background: 'var(--primary)', color: 'var(--bg-color)', border: 'none', padding: '0.4rem 1rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      Upgrade to Pro
+                    </button>
+                  </div>
+                )}
+
                 {/* Mode Selector Tabs */}
                 <div style={{ display: 'flex', gap: '0.25rem', padding: '2px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', border: '1px solid var(--glass-border)', marginBottom: '0.5rem' }}>
                   <button
@@ -2112,6 +2464,17 @@ ${data.basics.name || 'Applicant'}`;
                           onChange={e => setGuidedHook(e.target.value)}
                           style={{ minHeight: '60px', padding: '0.5rem', fontSize: '0.8rem', resize: 'vertical' }}
                         />
+                        <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                          {[
+                            { label: 'Standard', val: `I am writing to express my interest in the ${targetJobTitle || '[Job Title]'} position at ${targetCompany || '[Company]'}.` },
+                            { label: 'Experienced', val: `With a strong background in driving impactful results, I am thrilled to apply for the ${targetJobTitle || '[Job Title]'} role at ${targetCompany || '[Company]'}.` },
+                            { label: 'Passionate', val: `As a long-time admirer of ${targetCompany || '[Company]'}’s mission, I am excited to submit my application for the ${targetJobTitle || '[Job Title]'} position.` }
+                          ].map(opt => (
+                            <button key={opt.label} onClick={() => setGuidedHook(prev => prev ? prev + ' ' + opt.val : opt.val)} style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--primary)', background: 'rgba(56, 189, 248, 0.1)', color: 'var(--primary)', cursor: 'pointer' }}>
+                              + {opt.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                       <div>
                         <label className="label" style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Step 2: The Value Story (Body paragraph)</label>
@@ -2122,6 +2485,17 @@ ${data.basics.name || 'Applicant'}`;
                           onChange={e => setGuidedValue(e.target.value)}
                           style={{ minHeight: '70px', padding: '0.5rem', fontSize: '0.8rem', resize: 'vertical' }}
                         />
+                        <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                          {[
+                            { label: 'Problem Solver', val: `Throughout my career, I have focused on solving complex challenges and refining processes to deliver measurable value.` },
+                            { label: 'Leadership', val: `My background includes leading cross-functional teams, driving strategic initiatives, and consistently exceeding targets.` },
+                            { label: 'Technical', val: `My expertise in architecture, clean coding practices, and system optimization aligns perfectly with the requirements of this role.` }
+                          ].map(opt => (
+                            <button key={opt.label} onClick={() => setGuidedValue(prev => prev ? prev + ' ' + opt.val : opt.val)} style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--primary)', background: 'rgba(56, 189, 248, 0.1)', color: 'var(--primary)', cursor: 'pointer' }}>
+                              + {opt.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                       <div>
                         <label className="label" style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Step 3: Company Alignment (Why this company?)</label>
@@ -2132,6 +2506,17 @@ ${data.basics.name || 'Applicant'}`;
                           onChange={e => setGuidedAlign(e.target.value)}
                           style={{ minHeight: '60px', padding: '0.5rem', fontSize: '0.8rem', resize: 'vertical' }}
                         />
+                        <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                          {[
+                            { label: 'Mission Driven', val: `I am particularly drawn to ${targetCompany || '[Company]'} because of your commitment to pushing boundaries and your outstanding mission.` },
+                            { label: 'Product Focus', val: `I have been highly impressed with your recent product launches and the innovative engineering culture you've built.` },
+                            { label: 'Culture Fit', val: `I am eager to bring my collaborative spirit and diverse perspective to your forward-thinking team environment.` }
+                          ].map(opt => (
+                            <button key={opt.label} onClick={() => setGuidedAlign(prev => prev ? prev + ' ' + opt.val : opt.val)} style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--primary)', background: 'rgba(56, 189, 248, 0.1)', color: 'var(--primary)', cursor: 'pointer' }}>
+                              + {opt.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                       <div>
                         <label className="label" style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Step 4: Close & Call to Action</label>
@@ -2142,6 +2527,17 @@ ${data.basics.name || 'Applicant'}`;
                           onChange={e => setGuidedClose(e.target.value)}
                           style={{ minHeight: '50px', padding: '0.5rem', fontSize: '0.8rem', resize: 'vertical' }}
                         />
+                        <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                          {[
+                            { label: 'Standard', val: `Thank you for your time and consideration. I look forward to the possibility of discussing this opportunity with you.` },
+                            { label: 'Confident', val: `I am confident that my skills and drive will make a significant impact on your team. I look forward to hearing from you.` },
+                            { label: 'Strategic', val: `I would welcome the opportunity to discuss how my background can support your current priorities and upcoming initiatives.` }
+                          ].map(opt => (
+                            <button key={opt.label} onClick={() => setGuidedClose(prev => prev ? prev + ' ' + opt.val : opt.val)} style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', border: '1px solid var(--primary)', background: 'rgba(56, 189, 248, 0.1)', color: 'var(--primary)', cursor: 'pointer' }}>
+                              + {opt.label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
@@ -2189,6 +2585,20 @@ ${data.basics.name || 'Applicant'}`;
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
                 You have unlimited, premium access to all state-of-the-art AI parsing and generation features.
               </p>
+              <button 
+                onClick={() => setShowProCancelModal(true)} 
+                style={{ 
+                  background: 'transparent', 
+                  border: 'none', 
+                  color: 'var(--text-secondary)', 
+                  textDecoration: 'underline', 
+                  fontSize: '0.75rem', 
+                  cursor: 'pointer', 
+                  marginTop: '0.5rem' 
+                }}
+              >
+                Cancel Premium Subscription
+              </button>
             </div>
           ) : (
             <div style={{ padding: '1rem', background: 'rgba(139, 92, 246, 0.1)', border: '1px solid rgba(139, 92, 246, 0.2)', borderRadius: '8px', marginTop: '2rem' }}>
@@ -2240,10 +2650,10 @@ ${data.basics.name || 'Applicant'}`;
                   className="input-field"
                   style={{ width: 'auto', padding: '0.4rem 0.75rem', background: 'var(--surface-color)', border: '1px solid var(--glass-border)', color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.9rem' }}
                 >
-                  <option value="modern" style={{ color: '#fff', background: '#1e293b' }}>Modern Template</option>
-                  <option value="modern-split" style={{ color: '#fff', background: '#1e293b' }}>Modern Split</option>
-                  <option value="minimal" style={{ color: '#fff', background: '#1e293b' }}>Minimal Template</option>
-                  <option value="classic" style={{ color: '#fff', background: '#1e293b' }}>Classic Template</option>
+                  <option value="modern" style={{ color: '#fff', background: '#1e293b' }}>Modern</option>
+                  <option value="modern-split" style={{ color: '#fff', background: '#1e293b' }}>Split</option>
+                  <option value="minimal" style={{ color: '#fff', background: '#1e293b' }}>Minimal</option>
+                  <option value="classic" style={{ color: '#fff', background: '#1e293b' }}>Classic</option>
                 </select>
               </div>
             )}
@@ -2709,7 +3119,7 @@ ${data.basics.name || 'Applicant'}`;
             width: 'auto',
             minWidth: '850px',
             columnFill: 'auto',
-            padding: `${(data.metadata?.pageMargin || 0.42) * 96}px 0`
+            height: `${1100 - ((data.metadata?.pageMargin || 0.42) * 96 * 2)}px`
           }}>
             <div style={{ zoom: data.metadata?.scale || 1 }}>
               {template === 'modern' && <TemplateModern data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
@@ -2721,122 +3131,56 @@ ${data.basics.name || 'Applicant'}`;
           </div>
         </div>
 
-        {/* Print wrapper — USES THE SAME PAGE LOOP AS THE UI PREVIEW FOR TRUE WYSIWYG */}
-        <div style={{ opacity: 0, position: 'absolute', pointerEvents: 'none', top: 0, left: 0 }}>
-          <div ref={contentRef} className="resume-print-container">
-            <style>{`
-              @page { size: 8.5in 11in; margin: 0; }
-              @media print {
-                .resume-print-page { break-after: page; page-break-after: always; }
-              }
-            `}</style>
-            {/* We scale the 850px layout slightly to fit 8.5in (816px) paper perfectly */}
-            <div style={{ zoom: 0.96 }}>
-              {/* Optional Cover Letter page */}
-              {includeCoverLetter && generatedCoverLetter && (
-                <div className="resume-print-page" style={{
-                  width: '850px',
-                  height: '1100px',
-                  padding: '5rem 4.5rem',
-                  background: 'white',
-                  color: 'black',
-                  fontFamily: 'Georgia, serif',
-                  fontSize: '11pt',
-                  lineHeight: 1.6,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  boxSizing: 'border-box',
-                  position: 'relative'
-                }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
-                    <div>
-                      {/* Business letterhead */}
-                      <div style={{ borderBottom: '2px solid #eaeaea', paddingBottom: '1rem', marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                        <div>
-                          <strong style={{ fontSize: '1.75rem', letterSpacing: '-0.5px', color: '#1a1a1a' }}>{data.basics.name}</strong>
-                          <div style={{ fontSize: '1rem', color: '#8b5cf6', fontWeight: 600, marginTop: '2px' }}>{data.basics.label}</div>
-                        </div>
-                        <div style={{ textAlign: 'right', fontSize: '0.85rem', color: '#666' }}>
-                          {data.basics.email} | {data.basics.phone}<br />
-                          {data.basics.url || window.location.host}
-                        </div>
-                      </div>
-
-                      {/* Recipient block */}
-                      <div style={{ marginBottom: '2rem', fontSize: '0.95rem' }}>
-                        {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}<br /><br />
-                        <strong>Hiring Team</strong><br />
-                        {targetCompany || 'Target Company'}<br />
-                      </div>
-
-                      {/* Subject */}
-                      <div style={{ marginBottom: '1.5rem', fontSize: '1rem', fontWeight: 'bold', color: '#222' }}>
-                        Subject: Application for the {targetJobTitle || 'Open Position'} role
-                      </div>
-
-                      {/* Body */}
-                      <div style={{ whiteSpace: 'pre-wrap', color: '#333', textAlign: 'justify', fontSize: '0.95rem' }}>
-                        {generatedCoverLetter}
-                      </div>
-                    </div>
-
-                    {/* Sign-off */}
-                    <div style={{ marginTop: '2rem', fontSize: '0.95rem', color: '#333' }}>
-                      Sincerely,<br /><br />
-                      <strong>{data.basics.name}</strong>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {Array.from({ length: pageCount }).map((_, i) => (
-                <div key={`print-page-${i}`} className="resume-print-page" style={{
-                  width: '850px',
-                  height: '1100px',
-                  overflow: 'hidden',
-                  position: 'relative',
-                  background: 'white'
-                }}>
-                  <div style={{ position: 'absolute', top: 0, left: `-${i * 890}px`, width: 'auto' }}>
-                    <div className="resume-ui-layout" style={{ width: 'auto', minWidth: '850px', padding: `${(data.metadata?.pageMargin || 0.42) * 96}px 0` }}>
-                      <div style={{ zoom: data.metadata?.scale || 1, width: '850px', overflow: 'visible' }}>
-                        {template === 'modern' && <TemplateModern data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
-                        {template === 'modern-split' && <TemplateModernSplit data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
-                        {template === 'classic' && <TemplateClassic data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
-                        {template === 'minimal' && <TemplateMinimal data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
-                        <AtsMetadata data={data} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Scrollable preview — transform: scale provides pixel-perfect 
-            fidelity by scaling the rendered 850px layout. */}
-        <div className={!isMobile ? "sidebar-scroll" : ""} style={{
+        <div ref={previewContainerRef} className={!isMobile ? "sidebar-scroll" : ""} style={{
           flex: 1,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          padding: isMobile ? '0.5rem 0' : '3rem 2rem',
+          overflow: 'auto', // Allow both horizontal and vertical panning
+          padding: isMobile ? '1rem' : '3rem 2rem',
           display: 'flex',
-          justifyContent: 'center',
+          justifyContent: isMobile ? 'flex-start' : 'center', // Prevent flex-center truncation bug on mobile
           alignItems: 'flex-start',
+          position: 'relative',
           direction: 'ltr'
         }}>
-          {/* We use transform: scale for pixel-perfect fidelity. 
-              To avoid layout gaps, we wrap it in a container with the scaled dimensions. */}
+          {(() => {
+            const effectiveZoom = isMobile ? mobileScale * (zoom / 0.85) : zoom;
+            const marginPxTB = (data.metadata?.pageMargin || 0.42) * 96;
+            const contentHeight = 1100 - (marginPxTB * 2);
+            
+            const getLightBackground = (hex: string) => {
+              hex = hex.replace('#', '');
+              if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+              if (hex.length !== 6) return '#fafafa';
+              const r = parseInt(hex.substring(0, 2), 16);
+              const g = parseInt(hex.substring(2, 4), 16);
+              const b = parseInt(hex.substring(4, 6), 16);
+              const bgR = Math.round(r * 0.05 + 250 * 0.95);
+              const bgG = Math.round(g * 0.05 + 250 * 0.95);
+              const bgB = Math.round(b * 0.05 + 250 * 0.95);
+              return `rgb(${bgR}, ${bgG}, ${bgB})`;
+            };
+
+            const sidebarBgColor = getLightBackground(data.metadata?.themeColor || (template === 'minimal' ? '#111827' : '#3b82f6'));
+
+            return (
+              <>
+          {/* Zoom Controls */}
+          <div className="no-print" style={{ position: 'fixed', bottom: '2rem', right: isMobile ? '1rem' : 'calc(20px + 35%)', zIndex: 100, display: 'flex', gap: '0.5rem', background: 'var(--surface-color)', padding: '0.5rem', borderRadius: '8px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', border: '1px solid var(--glass-border)' }}>
+            <button className="btn" onClick={() => setZoom(z => Math.max(0.3, z - 0.1))} title="Zoom Out" style={{ padding: '0.4rem', background: 'transparent' }}><Minus size={16} /></button>
+            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', minWidth: '40px', justifyContent: 'center' }}>{Math.round(zoom * 100)}%</span>
+            <button className="btn" onClick={() => setZoom(z => Math.min(2, z + 0.1))} title="Zoom In" style={{ padding: '0.4rem', background: 'transparent' }}><Plus size={16} /></button>
+          </div>
+
           <div style={{
-            width: isMobile ? `${850 * mobileScale}px` : '850px',
-            height: isMobile ? `${(1100 * pageCount + (pageCount - 1) * 40) * mobileScale}px` : 'auto',
+            width: `${850 * effectiveZoom}px`,
+            height: `${(1100 * pageCount + (pageCount - 1) * 40) * effectiveZoom}px`,
             flexShrink: 0,
-            overflow: 'hidden'
+            overflow: 'hidden',
+            marginBottom: '4rem', // Extra space for zoom controls
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+            background: 'transparent'
           }}>
             <div style={{
-              transform: isMobile ? `scale(${mobileScale})` : 'none',
+              transform: `scale(${effectiveZoom})`,
               transformOrigin: 'top left',
               width: '850px',
               display: 'flex',
@@ -2844,9 +3188,18 @@ ${data.basics.name || 'Applicant'}`;
               alignItems: 'center'
             }}>
               {Array.from({ length: pageCount }).map((_, i) => (
-                <div key={`page-${i}`} className="resume-ui-page">
-                  <div style={{ position: 'absolute', top: 0, left: `-${i * 890}px`, width: 'auto' }}>
-                    <div className="resume-ui-layout" style={{ width: 'auto', minWidth: '850px', padding: `${(data.metadata?.pageMargin || 0.42) * 96}px 0` }}>
+                <div key={`page-${i}`} className="resume-ui-page" style={{ position: 'relative', overflow: 'hidden', width: '850px', height: '1100px', background: 'white', marginBottom: i < pageCount - 1 ? '40px' : '0' }}>
+                  
+                  {/* Dynamic Sidebar Background Hack for CSS Pagination */}
+                  {template === 'minimal' && (
+                    <div style={{ position: 'absolute', top: 0, left: 0, width: '30%', height: '1100px', background: sidebarBgColor, borderRight: '1px solid #eaeaea' }} />
+                  )}
+                  {template === 'modern-split' && (
+                    <div style={{ position: 'absolute', top: 0, right: 0, width: '35%', height: '1100px', background: sidebarBgColor, borderLeft: '1px solid #e2e8f0' }} />
+                  )}
+
+                  <div style={{ position: 'absolute', top: `${marginPxTB}px`, left: `-${i * 890}px`, width: 'auto' }}>
+                    <div className="resume-ui-layout" style={{ width: 'auto', minWidth: '850px', height: `${contentHeight}px` }}>
                       <div style={{ zoom: data.metadata?.scale || 1, width: '850px', overflow: 'visible' }}>
                         {template === 'modern' && <TemplateModern data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
                         {template === 'modern-split' && <TemplateModernSplit data={{ ...data, basics: { ...data.basics, image: includeHeadshot ? data.basics.image : '' } }} />}
@@ -2860,6 +3213,9 @@ ${data.basics.name || 'Applicant'}`;
               ))}
             </div>
           </div>
+          </>
+        );
+      })()}
         </div>
       </main>
 
@@ -2901,6 +3257,50 @@ ${data.basics.name || 'Applicant'}`;
       />
 
       {/* Guest Export Call-to-Action Modal */}
+      {showProCancelModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }} onClick={() => !isCancelingPro && setShowProCancelModal(false)}>
+          <div style={{ background: '#18181b', borderRadius: '16px', border: '1px solid var(--glass-border)', padding: '2rem', maxWidth: '420px', width: '90%', display: 'flex', flexDirection: 'column', gap: '1.5rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ textAlign: 'center' }}>
+              <h3 style={{ fontSize: '1.5rem', margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontWeight: 800 }}>Cancel Subscription?</h3>
+              <p style={{ color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>
+                Are you sure you want to cancel your Premium subscription? You'll lose access to AI generation, Multiple Resumes, and Cover Letter Library at the end of your billing cycle.
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <button
+                className="btn btn-primary"
+                style={{ width: '100%', padding: '0.8rem', justifyContent: 'center' }}
+                onClick={() => setShowProCancelModal(false)}
+                disabled={isCancelingPro}
+              >
+                Keep Premium
+              </button>
+              <button
+                style={{ 
+                  width: '100%', 
+                  padding: '0.8rem', 
+                  background: 'transparent', 
+                  border: '1px solid var(--danger)', 
+                  color: 'var(--danger)', 
+                  borderRadius: '6px', 
+                  fontWeight: 700, 
+                  cursor: isCancelingPro ? 'not-allowed' : 'pointer',
+                  opacity: isCancelingPro ? 0.7 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem'
+                }}
+                onClick={handleCancelPro}
+                disabled={isCancelingPro}
+              >
+                {isCancelingPro ? <><Loader2 size={16} className="animate-spin" /> Canceling...</> : 'Yes, Cancel Subscription'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showGuestExportPrompt && (
         <div style={{
           position: 'fixed',
@@ -3028,3 +3428,5 @@ export default function BuilderPage() {
     </BuilderErrorBoundary>
   );
 }
+
+// Force Next.js to reload cache

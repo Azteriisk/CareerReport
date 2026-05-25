@@ -12,8 +12,10 @@ export interface ResumeData {
     fontFamily?: string;
     fontSize?: number;
     pageMargin?: number;
+    pageMarginLR?: number;
     scale?: number;
     minimalSidebarColor?: string;
+    activeCoverLetterId?: string;
   };
   basics: {
     name: string;
@@ -81,7 +83,7 @@ export interface ResumeData {
     description: string;
     url: string;
   }>;
-  coverLetter?: {
+  coverLetter?: { // Kept for backwards compatibility
     company: string;
     jobTitle: string;
     jobDesc?: string;
@@ -95,4 +97,20 @@ export interface ResumeData {
       close?: string;
     };
   };
+  coverLetters?: Array<{
+    id: string;
+    name: string;
+    company: string;
+    jobTitle: string;
+    jobDesc?: string;
+    storyType?: string;
+    content: string;
+    isGuided?: boolean;
+    guidedSteps?: {
+      hook?: string;
+      value?: string;
+      align?: string;
+      close?: string;
+    };
+  }>;
 }

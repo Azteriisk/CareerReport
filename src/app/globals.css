@@ -271,6 +271,8 @@ body {
 .resume-print-wrapper h3,
 .resume-print-wrapper h4 {
   break-after: auto !important;
+  page-break-after: auto !important;
+  -webkit-column-break-after: auto !important;
 }
 
 .hide-scrollbar::-webkit-scrollbar {
@@ -337,6 +339,16 @@ input[type="month"].empty-date:focus::-webkit-datetime-edit {
     margin: 0;
   }
 
+  body.is-printing-resume * {
+    visibility: hidden !important;
+  }
+
+  body.is-printing-resume .resume-print-wrapper,
+  body.is-printing-resume .resume-print-wrapper * {
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
   body {
     background: white;
     -webkit-print-color-adjust: exact !important;
@@ -349,11 +361,15 @@ input[type="month"].empty-date:focus::-webkit-datetime-edit {
 
   /* The print wrapper fills the page naturally */
   .resume-print-wrapper {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
     width: 100% !important;
     padding: 0 !important;
     margin: 0 !important;
     box-shadow: none !important;
     border: none !important;
+    transform: none !important;
   }
 
   /* Standardize print container dimensions to prevent mobile viewport truncation */
@@ -366,12 +382,13 @@ input[type="month"].empty-date:focus::-webkit-datetime-edit {
   .resume-print-page {
     width: 8.5in !important;
     height: 11in !important;
+    min-height: 11in !important;
     page-break-after: always !important;
     break-after: page !important;
     box-sizing: border-box !important;
     position: relative !important;
     overflow: hidden !important;
-    background: white !important;
+    background: transparent !important;
   }
 
   /* Suppress visual-only page chrome */
@@ -396,6 +413,11 @@ input[type="month"].empty-date:focus::-webkit-datetime-edit {
 
 .sidebar-scroll>* {
   direction: ltr;
+}
+
+.no-print-screen {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .sidebar-scroll::-webkit-scrollbar {
@@ -632,6 +654,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 input[type=number] {
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .animate-spin {
