@@ -240,8 +240,8 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
         background: 'var(--surface-color)', 
         borderRadius: '16px', 
         marginBottom: '1rem', 
-        border: '1px solid var(--glass-border)', 
-        boxShadow: '0 2px 10px rgba(0,0,0,0.05)' 
+        border: hasPremiumGlow(profile?.is_pro, profile?.bio) ? undefined : '1px solid var(--glass-border)', 
+        boxShadow: hasPremiumGlow(profile?.is_pro, profile?.bio) ? undefined : '0 2px 10px rgba(0,0,0,0.05)' 
       }}>
 
         {isRepost && (

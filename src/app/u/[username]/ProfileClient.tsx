@@ -183,12 +183,12 @@ export function ProfileClient({ username }: { username: string }) {
           background: 'var(--surface-color)',
           borderRadius: '16px',
           padding: '1.5rem',
-          border: '1px solid var(--glass-border)',
+          border: hasPremiumGlow(profileData?.is_pro, profileData?.bio) ? undefined : '1px solid var(--glass-border)',
           display: 'flex',
           flexDirection: isMobile ? 'column' : 'row',
           alignItems: isMobile ? 'center' : 'flex-start',
           gap: '1.5rem',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+          boxShadow: hasPremiumGlow(profileData?.is_pro, profileData?.bio) ? undefined : '0 4px 20px rgba(0,0,0,0.1)'
         }}>
           {profileData?.avatar_url ? (
             <img src={profileData.avatar_url} alt={profileData.full_name || 'Profile'} className={hasPremiumGlow(profileData?.is_pro, profileData?.bio) ? 'premium-avatar-glow' : ''} style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--glass-border)' }} />
