@@ -236,12 +236,12 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
         <RepostModal post={post} onClose={() => setRepostModalOpen(false)} onReposted={() => { if (onRepost) onRepost(); }} />
       )}
 
-      <div className="post-card-container" style={{ 
+      <div className={`post-card-container ${hasPremiumGlow(profile?.is_pro, profile?.bio) ? 'premium-glow' : ''}`} style={{ 
         background: 'var(--surface-color)', 
         borderRadius: '16px', 
         marginBottom: '1rem', 
-        border: hasPremiumGlow(profile?.is_pro, profile?.bio) ? '1px solid var(--primary)' : '1px solid var(--glass-border)', 
-        boxShadow: hasPremiumGlow(profile?.is_pro, profile?.bio) ? '0 0 20px rgba(250, 189, 47, 0.15)' : '0 2px 10px rgba(0,0,0,0.05)' 
+        border: '1px solid var(--glass-border)', 
+        boxShadow: '0 2px 10px rgba(0,0,0,0.05)' 
       }}>
 
         {isRepost && (
@@ -254,7 +254,7 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <Link href={`/u/${profile?.username}`} style={{ display: 'flex', gap: '0.75rem', textDecoration: 'none', color: 'inherit', alignItems: 'center' }}>
             {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt={profile.full_name} style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+              <img src={profile.avatar_url} alt={profile.full_name} className={hasPremiumGlow(profile?.is_pro, profile?.bio) ? 'premium-avatar-glow' : ''} style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid transparent' }} />
             ) : (
               <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bg-color)', fontWeight: 'bold', flexShrink: 0 }}>
                 {profile?.full_name?.charAt(0) || profile?.username?.charAt(0) || '?'}

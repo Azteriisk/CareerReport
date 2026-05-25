@@ -176,22 +176,22 @@ export function ProfileClient({ username }: { username: string }) {
       <main className={isMobile ? "hide-scrollbar" : ""} style={{ flex: 1, padding: isMobile ? '1rem 0' : '3rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', overflowX: 'hidden' }}>
 
         {/* Social Header */}
-        <div style={{
+        <div className={hasPremiumGlow(profileData?.is_pro, profileData?.bio) ? 'premium-glow' : ''} style={{
           width: isMobile ? '100%' : '850px',
           maxWidth: '100%',
           margin: isMobile ? '0 1rem 2rem 1rem' : '0 0 2rem 0',
           background: 'var(--surface-color)',
           borderRadius: '16px',
           padding: '1.5rem',
-          border: hasPremiumGlow(profileData?.is_pro, profileData?.bio) ? '1px solid var(--primary)' : '1px solid var(--glass-border)',
+          border: '1px solid var(--glass-border)',
           display: 'flex',
           flexDirection: isMobile ? 'column' : 'row',
           alignItems: isMobile ? 'center' : 'flex-start',
           gap: '1.5rem',
-          boxShadow: hasPremiumGlow(profileData?.is_pro, profileData?.bio) ? '0 0 25px rgba(250, 189, 47, 0.15)' : '0 4px 20px rgba(0,0,0,0.1)'
+          boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
         }}>
           {profileData?.avatar_url ? (
-            <img src={profileData.avatar_url} alt={profileData.full_name || 'Profile'} style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--glass-border)' }} />
+            <img src={profileData.avatar_url} alt={profileData.full_name || 'Profile'} className={hasPremiumGlow(profileData?.is_pro, profileData?.bio) ? 'premium-avatar-glow' : ''} style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--glass-border)' }} />
           ) : (
             <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bg-color)', fontSize: '2rem', fontWeight: 'bold' }}>
               {profileData?.full_name?.charAt(0) || profileData?.username?.charAt(0) || '?'}
