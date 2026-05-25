@@ -205,6 +205,8 @@ export type Database = {
           salary_min: number | null
           status: string | null
           title: string
+          views: number
+          clicks: number
         }
         Insert: {
           business_id: string
@@ -217,6 +219,8 @@ export type Database = {
           salary_min?: number | null
           status?: string | null
           title: string
+          views?: number
+          clicks?: number
         }
         Update: {
           business_id?: string
@@ -229,6 +233,8 @@ export type Database = {
           salary_min?: number | null
           status?: string | null
           title?: string
+          views?: number
+          clicks?: number
         }
         Relationships: [
           {

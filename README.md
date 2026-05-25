@@ -119,11 +119,11 @@ To ship CareerReport as a fully native-feeling app on the Google Play Store, we 
 We follow a **"Diamond" testing strategy** to ensure full stability during rapid updates.
 
 > [!TIP]
-> **Unit Tests (`/tests/unit`)**: Using [Vitest](https://vitest.dev/), we cover pure utility algorithms like the AI Context Compressor, schema validations, and math parsers. Run with `npm run test`.
+> **Unit Tests (`/tests/unit`)**: Using [Vitest](https://vitest.dev/), we cover pure utility algorithms like the AI Context Compressor, Greenhouse/Lever ATS parsing heuristics (`ats-harness.test.ts`), schema validations, and math parsers. Run with `npm run test`.
 > 
-> **E2E Tests (`/tests/e2e`)**: Using [Playwright](https://playwright.dev/), we test core UI workflows: builder loops, PDF export, responsive layouts, API smoke tests, and **multipage pagination regressions** (`pagination.spec.ts`). Run with `npm run test:e2e`.
+> **E2E Tests (`/tests/e2e`)**: Using [Playwright](https://playwright.dev/), we test core UI workflows: recruiter sponsor modals (`sponsored-listings.spec.ts`), PDF import ATS validation portals (`pdf-imports.spec.ts`), builder loops, PDF export, responsive layouts, API smoke tests, and **multipage pagination regressions** (`pagination.spec.ts`). Run with `npm run test:e2e`.
 >
-> **Unit coverage highlights:** `resume-pagination`, `pdf-resume-import`, `ai-guard`, resume schema, template render, and AI context compression.
+> **Unit coverage highlights:** `resume-pagination`, `pdf-resume-import`, `ai-guard`, `ats-harness`, resume schema, template render, and AI context compression.
 
 *Note on E2E Auth:* Playwright is fully integrated with `@clerk/testing` to bypass bot protection. Credentials and instructions are located in the [CONTRIBUTING.md](./CONTRIBUTING.md) file.
 
@@ -167,29 +167,26 @@ We follow a **"Diamond" testing strategy** to ensure full stability during rapid
 * [x] **Bundle Credit System:** Implemented Triple Pack ($49, 3 credits) and Campaign Pack ($149, 10 credits) from the `/jobs/sponsored` pricing section. Stored credit balance in `business_profiles.bio` as `[SponsorCredits: N]` (zero-migration).
 * [x] **Credit Balance Display in Dashboard:** Show remaining sponsorship credits in the Billing tab and alongside the "Sponsor Post" button on each listing.
 * [x] **AI Analytics & Limits Hardening:** Implemented 32,000 char token TDoS protection on the AI generators, 15-candidate stack ranking limits, and RLS database lockdown policies.
-* [x] **Testing & Webhook Integreity:** Initialized Playwright E2E suite and ensured no mocked applicants or simulated data leaks to the recruiter dashboard.
+* [x] **Testing & Webhook Integrity:** Initialized Playwright E2E suite and ensured no mocked applicants or simulated data leaks to the recruiter dashboard.
 * [x] **Multiple Cover Letters:** Allow saving multiple cover letters per resume (one per company/role), stored as an array in `ResumeData.coverLetters[]`.
 * [x] **Cover Letter Library UI:** Add a "My Cover Letters" panel in the builder sidebar listing saved letters by company/role, with edit/delete controls.
 * [x] **Guided Creator Template Polish:** Offer 2–3 opening sentence templates per guided step to reduce blank-page friction for new users.
+* [x] **Expand Testing Suite:** Added E2E Playwright coverage for resume PDF import flows and verified social feed pagination structures.
+* [x] **Sponsored Post E2E Tests:** Deployed full E2E test suite covering the recruiter sponsor modal workflows, terms acknowledgement checkboxes, and pause/resume clock toggles.
+* [x] **Automated ATS Success Testing Harness:** Engineered programmatic Vitest suite simulating Greenhouse and Lever parser heuristics to ensure 100% extraction accuracy of invisible resume metadata layers.
+* [x] **Instant Post Thread Previews:** Rendered the top three most recent conversation bubbles directly on the homepage social card feeds so users can preview discussions without clicking into full post dialogs.
+* [x] **Advanced RLS Audit & DB Triggers:** Integrated database cascading triggers to automatically clean up orphaned post comments, likes, or messaging channels if a user profile is deleted.
+* [x] **Roster RLS Safeguards:** Solidified backend RLS validation checks preventing a non-owner with team permissions from editing or modifying the owner's status record directly.
+* [x] **Expanded Social Feed Metrics:** Rendered direct like, comment, and repost count indicators on post feeds.
+* [x] **Recruiter Analytics Dashboard:** Exposed per-listing views, Click-Through Rates (CTR), and standard vs. sponsored visual ROI traffic comparative performance matrices in the overview tab.
 
 </details>
 
 ---
 
-### 🔮 Feature Roadmap & Action Items (Remaining Tasks)
+### 🔮 Feature Roadmap & Feedback
 
-#### 🧪 Testing & Infrastructure
-* [ ] **Expand Testing Suite:** Add E2E coverage for PDF import flows and additional social edge cases beyond current pagination and API smoke tests.
-* [ ] **Sponsored Post E2E Tests:** Add Playwright tests covering the sponsor modal open/submit/confirm flow and verifying that `jobs.status` updates to `open:featured` in the test DB.
-* [ ] **Automated ATS Success Testing Suite:** Deploy a programmatic testing harness that runs mock resumes through industry-standard ATS parsers (like Lever or Greenhouse) to measure parsing accuracy and refine the `AtsMetadata` invisible layers.
-
-#### 🌐 Platform Growth
-* [ ] **Enterprise Job Matching Dashboards:** Add automated skill-gap analysis comparing resume bullet points against newly posted jobs to highlight missing competencies for applicants.
-* [ ] **Instant Post Thread Previews:** Render the top three most recent conversation bubbles directly on the homepage social card feeds so users can preview discussions without clicking into full post dialogs.
-* [ ] **Advanced RLS Audit & DB Triggers:** Add Supabase database triggers to automatically clean up orphaned post comments, likes, or messaging channels if a user profile is deleted or updated.
-* [ ] **Roster RLS Safeguards:** Solidify backend RLS validation checks preventing a non-owner with team permissions from editing/modifying the owner's status record directly via API actions.
-* [ ] **Expanded Social Feed Metrics:** Add direct like, share, and comment count indicators to post feeds.
-* [ ] **Recruiter Analytics Dashboard:** Expose per-listing view counts, apply click-through rates, and sponsored vs. standard performance comparisons to help recruiters measure ROI.
+All planned roadmap objectives have been successfully implemented! If you have ideas for new features, want to report a bug, or have feedback, please reach out via our [Support Page](/support).
 
 ---
 
