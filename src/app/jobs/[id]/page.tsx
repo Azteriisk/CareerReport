@@ -59,7 +59,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
 
     const description = `${jobType} • ${displayLocation}${salaryStr}. ${job.description ? job.description.substring(0, 150) + '...' : ''}`;
-    const images = logoUrl ? [logoUrl] : ['/homepage.png'];
+    const images = logoUrl ? [logoUrl] : ['/homepage.jpg'];
 
     return {
       title: `${title} | CareerReport`,

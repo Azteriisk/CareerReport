@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     siteName: "CareerReport",
     images: [
       {
-        url: "/homepage.png",
+        url: "/homepage.jpg",
         width: 1200,
         height: 630,
         alt: "CareerReport - Your Professional Network",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "CareerReport | Your Professional Network",
     description: "Create stunning public resumes and connect with the new generation of professionals.",
-    images: ["/homepage.png"],
+    images: ["/homepage.jpg"],
   }
 };
 
