@@ -24,6 +24,7 @@ export const metadata: Metadata = {
         width: 1200,
         height: 630,
         alt: "CareerReport - Your Professional Network",
+        type: "image/jpeg",
       }
     ],
   },

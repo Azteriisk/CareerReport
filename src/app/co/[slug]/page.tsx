@@ -25,7 +25,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     const title = `${company.name} | Careers & Opportunities`;
     const description = company.bio || `Explore jobs and team updates at ${company.name} on CareerReport.`;
-    const images = company.logo_url ? [company.logo_url] : ['/homepage.jpg'];
+    const images = company.logo_url
+      ? [{ url: company.logo_url }]
+      : [{ url: '/homepage.jpg', type: 'image/jpeg', width: 1200, height: 630 }];
 
     return {
       title: `${title} | CareerReport`,

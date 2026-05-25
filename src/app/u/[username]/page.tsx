@@ -45,7 +45,14 @@ export async function generateMetadata(
     description = `${resume.data.basics.label}. ${description}`;
   }
 
-  const images = profile.avatar_url ? [profile.avatar_url] : ['/homepage.jpg'];
+  const images = [
+    {
+      url: `https://careerreport.azterisk.net/api/og/profile?username=${username}`,
+      width: 1200,
+      height: 630,
+      type: 'image/png',
+    }
+  ];
 
   return {
     title: `${title} | CareerReport`,
