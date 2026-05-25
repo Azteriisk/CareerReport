@@ -204,8 +204,7 @@ function BuilderPageContent() {
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [upgradeFeature, setUpgradeFeature] = useState('');
-  const [showProCancelModal, setShowProCancelModal] = useState(false);
-  const [isCancelingPro, setIsCancelingPro] = useState(false);
+
   const [undoData, setUndoData] = useState<ResumeData | null>(null);
   const [showUndo, setShowUndo] = useState(false);
   const [careerContext, setCareerContext] = useState('');
@@ -724,27 +723,7 @@ ${data.basics.name || 'Applicant'}`;
     }
   };
 
-  const handleCancelPro = async () => {
-    setIsCancelingPro(true);
-    try {
-      const res = await fetch('/api/checkout/cancel-pro', { method: 'POST' });
-      const body = await res.json();
-      
-      if (body.isGooglePlay) {
-        window.location.href = body.redirectUrl;
-        return;
-      }
-      
-      if (!res.ok) throw new Error(body.error || 'Failed to cancel subscription');
-      
-      alert(body.message || 'Subscription successfully scheduled for cancellation at the end of the billing period.');
-      setShowProCancelModal(false);
-    } catch (err: any) {
-      alert('Cancellation failed: ' + err.message);
-    } finally {
-      setIsCancelingPro(false);
-    }
-  };
+
 
   // Resume CRUD operations for Pro users
   const handleCreateNewResume = async (name: string, cloneCurrent: boolean) => {
@@ -2585,20 +2564,7 @@ ${data.basics.name || 'Applicant'}`;
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
                 You have unlimited, premium access to all state-of-the-art AI parsing and generation features.
               </p>
-              <button 
-                onClick={() => setShowProCancelModal(true)} 
-                style={{ 
-                  background: 'transparent', 
-                  border: 'none', 
-                  color: 'var(--text-secondary)', 
-                  textDecoration: 'underline', 
-                  fontSize: '0.75rem', 
-                  cursor: 'pointer', 
-                  marginTop: '0.5rem' 
-                }}
-              >
-                Cancel Premium Subscription
-              </button>
+
             </div>
           ) : (
             <div style={{ padding: '1rem', background: 'rgba(139, 92, 246, 0.1)', border: '1px solid rgba(139, 92, 246, 0.2)', borderRadius: '8px', marginTop: '2rem' }}>
@@ -3256,50 +3222,7 @@ ${data.basics.name || 'Applicant'}`;
         onUpgradeSuccess={() => setIsPro(true)}
       />
 
-      {/* Guest Export Call-to-Action Modal */}
-      {showProCancelModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)' }} onClick={() => !isCancelingPro && setShowProCancelModal(false)}>
-          <div style={{ background: '#18181b', borderRadius: '16px', border: '1px solid var(--glass-border)', padding: '2rem', maxWidth: '420px', width: '90%', display: 'flex', flexDirection: 'column', gap: '1.5rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }} onClick={e => e.stopPropagation()}>
-            <div style={{ textAlign: 'center' }}>
-              <h3 style={{ fontSize: '1.5rem', margin: '0 0 0.5rem 0', color: 'var(--text-primary)', fontWeight: 800 }}>Cancel Subscription?</h3>
-              <p style={{ color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>
-                Are you sure you want to cancel your Premium subscription? You'll lose access to AI generation, Multiple Resumes, and Cover Letter Library at the end of your billing cycle.
-              </p>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <button
-                className="btn btn-primary"
-                style={{ width: '100%', padding: '0.8rem', justifyContent: 'center' }}
-                onClick={() => setShowProCancelModal(false)}
-                disabled={isCancelingPro}
-              >
-                Keep Premium
-              </button>
-              <button
-                style={{ 
-                  width: '100%', 
-                  padding: '0.8rem', 
-                  background: 'transparent', 
-                  border: '1px solid var(--danger)', 
-                  color: 'var(--danger)', 
-                  borderRadius: '6px', 
-                  fontWeight: 700, 
-                  cursor: isCancelingPro ? 'not-allowed' : 'pointer',
-                  opacity: isCancelingPro ? 0.7 : 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem'
-                }}
-                onClick={handleCancelPro}
-                disabled={isCancelingPro}
-              >
-                {isCancelingPro ? <><Loader2 size={16} className="animate-spin" /> Canceling...</> : 'Yes, Cancel Subscription'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {showGuestExportPrompt && (
         <div style={{
