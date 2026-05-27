@@ -463,7 +463,7 @@ function MessagesContent() {
                       @{activePartner.username} does not have a public profile. Direct messages can only be sent to users who have published a public resume.
                     </p>
                   </div>
-                ) : !hasDeliveryAccess ? (
+                ) : (!hasDeliveryAccess && !messages.some(msg => msg.sender_id === activePartner?.id)) ? (
                   <div style={{
                     padding: '1.5rem',
                     background: 'rgba(251, 191, 36, 0.05)',

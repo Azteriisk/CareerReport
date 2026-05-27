@@ -55,6 +55,7 @@ test-results/
 # Supabase local config
 supabase/.temp/
 supabase/.branches/
+supabase/migrations/
 
 # Backups & Local DB dumps
 *.sqlite
