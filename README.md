@@ -59,9 +59,9 @@ Stunning, heavily styled, and multi-column resumes often fail enterprise Applica
   - [x] Security Hardening & Rate Limiting
 
 ### Long Term
-- Native Mobile App (iOS/Android) for Job Seekers (Web-only Recruiter Dashboard to avoid app store fees)
-- Resume Parsing via OCR / PDF extraction improvements
-- Automated Email Drip Campaigns for Candidates
+- [ ] Native Mobile App (iOS/Android) for Job Seekers (Web-only Recruiter Dashboard to avoid app store fees)
+- [x] Resume Parsing via OCR / PDF extraction improvements
+- [x] Automated Email Drip Campaigns for Candidates
 
 ### 💬 3. Professional Social Networking Suite
 Transitioned from a single resume builder into a collaborative network with Clerk authentication and custom JWT-to-Supabase RLS token mapping:
@@ -179,6 +179,9 @@ We follow a **"Diamond" testing strategy** to ensure full stability during rapid
 * [x] **Roster RLS Safeguards:** Solidified backend RLS validation checks preventing a non-owner with team permissions from editing or modifying the owner's status record directly.
 * [x] **Expanded Social Feed Metrics:** Rendered direct like, comment, and repost count indicators on post feeds.
 * [x] **Recruiter Analytics Dashboard:** Exposed per-listing views, Click-Through Rates (CTR), and standard vs. sponsored visual ROI traffic comparative performance matrices in the overview tab.
+* [x] **Premium Messaging & Reply Bypass:** Enforced premium sender delivery limits and public recipient checks on `messages` table RLS, using `security definer` recursive-safe checks to allow standard candidate reply capabilities.
+* [x] **Operational Site Event Analytics:** Added anonymous guest and user resume print/export event logs alongside the real-time visual Systems Analytics dashboard widget in the administrator panel.
+* [x] **Automated Onboarding Drip Campaigns:** Created PostgreSQL schemas and default Welcome campaigns that auto-subscribe new profiles via Postgres triggers, processed by backend simulated dispatcher endpoints and managed inside `/admin` control consoles.
 
 </details>
 
