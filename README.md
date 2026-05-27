@@ -20,25 +20,24 @@
 
 ---
 
-## 🚀 Core Innovations & Recent Accomplishments
+### 🚀 Core Innovations & Recent Accomplishments
 
-### 💼 1. Recruiter Monetization & Job Platform
-CareerReport now ships a complete recruiter-side business model with tiered subscriptions, per-listing sponsorships, and AI-powered applicant tools:
-* **Business Subscription Tiers (`src/lib/business-tier.ts`):** Four tiers — Free Starter (3 jobs), Recruiter Pro ($49/mo, 10 jobs + AI), Recruiter Enterprise ($149/mo, 25 jobs), and Unlimited ($299/mo, unlimited). Tier state is encoded directly in the existing `business_profiles.bio` field using a `[Tier: id]` tag, requiring zero DB migrations.
+### 💼 1. Recruiter Monetization, Live Stripe & Bulk Credits
+CareerReport now ships a complete recruiter-side business model with tiered subscriptions, sponsored jobs, bulk packs, and live production payments:
+* **Business Subscription Tiers (`src/lib/business-tier.ts`):** Four tiers — Free Starter (3 jobs), Recruiter Pro ($49/mo, 10 jobs + AI), Recruiter Enterprise ($149/mo, 25 jobs), and Unlimited ($299/mo, unlimited). Tier state is encoded directly in the `business_profiles.bio` field using a `[Tier: id]` tag, requiring zero DB migrations.
 * **Premium Seat Allocation:** Recruiter Pro includes 3 premium employee seats, Enterprise 5, Unlimited 10. Seat status is encoded in `company_employees.status` via a pipe-delimited `|premium` suffix.
-* **Sponsored Job Posts (`/jobs/sponsored`, $19/month per listing):** Recruiters can upgrade any standard listing to Featured directly from the Manage Listings tab. Featured posts receive a gold-highlighted card border, a `+25pt` algorithmic boost in the candidate relevance engine, and are pinned above all standard listings in every candidate's personalized feed. Matching candidates see a `✨ Sponsored Match for You` badge. Status is stored as `open:featured` in the existing `jobs.status` field — fully backwards-compatible via `parseJobStatus` / `encodeJobStatus` in `src/lib/job-tier.ts`.
-* **Pauseable Sponsorship Clock:** Recruiters can pause the 30-day featured clock at any time from the Manage Listings tab (`⏸ Pause Sponsorship`). While paused, the listing reverts to standard placement in the candidate feed and the countdown freezes. Resuming (`▶ Resume Sponsorship`) instantly restores full featured status. The pause state is encoded zero-migration-style as a third colon segment: `open:featured:paused`. Attentive admins can conserve budget by only running the clock during peak hiring hours.
-* **Non-Transferable Sponsorship Rule:** Each sponsorship credit is permanently bound to the listing it was purchased for. The checkout modal requires a checkbox acknowledgement before purchase can proceed. This is documented in `job-tier.ts` JSDoc and enforced in the dashboard UI.
-* **Sponsor Checkout Modal:** A premium glassmorphic in-dashboard checkout collects card details, shows a benefit summary, and simulates Stripe processing — designed to drop-replace with live Stripe Sessions when ready.
-* **Sponsored Jobs Info Page (`/jobs/sponsored`):** A full conversion-focused marketing page explaining how sponsored posts work, with animated stat counters, a step-by-step how-it-works section, benefit grid, pricing tiers, FAQ accordion, and dual CTAs linking directly to the recruiter dashboard.
+* **Live Stripe Subscription Checkout (`/api/stripe/checkout-session`):** Real-time upgrade redirects to Stripe Checkout with custom metadata. Successful transactions trigger the Stripe Webhook handler (`/api/webhooks/stripe`) to instantly update the recruiter's subscription level in the Supabase database.
+* **Sponsored Job Posts (`/jobs/sponsored`, $19/month per listing):** Recruiters can upgrade standard listings to Featured using live one-time Stripe checkout pages or bulk packs. Featured posts receive a gold-highlighted card border, a `+25pt` algorithmic boost in the candidate relevance engine, and are pinned at the top of personalized feeds with a `✨ Sponsored Match for You` badge. Status is stored as `open:featured` in the existing `jobs.status` field.
+* **Bundle Credit System:** Recruiters can purchase a Triple Pack ($49, 3 credits) or Campaign Pack ($149, 10 credits) from `/jobs/sponsored`. Credit balance is stored zero-migration-style in `business_profiles.bio` as `[SponsorCredits: N]`, visible in the recruiter billing tab and beside listing activation triggers.
+* **Pauseable Sponsorship Clock:** Recruiters can pause the 30-day featured clock at any time (`⏸ Pause Sponsorship`). While paused, the listing reverts to standard placement in candidate feeds and the countdown freezes. Resuming (`▶ Resume Sponsorship`) instantly restores featured placement. The pause state is encoded zero-migration-style as `open:featured:paused`.
+* **Non-Transferable Sponsorship Rule:** Each sponsorship credit is permanently bound to the listing it was purchased for. Enforced in both the UI checkout confirmation checkboxes and helper JSDoc constraints.
 
-### ✍️ 2. Cover Letter Architect (`/builder`)
-A dual-mode cover letter system built directly into the resume builder:
-* **AI Storytelling Generator (Premium):** Five persona-based narrative tones — Standard Corporate, Passionate & Purpose-Driven, Growth & Adaptability, Technical Excellence, and Strategic Leadership — each using custom Gemini system prompts to write role-specific, career-story-driven cover letters referencing the target company and job title.
-* **Free Guided Creator (All Tiers):** A client-side 4-step guided letter builder (Hook → Value Story → Alignment → Close) that composes a real-time formatted business letter with no AI tokens, no premium gate.
-* **Per-Role Scope:** Cover letters are tied to a specific company + job title. They are not shown on the public profile — only available in the builder and optionally included in PDF exports.
-* **PDF Export Toggle:** An "Include Cover Letter" checkbox in the builder header injects a Georgia-serif formatted cover letter as Page 1 of the exported PDF, ahead of the resume pages.
-* **Zero-Migration Persistence:** Cover letter state is stored inside the existing `ResumeData.coverLetter` optional field and auto-saved through the existing Supabase sync loop.
+### 📝 2. Responsive Resume Builder & Pro AI Features (`/builder`)
+A premium, highly interactive real-time resume editor designed to deliver pixel-perfect results on both desktop and mobile viewports:
+* **Interactive Live Editor:** Edit and preview resumes dynamically with multiple professional layout templates (Modern, Split, Minimal, Classic) and real-time page-count calculations.
+* **Pro AI Resume Optimizer:** Integrated AI editing highlights and action-oriented suggestions that run securely via Gemini to guide professionals through the resume building loop.
+* **Pro Multi-Resume Save System:** Seamless draft management allowing premium users to maintain, clone, rename, and toggle visibility on multiple resume versions.
+* **Cover Letter Architect:** A built-in dual-mode cover letter builder (Premium AI Storyteller with 5 narrative personas + Free 4-step Guided Creator). Enables candidates to curate cover letters per company/role and toggle their inclusion as Page 1 of the exported PDF.
 
 ### 🤖 3. Invisible ATS & AI Metadata Layer (`AtsMetadata.tsx`)
 Stunning, heavily styled, and multi-column resumes often fail enterprise Applicant Tracking Systems (ATS) and AI search indexers that rely on naive text flow analysis. 
@@ -47,36 +46,42 @@ Stunning, heavily styled, and multi-column resumes often fail enterprise Applica
   1. **Plaintext Summaries:** Standardized headers like `=== MACHINE READABLE RESUME DATA ===` outline your work, education, and skills.
   2. **Raw JSON Payload:** A fully serialized JSON-LD block (`=== RAW JSON PAYLOAD FOR AI EXTRACTORS ===`) for programmatic extraction by AI agents.
 * **Visually Invisible, Programmatically Clear:** Styled via absolute positioning, 1px dimension gates, color transparency, and sub-pixel opacity. Screen readers and automated PDF text extractors pick it up flawlessly while human eyes only see the premium layout templates.
+* **Automated ATS Success Testing Harness:** Backed by a programmatic Vitest testing suite (`tests/unit/ats-harness.test.ts`) that runs generated resumes through Lever and Greenhouse parsing simulator heuristics to guarantee 100% data extraction accuracy.
 
-### 🧠 2. Advanced Context-Aware AI Suite
+### 🧠 4. Advanced Context-Aware AI Suite
 * **Resilient AI PDF Import (Pro):** Multi-stage import pipeline for existing resumes:
   1. **Embedded JSON fast-path** — CareerReport exports include a machine-readable JSON block for instant, zero-token imports.
-  2. **Text extraction + Gemini** — Standard PDFs are parsed with `pdf-parse`, then structured via `generateObject` and a strict Zod schema.
+  2. **Text extraction + Gemini** — Standard PDFs are parsed with `pdf-parse`, then structured via `generateObject` and a Zod schema.
   3. **Vision fallback** — Scanned or image-heavy PDFs with no selectable text are sent directly to Gemini as a PDF file input.
-  - [x] Sponsor Bundles & Bulk Credits
-  - [x] Real-time Job Analytics (Views & Clicks)
-  - [x] Playwright E2E Testing Suite
-  - [x] Security Hardening & Rate Limiting
+* **Analytics & Limits Hardening:** Implemented 32,000 character token TDoS (Token Denial of Service) protection on AI routes, a 15-candidate limit for recruiter applicant stack ranking.
 
-### Long Term
-- [ ] Native Mobile App (iOS/Android) for Job Seekers (Web-only Recruiter Dashboard to avoid app store fees)
-- [x] Resume Parsing via OCR / PDF extraction improvements
-- [x] Automated Email Drip Campaigns for Candidates
-
-### 💬 3. Professional Social Networking Suite
+### 💬 5. Professional Social Networking & Secure Direct Messaging
 Transitioned from a single resume builder into a collaborative network with Clerk authentication and custom JWT-to-Supabase RLS token mapping:
-* **Public Handles:** Claim a custom username (`/u/username`) that serves as a unified digital footprint featuring your public resume, follower counts, and posts.
-* **Social Engagement:** A global activity feed supporting threaded comments, real-time likes, and notifications dropdowns for incoming follows and post interactions.
-* **Quote Reposting Modal:** Reshare network thoughts with integrated confirmation gates and nested content validation.
-* **Follower Mechanics:** Follow peers and grow your circle, managed with robust Supabase relational integrity. Guests see Follow on public profiles and get the same **Account Required** benefits modal used in the builder (not a hard redirect to sign-in).
-* **Private Direct Messages:** Seamless direct message portal with real-time syncing so recruiters and professionals can connect immediately.
+* **Public Handles & Follow UX:** Claim a custom username (`/u/username`) that serves as a unified footprint featuring your public resume, follower counts, and posts. Tapping Follow while logged out triggers an elegant custom "Account Required" modal rather than an immediate redirect to sign-in.
+* **Social Engagement Feed:** A global activity feed supporting threaded comments, real-time likes, reposting, and direct metrics indicators (like, comment, and repost counts).
+* **Instant Post Thread Previews:** Renders the top three most recent conversation bubbles directly on the homepage social card feeds so users can preview discussions without clicking into full post dialogs.
+* **Private Direct Messages:** Seamless direct message portal with real-time syncing.
+  * **Premium Delivery Policy (RLS):** Messaging delivery is restricted to Premium consumers and Pro Recruiter members, and recipients must have an active public profile.
+  * **Reply Fast-Path (Security Definer):** An RLS helper function (`public.has_initiated_conversation`) runs with `SECURITY DEFINER` privileges to safely query message threads, avoiding infinite RLS recursion loops and enabling standard candidates to reply to conversations initiated by premium recruiters.
 
-### 📱 4. Google Play Store TWA Integration (Android Billing)
+### 📱 6. Google Play Store TWA Integration (Android Billing)
 To ship CareerReport as a fully native-feeling app on the Google Play Store, we implemented a custom Android **Trusted Web Activity (TWA)** wrapper integration:
 * **Dynamic Payment Bridge:** In standard web viewports, users check out securely via Stripe. When launched inside the Google Play TWA, Chrome's container injects the **Digital Goods API** (`window.getDigitalGoodsService`), which we automatically intercept to trigger the native Google Play Billing dialog using the standard **Payment Request API**.
 * **Secure Server Verification:** Added `/api/checkout/google-play` to securely authenticate with Google Cloud using JWT service accounts and verify subscription purchase tokens against Google Play Publisher APIs.
 * **Database Token Mapping:** Linked purchase tokens directly into the user's `career_context` record as `[GooglePlayToken: <token>]` to enable active session mapping and lookup without requiring complex database migrations.
 * **Real-time Developer Notifications (RTDN):** Created `/api/webhooks/google-play` to receive Google Cloud Pub/Sub webhook events, automatically syncing `is_pro` status and cleaning tokens when subscriptions renew, hold, or cancel/expire.
+
+### ✉️ 7. Automated Onboarding Candidate Drips & Analytics
+* **Standard Welcome Campaign:** Includes a 3-step Welcome and Career Acceleration onboarding email drip. New candidates are auto-subscribed upon profile registration via a custom Postgres trigger (`on_profile_created_enroll_drip`).
+* **Processing Engine API (`/api/admin/drips`):** A secure background dispatch endpoint that aggregates pending candidate schedules, simulation-delivers templates, writes historical send logs to `sent_drip_emails`, and advances sequence queues.
+* **Interactive Campaign Manager Console:** Renders an elegant control widget inside the administrator dashboard exposing live analytics metrics, enrollment queues, and a manual simulation trigger button.
+* **Operational Event Analytics:** Tracks site-wide events (direct messages dispatched, anonymous guest exports, and logged-in user resume prints) via an event tracking API (`/api/analytics`), feeding real-time visual dashboards and recent logs inside `/admin`.
+* **Advanced RLS Cleanups & Roster Safeguards:** 
+  * Cascade triggers (`on_profile_deleted_cleanup`, `on_post_deleted_cleanup`, and `on_business_deleted_cleanup`) safely scrub orphan comments, likes, and applicant records on delete.
+  * Granular safeguards on `company_employees` prevent non-owners from editing or deleting the owner's status record even if they possess team administration write permissions.
+
+### 🗺️ Long Term
+- [ ] Native Mobile App (iOS/Android) for Job Seekers (Web-only Recruiter Dashboard to avoid app store fees)
 
 ---
 
