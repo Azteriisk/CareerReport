@@ -971,6 +971,27 @@ ${data.basics.name || 'Applicant'}`;
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+
+      // Record resume export analytics event asynchronously
+      try {
+        const isUserSignedIn = isSignedIn && !!user;
+        let visitorId = localStorage.getItem('cr-anonymous-visitor-id');
+        if (!visitorId) {
+          visitorId = crypto.randomUUID();
+          localStorage.setItem('cr-anonymous-visitor-id', visitorId);
+        }
+
+        fetch('/api/analytics', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            eventType: isUserSignedIn ? 'resume_export_signed_in' : 'resume_export_guest',
+            sessionId: isUserSignedIn ? user.id : visitorId
+          })
+        }).catch(err => console.error('Error logging analytics event background:', err));
+      } catch (analyticsErr) {
+        console.error('Error triggering analytics event:', analyticsErr);
+      }
     } catch (e) {
       console.error(e);
       alert('Failed to generate PDF. Please try again.');

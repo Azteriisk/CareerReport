@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Shield, Search, CheckCircle, XCircle, Loader2, Building2, Zap, Users } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Shield, Search, CheckCircle, XCircle, Loader2, Building2, Zap, Users, BarChart3, Download, Clock } from 'lucide-react';
 import { BUSINESS_TIERS } from '@/lib/business-tier';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -248,6 +248,216 @@ const btnStyle: React.CSSProperties = {
   gap: '0.5rem', width: 'fit-content',
 };
 
+// ── Panel: System Analytics Dashboard ──────────────────────────────────────────
+
+function AnalyticsPanel() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<{
+    metrics: {
+      directMessagesSent: number;
+      uniqueGuestExports: number;
+      signedInExports: number;
+      totalExports: number;
+    };
+    recentEvents: Array<{ id: string; event_type: string; created_at: string }>;
+  } | null>(null);
+
+  const fetchAnalytics = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/admin/analytics');
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to fetch analytics.');
+      setData(json);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'An error occurred.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, []);
+
+  return (
+    <section style={panelStyle}>
+      <div style={panelHeaderStyle}>
+        <BarChart3 size={18} color="var(--primary)" />
+        <h2 style={panelTitleStyle}>System Analytics Dashboard</h2>
+      </div>
+      <p style={descStyle}>Anonymized real-time operational insights, messaging activity, and resume export distributions.</p>
+      
+      {loading ? (
+        <div style={{ padding: '2rem', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <Loader2 className="animate-spin text-primary" size={24} />
+        </div>
+      ) : error ? (
+        <div style={{
+          padding: '1rem',
+          borderRadius: '8px',
+          background: 'rgba(251,73,52,0.1)',
+          border: '1px solid rgba(251,73,52,0.3)',
+          color: '#fb4934',
+          fontSize: '0.875rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <span>❌ Error: {error}</span>
+          <button onClick={fetchAnalytics} className="btn btn-secondary" style={{ padding: '0.25rem 0.75rem', fontSize: '0.8rem' }}>Retry</button>
+        </div>
+      ) : data ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Metrics Grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: '1rem'
+          }}>
+            {/* Direct Messages */}
+            <div style={{
+              background: 'var(--bg-color)',
+              border: '1px solid var(--glass-border)',
+              borderRadius: '12px',
+              padding: '1.25rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Messages Sent</span>
+                <MessageSquare size={16} color="var(--primary)" />
+              </div>
+              <span style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--text-primary)' }}>{data.metrics.directMessagesSent}</span>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Anonymized deliveries</span>
+            </div>
+
+            {/* Guest Exports */}
+            <div style={{
+              background: 'var(--bg-color)',
+              border: '1px solid var(--glass-border)',
+              borderRadius: '12px',
+              padding: '1.25rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Guest Exports</span>
+                <Users size={16} color="var(--accent)" />
+              </div>
+              <span style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--text-primary)' }}>{data.metrics.uniqueGuestExports}</span>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Unique non-account exports</span>
+            </div>
+
+            {/* Signed-in Exports */}
+            <div style={{
+              background: 'var(--bg-color)',
+              border: '1px solid var(--glass-border)',
+              borderRadius: '12px',
+              padding: '1.25rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>User Exports</span>
+                <Download size={16} color="#10b981" />
+              </div>
+              <span style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--text-primary)' }}>{data.metrics.signedInExports}</span>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Cloud account exports</span>
+            </div>
+
+            {/* Total Exports */}
+            <div style={{
+              background: 'var(--bg-color)',
+              border: '1px solid var(--glass-border)',
+              borderRadius: '12px',
+              padding: '1.25rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Total Exports</span>
+                <Download size={16} color="var(--text-primary)" />
+              </div>
+              <span style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--text-primary)' }}>{data.metrics.totalExports}</span>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>All time exports count</span>
+            </div>
+          </div>
+
+          {/* Recent Event Log */}
+          <div>
+            <h4 style={{
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              color: 'var(--text-secondary)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+              marginBottom: '0.75rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem'
+            }}>
+              <Clock size={12} /> Live Event Activity Log
+            </h4>
+            <div style={{
+              background: 'var(--bg-color)',
+              border: '1px solid var(--glass-border)',
+              borderRadius: '10px',
+              overflow: 'hidden'
+            }}>
+              {data.recentEvents.length === 0 ? (
+                <div style={{ padding: '1rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  No system events recorded yet.
+                </div>
+              ) : (
+                data.recentEvents.map((evt, idx) => (
+                  <div key={evt.id} style={{
+                    padding: '0.75rem 1rem',
+                    borderBottom: idx === data.recentEvents.length - 1 ? 'none' : '1px solid var(--glass-border)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    fontSize: '0.8rem',
+                    transition: 'background 0.2s'
+                  }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)', fontWeight: 600 }}>
+                      <span style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        background: evt.event_type === 'direct_message_sent' ? 'var(--primary)' : evt.event_type === 'resume_export_guest' ? 'var(--accent)' : '#10b981'
+                      }} />
+                      {evt.event_type === 'direct_message_sent' && 'Direct Message Transmitted'}
+                      {evt.event_type === 'resume_export_guest' && 'Guest PDF Resume Exported'}
+                      {evt.event_type === 'resume_export_signed_in' && 'User PDF Resume Exported'}
+                    </span>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
+                      {new Date(evt.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AdminPage() {
@@ -295,6 +505,7 @@ export default function AdminPage() {
 
         {/* Panels */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <AnalyticsPanel />
           <TierPanel />
           <SponsorPanel />
           <ProPanel />

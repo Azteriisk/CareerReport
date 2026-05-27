@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { supabase, setSupabaseToken } from '@/lib/supabase';
 import { useUser, useAuth } from '@clerk/nextjs';
-import { Loader2, Send, MessageSquare, ArrowLeft } from 'lucide-react';
+import { Loader2, Send, MessageSquare, ArrowLeft, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { UpgradeModal } from '@/components/UpgradeModal';
 
 interface Message {
   id: string;
@@ -38,6 +39,94 @@ function MessagesContent() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [isMobile, setIsMobile] = useState(false);
+
+  const [hasDeliveryAccess, setHasDeliveryAccess] = useState(true);
+  const [receiverIsPublic, setReceiverIsPublic] = useState(true);
+  const [checkingAccess, setCheckingAccess] = useState(true);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    async function verifyMessagePrivileges() {
+      setCheckingAccess(true);
+      try {
+        // 1. Check consumer profiles.is_pro
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_pro')
+          .eq('id', user!.id)
+          .single();
+
+        if (profile?.is_pro) {
+          setHasDeliveryAccess(true);
+          return;
+        }
+
+        // 2. Check recruiter business profile subscription bio tags
+        const { data: business } = await supabase
+          .from('business_profiles')
+          .select('bio')
+          .eq('owner_id', user!.id)
+          .maybeSingle();
+
+        if (business?.bio) {
+          const match = business.bio.match(/\[Tier:\s*(\w+)\]/i);
+          if (match) {
+            const tierId = match[1].toLowerCase();
+            if (['pro', 'enterprise', 'unlimited'].includes(tierId)) {
+              setHasDeliveryAccess(true);
+              return;
+            }
+          }
+        }
+
+        // 3. Check approved employee premium status
+        const { data: employee } = await supabase
+          .from('company_employees')
+          .select('status')
+          .eq('user_id', user!.id)
+          .maybeSingle();
+
+        if (employee?.status && employee.status.includes('approved') && employee.status.includes('premium')) {
+          setHasDeliveryAccess(true);
+          return;
+        }
+
+        // Default to false if none of premium conditions met
+        setHasDeliveryAccess(false);
+      } catch (err) {
+        console.error('Error verifying message access:', err);
+        setHasDeliveryAccess(true); // Optimistic fallback
+      } finally {
+        setCheckingAccess(false);
+      }
+    }
+
+    verifyMessagePrivileges();
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!activePartner?.id) return;
+
+    async function verifyReceiverPublic() {
+      try {
+        const { data: resumes } = await supabase
+          .from('resumes')
+          .select('id')
+          .eq('user_id', activePartner!.id)
+          .eq('is_public', true)
+          .limit(1);
+
+        setReceiverIsPublic((resumes || []).length > 0);
+      } catch (err) {
+        console.error('Error verifying receiver public status:', err);
+        setReceiverIsPublic(true); // Optimistic fallback
+      }
+    }
+
+    verifyReceiverPublic();
+  }, [activePartner?.id]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -350,28 +439,84 @@ function MessagesContent() {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Message Input */}
+              {/* Message Input with Premium / Public controls */}
               <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--glass-border)', background: 'var(--surface-color)' }}>
-                <form onSubmit={sendMessage} style={{ display: 'flex', gap: '0.75rem' }}>
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={e => setNewMessage(e.target.value)}
-                    placeholder={`Message @${activePartner.username}...`}
-                    className="input-field"
-                    style={{ flex: 1, borderRadius: '999px', paddingLeft: '1.5rem' }}
-                    disabled={sending}
-                  />
-                  <button
-                    type="submit"
-                    disabled={!newMessage.trim() || sending}
-                    className="btn btn-primary"
-                    style={{ borderRadius: '50%', width: '46px', height: '46px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                  >
-                    {sending ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
-                  </button>
-                </form>
+                {checkingAccess ? (
+                  <div style={{ padding: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    <Loader2 className="animate-spin text-primary" size={20} />
+                  </div>
+                ) : !receiverIsPublic ? (
+                  <div style={{
+                    padding: '1.25rem 1.5rem',
+                    background: 'rgba(239, 68, 68, 0.05)',
+                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                    borderRadius: '12px',
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    margin: '0.5rem 0'
+                  }}>
+                    <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--error)', fontWeight: 700 }}>Private Profile</h4>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4, maxWidth: '450px' }}>
+                      @{activePartner.username} does not have a public profile. Direct messages can only be sent to users who have published a public resume.
+                    </p>
+                  </div>
+                ) : !hasDeliveryAccess ? (
+                  <div style={{
+                    padding: '1.5rem',
+                    background: 'rgba(251, 191, 36, 0.05)',
+                    border: '1px solid rgba(251, 191, 36, 0.2)',
+                    borderRadius: '12px',
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    margin: '0.5rem 0'
+                  }}>
+                    <Sparkles size={24} color="var(--primary)" />
+                    <h4 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--text-primary)', fontWeight: 700 }}>Premium Messaging Required</h4>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4, maxWidth: '400px' }}>
+                      Direct messaging delivery is an exclusive benefit for Premium subscribers and Recruiter Pro members. Upgrade your account today to establish instant contact!
+                    </p>
+                    <button 
+                      onClick={() => setUpgradeModalOpen(true)} 
+                      className="btn btn-primary" 
+                      style={{ fontSize: '0.85rem', padding: '0.5rem 1.5rem', marginTop: '0.25rem' }}
+                    >
+                      Upgrade to Premium
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={sendMessage} style={{ display: 'flex', gap: '0.75rem' }}>
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={e => setNewMessage(e.target.value)}
+                      placeholder={`Message @${activePartner.username}...`}
+                      className="input-field"
+                      style={{ flex: 1, borderRadius: '999px', paddingLeft: '1.5rem' }}
+                      disabled={sending}
+                    />
+                    <button
+                      type="submit"
+                      disabled={!newMessage.trim() || sending}
+                      className="btn btn-primary"
+                      style={{ borderRadius: '50%', width: '46px', height: '46px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                    >
+                      {sending ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
+                    </button>
+                  </form>
+                )}
               </div>
+
+              <UpgradeModal 
+                isOpen={upgradeModalOpen} 
+                onClose={() => setUpgradeModalOpen(false)} 
+                featureName="Direct Messaging"
+              />
             </>
           )}
         </div>
