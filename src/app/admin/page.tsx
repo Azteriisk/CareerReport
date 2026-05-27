@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Shield, Search, CheckCircle, XCircle, Loader2, Building2, Zap, Users, BarChart3, Download, Clock } from 'lucide-react';
+import { Shield, Search, CheckCircle, XCircle, Loader2, Building2, Zap, Users, BarChart3, Download, Clock, MessageSquare } from 'lucide-react';
 import { BUSINESS_TIERS } from '@/lib/business-tier';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
