@@ -37,7 +37,7 @@ describe('compressContext algorithm', () => {
     expect(output).toEqual({ valid: 'hello' });
   });
 
-  it('removes stopwords from long strings', () => {
+  it('preserves text fidelity without stripping grammatical stop words', () => {
     const input = {
       short: 'Hello world',
       long: 'This is a long string that has the words and or but in it for testing purposes.'
@@ -45,10 +45,6 @@ describe('compressContext algorithm', () => {
     
     const output = compressContext(input);
     expect(output.short).toBe('Hello world');
-    // 'is', 'a', 'that', 'has', 'the', 'and', 'or', 'but', 'in', 'it', 'for' 
-    // Wait, our regex only strips: \b(the|a|an|and|or|but|is|are|was|were|in|on|at|to|for|of|with|by|as)\b
-    expect(output.long).not.toContain(' the ');
-    expect(output.long).not.toContain(' and ');
-    expect(output.long).not.toContain(' is ');
+    expect(output.long).toBe('This is a long string that has the words and or but in it for testing purposes.');
   });
 });

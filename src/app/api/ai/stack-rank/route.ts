@@ -1,17 +1,34 @@
-import { generateText } from 'ai';
+import { generateObject } from 'ai';
 import { google } from '@ai-sdk/google';
+import { z } from 'zod';
 import { getErrorMessage } from '@/lib/api-error';
 import { auth } from '@clerk/nextjs/server';
 import { aiRateLimiter } from '@/lib/rate-limit';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
+export const maxDuration = 60;
 
-// Strict input sanitization to avoid prompt injection and control character abuse
+// Output Schema for Structured Outputs via Gemini
+const candidateRankSchema = z.object({
+  id: z.string().describe("The candidate's unique identifier matching their input ID"),
+  aiScore: z.number().min(1).max(10).describe("Objective compatibility score between 1.0 and 10.0"),
+  aiLabel: z.enum([
+    'AI: Outstanding',
+    'AI: Highly Qualified',
+    'AI: Good Match',
+    'AI: Unaligned',
+  ]).describe("Categorical match label"),
+  aiExplanation: z.string().describe("1-2 sentence recruiter-grade assessment highlighting strengths and experience gaps relative to the job requirements"),
+});
+
+const stackRankResultSchema = z.object({
+  results: z.array(candidateRankSchema).describe("List of evaluated candidate rankings"),
+});
+
 function sanitizeInput(raw: string, maxLen: number): string {
   if (!raw) return '';
   return raw
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '') // strip control chars
-    .replace(/[\{\}]/g, '') // remove curly braces to avoid structural prompt manipulation
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, maxLen);
@@ -20,7 +37,10 @@ function sanitizeInput(raw: string, maxLen: number): string {
 function cleanResumePayload(payload: any): string {
   if (!payload) return '';
   const str = typeof payload === 'string' ? payload : JSON.stringify(payload);
-  return sanitizeInput(str, 4000); // enforce strict 4000 char limit per resume payload
+  return str
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+    .trim()
+    .slice(0, 8000); // enforce safe 8000 char limit per resume payload
 }
 
 export async function POST(req: Request) {
@@ -71,7 +91,7 @@ export async function POST(req: Request) {
       return {
         id: sanitizeInput(c.id, 80),
         name: sanitizeInput(c.name, 100),
-        resumeText: cleanResumePayload(c.resumeText)
+        resumeText: cleanResumePayload(c.resumeText),
       };
     });
 
@@ -87,41 +107,29 @@ ${sanitizedCandidates.map((c, i) => `
 Candidate #${i + 1}
 ID: ${c.id}
 Name: ${c.name}
-Resume/Portfolio JSON payload:
+Resume/Portfolio Details:
 ${c.resumeText}
 `).join('\n---\n')}
 
-For each candidate, assign:
-1. An objective compatibility score (aiScore) between 1.0 and 10.0 based strictly on experience, tech stack match, and skills.
-2. A short matching category (aiLabel), which MUST be exactly one of: 'AI: Outstanding', 'AI: Highly Qualified', 'AI: Good Match', or 'AI: Unaligned'.
-3. A highly precise, recruiter-grade 1-2 sentence assessment reasoning (aiExplanation) highlighting their key alignment strengths and any experience gaps relative to the job description.
+Scoring Rubric:
+- 9.0 - 10.0: 'AI: Outstanding' (exceeds all core criteria with directly proven accomplishments)
+- 7.5 - 8.9: 'AI: Highly Qualified' (meets all requirements with solid demonstrated background)
+- 5.0 - 7.4: 'AI: Good Match' (possesses transferrable skills but minor domain or stack gaps)
+- 1.0 - 4.9: 'AI: Unaligned' (lacks primary prerequisites or relevant technical background)
 
-CRITICAL INSTRUCTIONS:
-- You must return a valid, parsable JSON array of objects.
-- Each object in the array MUST contain the fields: "id", "aiScore", "aiLabel", and "aiExplanation".
-- Do NOT wrap your output in markdown code blocks like \`\`\`json. Return ONLY the raw JSON array string.
-- Do NOT output any conversational text, introductions, explanations outside the JSON array, or trailing commas.`;
+For each candidate, assign the objective compatibility score (aiScore), the matching category (aiLabel), and a precise 1-2 sentence assessment (aiExplanation).`;
 
-    const result = await generateText({
-      model: google('gemini-2.5-flash'),
+    const { object } = await generateObject({
+      model: google('gemini-2.0-flash'),
+      schema: stackRankResultSchema,
       system: systemPrompt,
-      prompt: `Analyze the candidates and return the JSON array immediately.`,
-      temperature: 0.2, // low temperature for highly reliable, objective JSON output
+      prompt: 'Evaluate the candidates against the role requirements and return the structured ranking results.',
+      temperature: 0.2,
     });
 
-    let rawText = result.text.trim();
-    
-    // Clean potential markdown fencing if the model ignored instructions
-    if (rawText.startsWith('```')) {
-      rawText = rawText.replace(/^```json\s*/, '').replace(/```$/, '').trim();
-    }
-
-    // Verify it parses as JSON to ensure response integrity
-    const parsed = JSON.parse(rawText);
-
-    return new Response(JSON.stringify({ results: parsed }), {
+    return new Response(JSON.stringify(object), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
     });
   } catch (err: unknown) {
     console.error('AI Stack Ranker Error:', err);

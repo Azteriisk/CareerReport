@@ -5,7 +5,8 @@ import { sanitizeCareerContext } from '@/lib/ai-guard';
 import { aiRateLimiter } from '@/lib/rate-limit';
 import { auth } from '@clerk/nextjs/server';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 export function compressContext(obj: any): any {
   if (Array.isArray(obj)) {
@@ -24,11 +25,8 @@ export function compressContext(obj: any): any {
   }
   
   if (typeof obj === 'string') {
-    if (obj.trim() === '') return undefined;
-    if (obj.length > 30) {
-      // Remove common filler words to save tokens drastically
-      return obj.replace(/\b(the|a|an|and|or|but|is|are|was|were|in|on|at|to|for|of|with|by|as)\b/gi, '').replace(/\s+/g, ' ').trim();
-    }
+    const trimmed = obj.trim();
+    return trimmed === '' ? undefined : trimmed;
   }
   return obj;
 }
@@ -119,7 +117,7 @@ export async function POST(req: Request) {
     }
 
     const result = await generateText({
-      model: google('gemini-2.5-flash'),
+      model: google('gemini-2.0-flash'),
       system: systemPrompt,
       prompt: `Context/Input to process:\n${JSON.stringify(compressedContext)}`,
       temperature: 0.7,
