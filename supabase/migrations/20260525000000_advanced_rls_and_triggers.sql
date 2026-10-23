@@ -4,12 +4,14 @@
 ALTER TABLE IF EXISTS company_employees ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Anyone can read employee records (Public Directory)
+DROP POLICY IF EXISTS "Allow public read of company employees" ON company_employees;
 CREATE POLICY "Allow public read of company employees"
   ON company_employees
   FOR SELECT
   USING (true);
 
 -- Policy: Only business owners can insert employee records (or invite them)
+DROP POLICY IF EXISTS "Allow business owners to insert employees" ON company_employees;
 CREATE POLICY "Allow business owners to insert employees"
   ON company_employees
   FOR INSERT
@@ -22,6 +24,7 @@ CREATE POLICY "Allow business owners to insert employees"
   );
 
 -- Policy: Business owners can update/delete employee records, but NON-owners cannot touch the owner's record.
+DROP POLICY IF EXISTS "Allow business owners to manage employees except owner record" ON company_employees;
 CREATE POLICY "Allow business owners to manage employees except owner record"
   ON company_employees
   FOR UPDATE
@@ -46,6 +49,7 @@ CREATE POLICY "Allow business owners to manage employees except owner record"
     )
   );
 
+DROP POLICY IF EXISTS "Allow business owners to delete employees except owner record" ON company_employees;
 CREATE POLICY "Allow business owners to delete employees except owner record"
   ON company_employees
   FOR DELETE
@@ -87,6 +91,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Trigger: When a profile is deleted, run handle_deleted_profile_cleanup
+DROP TRIGGER IF EXISTS on_profile_deleted_cleanup ON profiles;
 CREATE TRIGGER on_profile_deleted_cleanup
   BEFORE DELETE ON profiles
   FOR EACH ROW
@@ -108,6 +113,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Trigger: When a post is deleted, run handle_deleted_post_cleanup
+DROP TRIGGER IF EXISTS on_post_deleted_cleanup ON posts;
 CREATE TRIGGER on_post_deleted_cleanup
   BEFORE DELETE ON posts
   FOR EACH ROW
@@ -129,6 +135,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Trigger: When a business profile is deleted, run handle_deleted_business_cleanup
+DROP TRIGGER IF EXISTS on_business_deleted_cleanup ON business_profiles;
 CREATE TRIGGER on_business_deleted_cleanup
   BEFORE DELETE ON business_profiles
   FOR EACH ROW
