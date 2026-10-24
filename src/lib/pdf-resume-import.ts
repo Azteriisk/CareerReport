@@ -110,7 +110,7 @@ async function structureResumeWithAi(options: {
     const fileDataUrl = `data:application/pdf;base64,${base64}`;
 
     const { object } = await generateObject({
-      model: google('gemini-2.0-flash'),
+      model: google('gemini-2.5-flash'),
       schema: resumeDataSchema,
       messages: [
         {
@@ -138,7 +138,7 @@ async function structureResumeWithAi(options: {
   }
 
   const { object } = await generateObject({
-    model: google('gemini-2.0-flash'),
+    model: google('gemini-2.5-flash'),
     schema: resumeDataSchema,
     prompt: `${systemPrompt}
 

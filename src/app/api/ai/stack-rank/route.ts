@@ -119,13 +119,27 @@ Scoring Rubric:
 
 For each candidate, assign the objective compatibility score (aiScore), the matching category (aiLabel), and a precise 1-2 sentence assessment (aiExplanation).`;
 
-    const { object } = await generateObject({
-      model: google('gemini-2.0-flash'),
-      schema: stackRankResultSchema,
-      system: systemPrompt,
-      prompt: 'Evaluate the candidates against the role requirements and return the structured ranking results.',
-      temperature: 0.2,
-    });
+    let object;
+    try {
+      const res = await generateObject({
+        model: google('gemini-2.5-flash'),
+        schema: stackRankResultSchema,
+        system: systemPrompt,
+        prompt: 'Evaluate the candidates against the role requirements and return the structured ranking results.',
+        temperature: 0.2,
+      });
+      object = res.object;
+    } catch (primaryErr) {
+      console.warn('Primary model gemini-2.5-flash failed, falling back to gemini-2.5-flash-lite:', primaryErr);
+      const res = await generateObject({
+        model: google('gemini-2.5-flash-lite'),
+        schema: stackRankResultSchema,
+        system: systemPrompt,
+        prompt: 'Evaluate the candidates against the role requirements and return the structured ranking results.',
+        temperature: 0.2,
+      });
+      object = res.object;
+    }
 
     return new Response(JSON.stringify(object), {
       status: 200,

@@ -116,12 +116,23 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: 'Payload too large. Please shorten your resume data.' }), { status: 413 });
     }
 
-    const result = await generateText({
-      model: google('gemini-2.0-flash'),
-      system: systemPrompt,
-      prompt: `Context/Input to process:\n${JSON.stringify(compressedContext)}`,
-      temperature: 0.7,
-    });
+    let result;
+    try {
+      result = await generateText({
+        model: google('gemini-2.5-flash'),
+        system: systemPrompt,
+        prompt: `Context/Input to process:\n${JSON.stringify(compressedContext)}`,
+        temperature: 0.7,
+      });
+    } catch (primaryErr) {
+      console.warn('Primary model gemini-2.5-flash failed, falling back to gemini-2.5-flash-lite:', primaryErr);
+      result = await generateText({
+        model: google('gemini-2.5-flash-lite'),
+        system: systemPrompt,
+        prompt: `Context/Input to process:\n${JSON.stringify(compressedContext)}`,
+        temperature: 0.7,
+      });
+    }
 
     return new Response(result.text);
   } catch (err: unknown) {

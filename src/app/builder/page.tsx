@@ -13,6 +13,14 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AtsMetadata } from '@/components/AtsMetadata';
 import { BuilderErrorBoundary } from '@/components/BuilderErrorBoundary';
+import { Reorder } from 'framer-motion';
+import { moveItemDirection } from '@/lib/reorder-utils';
+import { ReorderableJobItem } from '@/components/builder/ReorderableJobItem';
+import { ReorderableEducationItem } from '@/components/builder/ReorderableEducationItem';
+import { ReorderableSkillItem } from '@/components/builder/ReorderableSkillItem';
+import { ReorderableProjectItem } from '@/components/builder/ReorderableProjectItem';
+import { ReorderableReferenceItem } from '@/components/builder/ReorderableReferenceItem';
+import { ReorderableCertificationItem } from '@/components/builder/ReorderableCertificationItem';
 
 // Dynamically import heavy components so they're code-split from the initial bundle
 const loadingFallback = () => <div style={{ minHeight: '850px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Loader2 className="animate-spin" size={48} style={{ color: 'var(--primary)', opacity: 0.5 }} /></div>;
@@ -1024,7 +1032,14 @@ ${data.basics.name || 'Applicant'}`;
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ context: { job, globalSkills: data.skills.map(s => s.name) }, type, careerContext })
       });
-      if (!response.ok) throw new Error('Failed to generate');
+      if (!response.ok) {
+        let errMsg = 'Failed to generate';
+        try {
+          const errData = await response.json();
+          if (errData?.error) errMsg = errData.error;
+        } catch {}
+        throw new Error(errMsg);
+      }
       const text = await response.text();
 
       saveUndoState();
@@ -1038,9 +1053,9 @@ ${data.basics.name || 'Applicant'}`;
           return j;
         })
       }));
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("AI Generation failed. Please try again.");
+      alert(e?.message || "AI Generation failed. Please try again.");
     } finally {
       setAiLoading(prev => ({ ...prev, [`${jobId}-${type}`]: false }));
     }
@@ -1076,7 +1091,14 @@ ${data.basics.name || 'Applicant'}`;
           careerContext
         })
       });
-      if (!response.ok) throw new Error('Failed to generate');
+      if (!response.ok) {
+        let errMsg = 'Failed to generate';
+        try {
+          const errData = await response.json();
+          if (errData?.error) errMsg = errData.error;
+        } catch {}
+        throw new Error(errMsg);
+      }
       const text = await response.text();
 
       saveUndoState();
@@ -1090,9 +1112,9 @@ ${data.basics.name || 'Applicant'}`;
           return s;
         })
       }));
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert('Failed to generate skills. Please try again.');
+      alert(e?.message || 'Failed to generate skills. Please try again.');
     } finally {
       setAiLoading(prev => ({ ...prev, [`skill-${skillGroupId}`]: false }));
     }
@@ -1117,7 +1139,14 @@ ${data.basics.name || 'Applicant'}`;
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ context: data, type: 'rewrite', careerContext })
       });
-      if (!response.ok) throw new Error('Failed to rewrite');
+      if (!response.ok) {
+        let errMsg = 'Failed to rewrite';
+        try {
+          const errData = await response.json();
+          if (errData?.error) errMsg = errData.error;
+        } catch {}
+        throw new Error(errMsg);
+      }
       const text = await response.text();
 
       saveUndoState();
@@ -1125,9 +1154,9 @@ ${data.basics.name || 'Applicant'}`;
         ...prev,
         basics: { ...prev.basics, summary: text.replace(/"/g, '').trim() }
       }));
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("AI Rewrite failed.");
+      alert(e?.message || "AI Rewrite failed.");
     } finally {
       setIsAILoading(false);
     }
@@ -1157,14 +1186,21 @@ ${data.basics.name || 'Applicant'}`;
         }),
       });
 
-      if (!response.ok) throw new Error('Generation failed');
+      if (!response.ok) {
+        let errMsg = 'Generation failed';
+        try {
+          const errData = await response.json();
+          if (errData?.error) errMsg = errData.error;
+        } catch {}
+        throw new Error(errMsg);
+      }
       const text = await response.text();
       const content = text.trim();
       setGeneratedCoverLetter(content);
       
       // Auto-save generated letter back to database via ResumeData state
       saveCoverLetterToData(targetCompany, targetJobTitle, targetJobDesc, storyType, content, 'ai');
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
       alert("Failed to generate cover letter. Please try again.");
     } finally {
@@ -1257,6 +1293,33 @@ ${data.basics.name || 'Applicant'}`;
     }));
   };
 
+  const handleReorderJobs = (newWork: typeof data.work) => {
+    setData(prev => ({ ...prev, work: newWork }));
+    setSaveStatus('idle');
+  };
+
+  const handleMoveJob = (index: number, direction: -1 | 1) => {
+    setData(prev => ({
+      ...prev,
+      work: moveItemDirection(prev.work, index, direction)
+    }));
+    setSaveStatus('idle');
+  };
+
+  const handleMoveJobHighlight = (jobId: string, highlightIndex: number, direction: -1 | 1) => {
+    setData(prev => ({
+      ...prev,
+      work: prev.work.map(job => {
+        if (job.id !== jobId) return job;
+        return {
+          ...job,
+          highlights: moveItemDirection(job.highlights || [], highlightIndex, direction)
+        };
+      })
+    }));
+    setSaveStatus('idle');
+  };
+
   // Education Handlers
   const handleEducationChange = (id: string, field: string, value: any) => {
     setData(prev => ({
@@ -1279,6 +1342,19 @@ ${data.basics.name || 'Applicant'}`;
     }));
   };
 
+  const handleReorderEducation = (newEdu: typeof data.education) => {
+    setData(prev => ({ ...prev, education: newEdu }));
+    setSaveStatus('idle');
+  };
+
+  const handleMoveEducation = (index: number, direction: -1 | 1) => {
+    setData(prev => ({
+      ...prev,
+      education: moveItemDirection(prev.education || [], index, direction)
+    }));
+    setSaveStatus('idle');
+  };
+
   // Skills Handlers
   const handleAddSkillCategory = () => {
     setData(prev => ({
@@ -1299,6 +1375,33 @@ ${data.basics.name || 'Applicant'}`;
       ...prev,
       skills: (prev.skills || []).map(s => s.id === id ? { ...s, [field]: value } : s)
     }));
+  };
+
+  const handleReorderSkills = (newSkills: typeof data.skills) => {
+    setData(prev => ({ ...prev, skills: newSkills }));
+    setSaveStatus('idle');
+  };
+
+  const handleMoveSkillCategory = (index: number, direction: -1 | 1) => {
+    setData(prev => ({
+      ...prev,
+      skills: moveItemDirection(prev.skills || [], index, direction)
+    }));
+    setSaveStatus('idle');
+  };
+
+  const handleMoveSkillKeyword = (skillId: string, keywordIndex: number, direction: -1 | 1) => {
+    setData(prev => ({
+      ...prev,
+      skills: (prev.skills || []).map(skill => {
+        if (skill.id !== skillId) return skill;
+        return {
+          ...skill,
+          keywords: moveItemDirection(skill.keywords || [], keywordIndex, direction)
+        };
+      })
+    }));
+    setSaveStatus('idle');
   };
 
   const handleLayoutChange = (module: 'work' | 'education' | 'skills' | 'projects' | 'references' | 'certifications', cols: number) => {
@@ -1336,6 +1439,19 @@ ${data.basics.name || 'Applicant'}`;
     }));
   };
 
+  const handleReorderProjects = (newProjects: NonNullable<typeof data.projects>) => {
+    setData(prev => ({ ...prev, projects: newProjects }));
+    setSaveStatus('idle');
+  };
+
+  const handleMoveProject = (index: number, direction: -1 | 1) => {
+    setData(prev => ({
+      ...prev,
+      projects: moveItemDirection(prev.projects || [], index, direction)
+    }));
+    setSaveStatus('idle');
+  };
+
   // References Handlers
   const handleAddReference = () => {
     setData(prev => ({
@@ -1358,6 +1474,19 @@ ${data.basics.name || 'Applicant'}`;
     }));
   };
 
+  const handleReorderReferences = (newReferences: NonNullable<typeof data.references>) => {
+    setData(prev => ({ ...prev, references: newReferences }));
+    setSaveStatus('idle');
+  };
+
+  const handleMoveReference = (index: number, direction: -1 | 1) => {
+    setData(prev => ({
+      ...prev,
+      references: moveItemDirection(prev.references || [], index, direction)
+    }));
+    setSaveStatus('idle');
+  };
+
   // Certifications Handlers
   const handleAddCertification = () => {
     setData(prev => ({
@@ -1368,6 +1497,19 @@ ${data.basics.name || 'Applicant'}`;
 
   const handleRemoveCertification = (id: string) => {
     setData(prev => ({ ...prev, certifications: (prev.certifications || []).filter(c => c.id !== id) }));
+  };
+
+  const handleReorderCertifications = (newCerts: NonNullable<typeof data.certifications>) => {
+    setData(prev => ({ ...prev, certifications: newCerts }));
+    setSaveStatus('idle');
+  };
+
+  const handleMoveCertification = (index: number, direction: -1 | 1) => {
+    setData(prev => ({
+      ...prev,
+      certifications: moveItemDirection(prev.certifications || [], index, direction)
+    }));
+    setSaveStatus('idle');
   };
 
   const handleCertificationChange = (id: string, field: string, value: string) => {
@@ -1726,98 +1868,29 @@ ${data.basics.name || 'Applicant'}`;
               </div>
               <button onClick={handleAddJob} className="btn-icon" style={{ background: 'var(--primary)', color: 'white', padding: '4px 8px' }}><Plus size={16} /></button>
             </div>
-            {data.work.map((job, index) => (
-              <div key={job.id} style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                  <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Job {index + 1}</div>
-                  <button onClick={() => handleRemoveJob(job.id)} className="btn-icon" style={{ color: 'var(--danger)', padding: '2px' }}><Trash2 size={14} /></button>
-                </div>
-                <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-                  <label className="label" style={{ fontSize: '0.75rem' }}>Company</label>
-                  <input type="text" className="input-field" style={{ padding: '0.5rem' }} value={job.name} onChange={(e) => handleJobChange(job.id, 'name', e.target.value)} />
-                </div>
-                <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-                  <label className="label" style={{ fontSize: '0.75rem' }}>Position</label>
-                  <input type="text" className="input-field" style={{ padding: '0.5rem' }} value={job.position} onChange={(e) => handleJobChange(job.id, 'position', e.target.value)} />
-                </div>
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                  <div className="form-group" style={{ flex: 1, marginBottom: 0, minWidth: 0 }}>
-                    <label className="label" style={{ fontSize: '0.75rem' }}>Start Date</label>
-                    <MonthYearPicker value={job.startDate} onChange={(val) => handleJobChange(job.id, 'startDate', val)} />
-                  </div>
-                  <div className="form-group" style={{ flex: 1, marginBottom: 0, minWidth: 0 }}>
-                    <label className="label" style={{ fontSize: '0.75rem' }}>End Date</label>
-                    <MonthYearPicker disabled={job.endDate === 'Present'} value={job.endDate === 'Present' ? '' : job.endDate} onChange={(val) => handleJobChange(job.id, 'endDate', val)} />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                  <input type="checkbox" id={`current-${job.id}`} checked={job.endDate === 'Present'} onChange={(e) => handleJobChange(job.id, 'endDate', e.target.checked ? 'Present' : '')} style={{ cursor: 'pointer' }} />
-                  <label htmlFor={`current-${job.id}`} style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', cursor: 'pointer', margin: 0 }}>I currently work here</label>
-                </div>
-                <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-                  <label className="label" style={{ fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    Summary
-                    <button
-                      onClick={() => handleJobAI(job.id, 'summary')}
-                      disabled={aiLoading[`${job.id}-summary`]}
-                      className="btn-icon"
-                      style={{ fontSize: '0.65rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.3)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      {aiLoading[`${job.id}-summary`] ? <Loader2 size={10} className="animate-spin" /> : <><Wand2 size={10} /> AI Generate {!isPro && <Lock size={8} />}</>}
-                    </button>
-                  </label>
-                  <textarea className="input-field" style={{ padding: '0.5rem', minHeight: '60px' }} value={job.summary} onChange={(e) => handleJobChange(job.id, 'summary', e.target.value)} />
-                </div>
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="label" style={{ fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    Bullet Points
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      <button
-                        onClick={() => handleJobAI(job.id, 'bullets')}
-                        disabled={aiLoading[`${job.id}-bullets`]}
-                        className="btn-icon"
-                        style={{ fontSize: '0.65rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.3)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                      >
-                        {aiLoading[`${job.id}-bullets`] ? <Loader2 size={10} className="animate-spin" /> : <><Wand2 size={10} /> AI Generate {!isPro && <Lock size={8} />}</>}
-                      </button>
-                      <button
-                        onClick={() => handleJobChange(job.id, 'highlights', [...(job.highlights || []), ''])}
-                        className="btn-icon"
-                        style={{ padding: '2px', color: 'var(--primary)' }}
-                        title="Add Bullet Point"
-                      >
-                        <Plus size={14} />
-                      </button>
-                    </div>
-                  </label>
-                  {(job.highlights || []).map((highlight, hIndex) => (
-                    <div key={hIndex} style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
-                      <input
-                        type="text"
-                        className="input-field"
-                        style={{ padding: '0.4rem', fontSize: '0.85rem' }}
-                        value={highlight}
-                        onChange={(e) => {
-                          const newHighlights = [...(job.highlights || [])];
-                          newHighlights[hIndex] = e.target.value;
-                          handleJobChange(job.id, 'highlights', newHighlights);
-                        }}
-                      />
-                      <button
-                        onClick={() => {
-                          const newHighlights = (job.highlights || []).filter((_, i) => i !== hIndex);
-                          handleJobChange(job.id, 'highlights', newHighlights);
-                        }}
-                        className="btn-icon"
-                        style={{ color: 'var(--danger)', padding: '4px' }}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+            <Reorder.Group
+              axis="y"
+              values={data.work}
+              onReorder={handleReorderJobs}
+              as="div"
+              style={{ listStyle: 'none', padding: 0, margin: 0 }}
+            >
+              {data.work.map((job, index) => (
+                <ReorderableJobItem
+                  key={job.id}
+                  job={job}
+                  index={index}
+                  total={data.work.length}
+                  isPro={isPro}
+                  aiLoading={aiLoading}
+                  onChange={handleJobChange}
+                  onRemove={handleRemoveJob}
+                  onJobAI={handleJobAI}
+                  onMove={handleMoveJob}
+                  onMoveHighlight={handleMoveJobHighlight}
+                />
+              ))}
+            </Reorder.Group>
           </div>
 
           {/* Education Section */}
@@ -1835,46 +1908,25 @@ ${data.basics.name || 'Applicant'}`;
               </div>
               <button onClick={handleAddEducation} className="btn-icon" style={{ background: 'var(--primary)', color: 'white', padding: '4px 8px' }}><Plus size={16} /></button>
             </div>
-            {(data.education || []).map((edu, index) => (
-              <div key={edu.id} style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                  <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Education {index + 1}</div>
-                  <button onClick={() => handleRemoveEducation(edu.id)} className="btn-icon" style={{ color: 'var(--danger)', padding: '2px' }}><Trash2 size={14} /></button>
-                </div>
-                <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-                  <label className="label" style={{ fontSize: '0.75rem' }}>Institution</label>
-                  <input type="text" className="input-field" style={{ padding: '0.5rem' }} value={edu.institution} onChange={(e) => handleEducationChange(edu.id, 'institution', e.target.value)} />
-                </div>
-                <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-                  <label className="label" style={{ fontSize: '0.75rem' }}>Area of Study</label>
-                  <input type="text" className="input-field" style={{ padding: '0.5rem' }} value={edu.area} onChange={(e) => handleEducationChange(edu.id, 'area', e.target.value)} />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="label" style={{ fontSize: '0.75rem' }}>Degree / Study Type</label>
-                    <input type="text" className="input-field" style={{ padding: '0.5rem' }} value={edu.studyType} onChange={(e) => handleEducationChange(edu.id, 'studyType', e.target.value)} />
-                  </div>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="label" style={{ fontSize: '0.75rem' }}>GPA / Score</label>
-                    <input type="text" className="input-field" style={{ padding: '0.5rem' }} value={edu.score} onChange={(e) => handleEducationChange(edu.id, 'score', e.target.value)} />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                  <div className="form-group" style={{ flex: 1, marginBottom: 0, minWidth: 0 }}>
-                    <label className="label" style={{ fontSize: '0.75rem' }}>Start Date</label>
-                    <MonthYearPicker value={edu.startDate} onChange={(val) => handleEducationChange(edu.id, 'startDate', val)} />
-                  </div>
-                  <div className="form-group" style={{ flex: 1, marginBottom: 0, minWidth: 0 }}>
-                    <label className="label" style={{ fontSize: '0.75rem' }}>End Date</label>
-                    <MonthYearPicker disabled={edu.endDate === 'Present'} value={edu.endDate === 'Present' ? '' : edu.endDate} onChange={(val) => handleEducationChange(edu.id, 'endDate', val)} />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 0 }}>
-                  <input type="checkbox" id={`current-edu-${edu.id}`} checked={edu.endDate === 'Present'} onChange={(e) => handleEducationChange(edu.id, 'endDate', e.target.checked ? 'Present' : '')} style={{ cursor: 'pointer' }} />
-                  <label htmlFor={`current-edu-${edu.id}`} style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', cursor: 'pointer', margin: 0 }}>Currently studying</label>
-                </div>
-              </div>
-            ))}
+            <Reorder.Group
+              axis="y"
+              values={data.education || []}
+              onReorder={handleReorderEducation}
+              as="div"
+              style={{ listStyle: 'none', padding: 0, margin: 0 }}
+            >
+              {(data.education || []).map((edu, index) => (
+                <ReorderableEducationItem
+                  key={edu.id}
+                  edu={edu}
+                  index={index}
+                  total={(data.education || []).length}
+                  onChange={handleEducationChange}
+                  onRemove={handleRemoveEducation}
+                  onMove={handleMoveEducation}
+                />
+              ))}
+            </Reorder.Group>
           </div>
 
           {/* Skills Section */}
@@ -1893,61 +1945,28 @@ ${data.basics.name || 'Applicant'}`;
               </div>
               <button onClick={handleAddSkillCategory} className="btn-icon" style={{ background: 'var(--primary)', color: 'white', padding: '4px 8px' }}><Plus size={16} /></button>
             </div>
-            {(data.skills || []).map((skillGroup, index) => (
-              <div key={skillGroup.id} style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                  <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Category {index + 1}</div>
-                  <button onClick={() => handleRemoveSkillCategory(skillGroup.id)} className="btn-icon" style={{ color: 'var(--danger)', padding: '2px' }}><Trash2 size={14} /></button>
-                </div>
-                <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-                  <label className="label" style={{ fontSize: '0.75rem' }}>Category Name</label>
-                  <input type="text" className="input-field" style={{ padding: '0.5rem' }} value={skillGroup.name} onChange={(e) => handleSkillCategoryChange(skillGroup.id, 'name', e.target.value)} />
-                </div>
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="label" style={{ fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      Skills
-                      <button onClick={() => handleGenerateSkills(skillGroup.id)} disabled={aiLoading[`skill-${skillGroup.id}`]} className="btn-icon" style={{ fontSize: '0.7rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.3)', fontWeight: 600 }}>
-                        {aiLoading[`skill-${skillGroup.id}`] ? <Loader2 size={12} className="animate-spin" /> : <><Wand2 size={12} style={{ marginRight: '4px' }} /> AI Generate</>}
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => handleSkillCategoryChange(skillGroup.id, 'keywords', [...(skillGroup.keywords || []), ''])}
-                      className="btn-icon"
-                      style={{ padding: '2px', color: 'var(--primary)' }}
-                      title="Add Skill"
-                    >
-                      <Plus size={14} />
-                    </button>
-                  </label>
-                  {(skillGroup.keywords || []).map((keyword, kIndex) => (
-                    <div key={kIndex} style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
-                      <input
-                        type="text"
-                        className="input-field"
-                        style={{ padding: '0.4rem', fontSize: '0.85rem' }}
-                        value={keyword}
-                        onChange={(e) => {
-                          const newKeywords = [...(skillGroup.keywords || [])];
-                          newKeywords[kIndex] = e.target.value;
-                          handleSkillCategoryChange(skillGroup.id, 'keywords', newKeywords);
-                        }}
-                      />
-                      <button
-                        onClick={() => {
-                          const newKeywords = (skillGroup.keywords || []).filter((_, i) => i !== kIndex);
-                          handleSkillCategoryChange(skillGroup.id, 'keywords', newKeywords);
-                        }}
-                        className="btn-icon"
-                        style={{ color: 'var(--danger)', padding: '4px' }}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+            <Reorder.Group
+              axis="y"
+              values={data.skills || []}
+              onReorder={handleReorderSkills}
+              as="div"
+              style={{ listStyle: 'none', padding: 0, margin: 0 }}
+            >
+              {(data.skills || []).map((skillGroup, index) => (
+                <ReorderableSkillItem
+                  key={skillGroup.id}
+                  skillGroup={skillGroup}
+                  index={index}
+                  total={(data.skills || []).length}
+                  aiLoading={aiLoading}
+                  onChange={handleSkillCategoryChange}
+                  onRemove={handleRemoveSkillCategory}
+                  onGenerateAI={handleGenerateSkills}
+                  onMove={handleMoveSkillCategory}
+                  onMoveKeyword={handleMoveSkillKeyword}
+                />
+              ))}
+            </Reorder.Group>
           </div>
 
           {/* Dynamic Portfolio Projects Section */}
@@ -1969,26 +1988,25 @@ ${data.basics.name || 'Applicant'}`;
                   <button onClick={() => { setHasProjectsSection(false); setData(prev => ({ ...prev, projects: [] })); }} className="btn-icon" style={{ color: 'var(--danger)', padding: '4px' }}><Trash2 size={16} /></button>
                 </div>
               </div>
-              {(data.projects || []).map((proj, index) => (
-                <div key={proj.id} style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Project {index + 1}</div>
-                    <button onClick={() => handleRemoveProject(proj.id)} className="btn-icon" style={{ color: 'var(--danger)', padding: '2px' }}><Trash2 size={14} /></button>
-                  </div>
-                  <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-                    <label className="label" style={{ fontSize: '0.75rem' }}>Project Name</label>
-                    <input type="text" className="input-field" style={{ padding: '0.5rem' }} value={proj.name} onChange={(e) => handleProjectChange(proj.id, 'name', e.target.value)} />
-                  </div>
-                  <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-                    <label className="label" style={{ fontSize: '0.75rem' }}>URL / Link</label>
-                    <input type="text" className="input-field" style={{ padding: '0.5rem' }} value={proj.url} onChange={(e) => handleProjectChange(proj.id, 'url', e.target.value)} />
-                  </div>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="label" style={{ fontSize: '0.75rem' }}>Description</label>
-                    <textarea className="input-field" style={{ padding: '0.5rem', minHeight: '60px' }} value={proj.description} onChange={(e) => handleProjectChange(proj.id, 'description', e.target.value)} />
-                  </div>
-                </div>
-              ))}
+              <Reorder.Group
+                axis="y"
+                values={data.projects || []}
+                onReorder={handleReorderProjects}
+                as="div"
+                style={{ listStyle: 'none', padding: 0, margin: 0 }}
+              >
+                {(data.projects || []).map((proj, index) => (
+                  <ReorderableProjectItem
+                    key={proj.id}
+                    project={proj}
+                    index={index}
+                    total={(data.projects || []).length}
+                    onChange={handleProjectChange}
+                    onRemove={handleRemoveProject}
+                    onMove={handleMoveProject}
+                  />
+                ))}
+              </Reorder.Group>
             </div>
           )}
 
@@ -2012,22 +2030,25 @@ ${data.basics.name || 'Applicant'}`;
                   <button onClick={() => { setHasReferencesSection(false); setData(prev => ({ ...prev, references: [] })); }} className="btn-icon" style={{ color: 'var(--danger)', padding: '4px' }}><Trash2 size={16} /></button>
                 </div>
               </div>
-              {(data.references || []).map((ref, index) => (
-                <div key={ref.id} style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Reference {index + 1}</div>
-                    <button onClick={() => handleRemoveReference(ref.id)} className="btn-icon" style={{ color: 'var(--danger)', padding: '2px' }}><Trash2 size={14} /></button>
-                  </div>
-                  <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-                    <label className="label" style={{ fontSize: '0.75rem' }}>Name</label>
-                    <input type="text" className="input-field" style={{ padding: '0.5rem' }} value={ref.name} onChange={(e) => handleReferenceChange(ref.id, 'name', e.target.value)} />
-                  </div>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="label" style={{ fontSize: '0.75rem' }}>Contact Info / Description</label>
-                    <input type="text" className="input-field" style={{ padding: '0.5rem' }} value={ref.reference} onChange={(e) => handleReferenceChange(ref.id, 'reference', e.target.value)} />
-                  </div>
-                </div>
-              ))}
+              <Reorder.Group
+                axis="y"
+                values={data.references || []}
+                onReorder={handleReorderReferences}
+                as="div"
+                style={{ listStyle: 'none', padding: 0, margin: 0 }}
+              >
+                {(data.references || []).map((ref, index) => (
+                  <ReorderableReferenceItem
+                    key={ref.id}
+                    item={ref}
+                    index={index}
+                    total={(data.references || []).length}
+                    onChange={handleReferenceChange}
+                    onRemove={handleRemoveReference}
+                    onMove={handleMoveReference}
+                  />
+                ))}
+              </Reorder.Group>
             </div>
           )}
 
@@ -2050,32 +2071,25 @@ ${data.basics.name || 'Applicant'}`;
                   <button onClick={() => { setHasCertificationsSection(false); setData(prev => ({ ...prev, certifications: [] })); }} className="btn-icon" style={{ color: 'var(--danger)', padding: '4px' }}><Trash2 size={16} /></button>
                 </div>
               </div>
-              {(data.certifications || []).map(cert => (
-                <div key={cert.id} style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>Certification</div>
-                    <button onClick={() => handleRemoveCertification(cert.id)} className="btn-icon" style={{ color: 'var(--danger)', padding: '2px' }}><Trash2 size={14} /></button>
-                  </div>
-                  <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-                    <label className="label" style={{ fontSize: '0.75rem' }}>Name</label>
-                    <input type="text" className="input-field" style={{ padding: '0.5rem' }} value={cert.name} onChange={(e) => handleCertificationChange(cert.id, 'name', e.target.value)} />
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                    <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
-                      <label className="label" style={{ fontSize: '0.75rem' }}>Issuer</label>
-                      <input type="text" className="input-field" style={{ padding: '0.5rem' }} value={cert.issuer} onChange={(e) => handleCertificationChange(cert.id, 'issuer', e.target.value)} />
-                    </div>
-                    <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
-                      <label className="label" style={{ fontSize: '0.75rem' }}>Date</label>
-                      <input type="text" className="input-field" style={{ padding: '0.5rem' }} placeholder="MM/YYYY" value={cert.date} onChange={(e) => handleCertificationChange(cert.id, 'date', e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="label" style={{ fontSize: '0.75rem' }}>URL (Optional)</label>
-                    <input type="url" className="input-field" style={{ padding: '0.5rem' }} value={cert.url || ''} onChange={(e) => handleCertificationChange(cert.id, 'url', e.target.value)} />
-                  </div>
-                </div>
-              ))}
+              <Reorder.Group
+                axis="y"
+                values={data.certifications || []}
+                onReorder={handleReorderCertifications}
+                as="div"
+                style={{ listStyle: 'none', padding: 0, margin: 0 }}
+              >
+                {(data.certifications || []).map((cert, index) => (
+                  <ReorderableCertificationItem
+                    key={cert.id}
+                    cert={cert}
+                    index={index}
+                    total={(data.certifications || []).length}
+                    onChange={handleCertificationChange}
+                    onRemove={handleRemoveCertification}
+                    onMove={handleMoveCertification}
+                  />
+                ))}
+              </Reorder.Group>
             </div>
           )}
 
