@@ -1,7 +1,9 @@
 "use client";
 import React from 'react';
 import Link from 'next/link';
-import { Heart, MessageSquare, Repeat2, MoreHorizontal, Trash2, Loader2, X as CloseIcon } from 'lucide-react';
+import { Heart, MessageSquare, Repeat2, MoreHorizontal, Trash2, Loader2, X as CloseIcon, Flag, Ban } from 'lucide-react';
+import { isUserBlocked, blockUser } from '@/lib/ugc';
+import { ReportModal } from './ReportModal';
 import { useUser, useAuth } from '@clerk/nextjs';
 import { supabase } from "@/lib/supabase";
 import { RepostModal } from './RepostModal';
@@ -89,6 +91,9 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
 
   const [commentsCount, setCommentsCount] = React.useState(0);
   const [repostsCount, setRepostsCount] = React.useState(0);
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const [reportModalOpen, setReportModalOpen] = React.useState(false);
+  const [isBlocked, setIsBlocked] = React.useState(false);
   const [previewComments, setPreviewComments] = React.useState<any[]>([]);
 
   React.useEffect(() => {
@@ -289,7 +294,47 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
                     : <Trash2 size={18} />}
               </button>
             )}
-            <button className="btn-icon"><MoreHorizontal size={18} /></button>
+            <div className="ugc-menu-container">
+              <button
+                type="button"
+                className="btn-icon"
+                onClick={() => setMenuOpen(!menuOpen)}
+                aria-label="More options"
+              >
+                <MoreHorizontal size={18} />
+              </button>
+              {menuOpen && (
+                <div className="ugc-menu-dropdown">
+                  <button
+                    type="button"
+                    className="ugc-menu-item"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setReportModalOpen(true);
+                    }}
+                  >
+                    <Flag size={15} color="var(--danger)" />
+                    Report Post
+                  </button>
+                  {user?.id !== post.user_id && (
+                    <button
+                      type="button"
+                      className="ugc-menu-item danger"
+                      onClick={() => {
+                        if (confirm(`Block @${post.profiles?.username || 'user'}? Their content will be hidden.`)) {
+                          blockUser(post.user_id, post.profiles?.username);
+                          setIsBlocked(true);
+                          setMenuOpen(false);
+                        }
+                      }}
+                    >
+                      <Ban size={15} />
+                      Block User
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -307,6 +352,7 @@ export function PostCard({ post, onDelete, onRepost, isLikedByUser = false }: {
           )}
 
           {isRepost && post.original_post && <EmbeddedPost post={post.original_post} />}
+      <ReportModal isOpen={reportModalOpen} onClose={() => setReportModalOpen(false)} targetType="post" targetId={post.id} targetUserId={post.user_id} targetName={post.profiles?.username ? `@${post.profiles.username}` : undefined} />
 
           <div style={{ display: 'flex', gap: '2rem', color: 'var(--text-secondary)' }}>
             <button

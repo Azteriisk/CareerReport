@@ -918,3 +918,50 @@ body.hide-footer .site-footer { display: none !important; }
   box-shadow: 0 0 15px rgba(250, 189, 47, 0.4) !important;
 }
 
+
+
+/* UGC Moderation & Safety Menu */
+.ugc-menu-container {
+  position: relative;
+  display: inline-block;
+}
+
+.ugc-menu-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.35rem;
+  background-color: var(--surface-color);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  min-width: 170px;
+  z-index: 100;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ugc-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease;
+  width: 100%;
+}
+
+.ugc-menu-item:hover {
+  background-color: var(--surface-highlight);
+}
+
+.ugc-menu-item.danger {
+  color: var(--danger);
+}

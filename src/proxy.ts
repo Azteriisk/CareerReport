@@ -19,6 +19,7 @@ const isPublicRoute = createRouteMatcher([
   '/assetlinks.json',
   '/sw.js',
   '/api/webhooks/(.*)', // Stripe + Clerk webhooks self-verify — must stay public
+  '/api/ugc/(.*)', // UGC report and moderation endpoints
 ]);
 
 export default clerkMiddleware(async (auth, request) => {

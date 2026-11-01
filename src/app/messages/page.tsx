@@ -3,7 +3,9 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { supabase, setSupabaseToken } from '@/lib/supabase';
 import { useUser, useAuth } from '@clerk/nextjs';
-import { Loader2, Send, MessageSquare, ArrowLeft, Sparkles } from 'lucide-react';
+import { Loader2, Send, MessageSquare, ArrowLeft, Sparkles, Flag, Ban } from 'lucide-react';
+import { isUserBlocked, blockUser, checkContentModeration } from '@/lib/ugc';
+import { ReportModal } from '@/components/ReportModal';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { UpgradeModal } from '@/components/UpgradeModal';
@@ -44,6 +46,8 @@ function MessagesContent() {
   const [receiverIsPublic, setReceiverIsPublic] = useState(true);
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [moderationError, setModerationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -169,7 +173,8 @@ function MessagesContent() {
         }
       });
 
-      setConversations(Array.from(partnerMap.values()));
+      const unblockedPartners = Array.from(partnerMap.values()).filter(p => !isUserBlocked(p.id));
+      setConversations(unblockedPartners);
 
       // Check if we need to load a specific new partner from query params
       const toUsername = searchParams.get('to');
@@ -265,6 +270,18 @@ function MessagesContent() {
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !activePartner || !user?.id) return;
+
+    if (isUserBlocked(activePartner.id)) {
+      setModerationError('You have blocked this user and cannot send messages.');
+      return;
+    }
+
+    const modCheck = checkContentModeration(newMessage.trim());
+    if (!modCheck.ok) {
+      setModerationError(modCheck.reason || 'Message contains prohibited content.');
+      return;
+    }
+    setModerationError(null);
 
     setSending(true);
     try {
@@ -490,6 +507,12 @@ function MessagesContent() {
                     </button>
                   </div>
                 ) : (
+                  <>
+                  {moderationError && (
+                    <div style={{ color: 'var(--error)', fontSize: '0.82rem', marginBottom: '0.5rem', padding: '0.4rem 0.75rem', background: 'rgba(251,73,52,0.1)', border: '1px solid rgba(251,73,52,0.3)', borderRadius: '8px' }}>
+                      {moderationError}
+                    </div>
+                  )}
                   <form onSubmit={sendMessage} style={{ display: 'flex', gap: '0.75rem' }}>
                     <input
                       type="text"
@@ -509,9 +532,18 @@ function MessagesContent() {
                       {sending ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
                     </button>
                   </form>
+                  </>
                 )}
               </div>
 
+              <ReportModal
+                isOpen={reportModalOpen}
+                onClose={() => setReportModalOpen(false)}
+                targetType="user"
+                targetId={activePartner.id}
+                targetUserId={activePartner.id}
+                targetName={`@${activePartner.username}`}
+              />
               <UpgradeModal 
                 isOpen={upgradeModalOpen} 
                 onClose={() => setUpgradeModalOpen(false)} 

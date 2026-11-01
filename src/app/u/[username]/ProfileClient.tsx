@@ -6,7 +6,9 @@ import { TemplateModern } from '@/components/TemplateModern';
 import { TemplateModernSplit } from '@/components/TemplateModernSplit';
 import { TemplateClassic } from '@/components/TemplateClassic';
 import { TemplateMinimal } from '@/components/TemplateMinimal';
-import { AlertCircle, Loader2, Users, Mail } from 'lucide-react';
+import { AlertCircle, Loader2, Users, Mail, Flag, Ban } from 'lucide-react';
+import { isUserBlocked, blockUser, unblockUser } from '@/lib/ugc';
+import { ReportModal } from '@/components/ReportModal';
 import { AtsMetadata } from '@/components/AtsMetadata';
 import { FollowButton } from '@/components/FollowButton';
 import { Feed } from '@/components/Feed';
@@ -29,6 +31,8 @@ export function ProfileClient({ username }: { username: string }) {
   const [activeTab, setActiveTab] = useState<'resume' | 'posts'>('resume');
   const [followModalOpen, setFollowModalOpen] = useState(false);
   const [followModalType, setFollowModalType] = useState<'followers' | 'following'>('followers');
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   const measureRef = React.useRef<HTMLDivElement>(null);
   const [pageCount, setPageCount] = useState(1);
@@ -101,6 +105,9 @@ export function ProfileClient({ username }: { username: string }) {
         return;
       }
       setProfileData(profile);
+        if (profile?.id) {
+          setIsBlocked(isUserBlocked(profile.id));
+        }
 
       supabase
         .from('followers')
@@ -266,7 +273,17 @@ export function ProfileClient({ username }: { username: string }) {
         {activeTab === 'resume' ? (
           resumeData ? (
             <>
-              {/* Hidden measurement div — uses CSS columns to detect exactly how many
+              {/* UGC Report Modal */}
+      <ReportModal
+        isOpen={reportModalOpen}
+        onClose={() => setReportModalOpen(false)}
+        targetType="user"
+        targetId={profileData?.id}
+        targetUserId={profileData?.id}
+        targetName={`@${profileData?.username}`}
+      />
+
+      {/* Hidden measurement div — uses CSS columns to detect exactly how many
                   850px columns (pages) the content overflows into. */}
               <div className="no-print" style={{
                 visibility: 'hidden',
