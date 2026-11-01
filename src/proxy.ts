@@ -13,6 +13,10 @@ const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)', 
   '/sign-up(.*)',
   '/business/advertise',
+  '/.well-known(.*)',
+  '/manifest.json',
+  '/manifest.webmanifest',
+  '/assetlinks.json',
   '/api/webhooks/(.*)', // Stripe + Clerk webhooks self-verify — must stay public
 ]);
 
