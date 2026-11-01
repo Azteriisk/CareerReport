@@ -17,6 +17,7 @@ const isPublicRoute = createRouteMatcher([
   '/manifest.json',
   '/manifest.webmanifest',
   '/assetlinks.json',
+  '/sw.js',
   '/api/webhooks/(.*)', // Stripe + Clerk webhooks self-verify — must stay public
 ]);
 

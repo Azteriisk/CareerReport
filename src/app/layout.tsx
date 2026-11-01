@@ -40,6 +40,7 @@ import { ClerkProvider } from '@clerk/nextjs'
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { PageTransition } from "@/components/PageTransition";
+import { PwaRegistrar } from "@/components/PwaRegistrar";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -75,6 +76,7 @@ export default function RootLayout({
             </PageTransition>
             <Footer />
           </div>
+          <PwaRegistrar />
           <Analytics />
           <SpeedInsights />
         </body>

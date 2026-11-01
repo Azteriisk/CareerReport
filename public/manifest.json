@@ -1,12 +1,17 @@
 {
+  "id": "/",
   "name": "CareerReport",
   "short_name": "CareerReport",
   "description": "Professional networking platform and AI resume builder.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#0a0a0c",
   "theme_color": "#0a0a0c",
-  "orientation": "portrait-primary",
+  "categories": ["business", "productivity", "social"],
+  "lang": "en-US",
+  "dir": "ltr",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -25,6 +30,38 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/homepage.png",
+      "sizes": "1888x996",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "CareerReport Platform & Feed"
+    },
+    {
+      "src": "/mobile-preview.png",
+      "sizes": "662x909",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "CareerReport Mobile View"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Resume Builder",
+      "short_name": "Builder",
+      "description": "Build ATS-optimized resumes with AI",
+      "url": "/builder",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Browse Jobs",
+      "short_name": "Jobs",
+      "description": "Explore curated job listings",
+      "url": "/jobs",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }
