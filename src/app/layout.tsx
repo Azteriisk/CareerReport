@@ -40,7 +40,6 @@ import { ClerkProvider } from '@clerk/nextjs'
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { PageTransition } from "@/components/PageTransition";
-import { PwaRegistrar } from "@/components/PwaRegistrar";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
@@ -67,6 +66,12 @@ export default function RootLayout({
             href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Merriweather:wght@300;400;700&family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&family=Raleway:wght@300;400;600;700&family=Source+Code+Pro:wght@400;600&family=Libre+Baskerville:wght@400;700&family=Nunito+Sans:wght@300;400;600;700&family=EB+Garamond:wght@400;500;700&family=DM+Sans:wght@300;400;500;700&display=swap"
             rel="stylesheet"
           />
+          {/* PWA Service Worker Registration */}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `if ('serviceWorker' in navigator && window.location.protocol === 'https:') { window.addEventListener('load', function() { navigator.serviceWorker.register('/sw.js'); }); }`,
+            }}
+          />
         </head>
         <body>
           <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh', overflowX: 'hidden' }}>
@@ -76,7 +81,6 @@ export default function RootLayout({
             </PageTransition>
             <Footer />
           </div>
-          <PwaRegistrar />
           <Analytics />
           <SpeedInsights />
         </body>

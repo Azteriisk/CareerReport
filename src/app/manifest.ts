@@ -9,12 +9,21 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: '/',
     scope: '/',
     display: 'standalone',
+    display_override: ['window-controls-overlay', 'standalone', 'minimal-ui'],
     orientation: 'portrait-primary',
     background_color: '#0a0a0c',
     theme_color: '#0a0a0c',
     categories: ['business', 'productivity', 'social'],
     lang: 'en-US',
     dir: 'ltr',
+    prefer_related_applications: false,
+    related_applications: [
+      {
+        platform: 'play',
+        id: 'net.azterisk.careerreport',
+        url: 'https://play.google.com/store/apps/details?id=net.azterisk.careerreport',
+      },
+    ],
     icons: [
       {
         src: '/icon-192.png',
