@@ -1,11 +1,17 @@
 [
   {
-    "relation": ["delegate_permission/common.handle_all_urls"],
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
     "target": {
       "namespace": "android_app",
       "package_name": "net.azterisk.careerreport",
       "sha256_cert_fingerprints": [
-        "BA:4A:0C:03:D1:E3:88:28:EF:65:EC:17:A7:FE:B3:80:0F:78:F4:C2:2B:DC:F5:EE:53:05:CD:A6:CB:29:FA:EF"
+        "BA:4A:0C:03:D1:E3:88:28:EF:65:EC:17:A7:FE:B3:80:0F:78:F4:C2:2B:DC:F5:EE:53:05:CD:A6:CB:29:FA:EF",
+        "CE:35:8B:15:6D:2A:A6:C3:40:9D:E9:E2:5B:B3:39:1A:D6:DA:38:78:88:02:D4:55:38:1D:6A:20:B7:1B:49:2B",
+        "8D:ED:08:DE:BA:DC:63:CD:9B:D0:A4:7C:DD:95:E4:B3:A0:7A:FE:C3:8F:65:2D:3D:ED:A6:8F:8E:78:10:BB:91",
+        "4B:20:92:3E:5B:0C:2D:96:DD:38:F0:E9:A4:B0:62:48:71:64:92:FB:4E:38:02:A2:50:5C:2A:32:3B:37:21:C5"
       ]
     }
   }
